@@ -12,7 +12,7 @@ MVP 的優先順序是：可靠發布與公開閱讀、基本 SEO、可維護的
 
 ## 2. 基座決策
 
-採「選擇性移植並重構」策略，以 MIT 授權的 [SamurAIGPT/blogger-cms](https://github.com/SamurAIGPT/blogger-cms) 作為候選基座：保留有價值的 Rich Text Editor、文章 CRUD 與 Google 登入骨架，重建公開前台、資料模型、權限、AI provider、SEO 與 AdSense 邊界。
+採「選擇性移植並重構」策略，以 MIT 授權的 [SamurAIGPT/blogger-cms](https://github.com/SamurAIGPT/blogger-cms) 作為候選基座：保留有價值的 Rich Text Editor 與文章 CRUD 骨架，重建公開前台、資料模型、帳號密碼登入、權限、AI provider、SEO 與 AdSense 邊界。
 
 目前正式 repository 是 `applet0421/1wiki`。原始 Blogger CMS repository 應設為 `upstream`，正式 repository 保持為 `origin`，並在 README 保留來源與 MIT 授權說明。
 
@@ -20,11 +20,11 @@ MVP 的優先順序是：可靠發布與公開閱讀、基本 SEO、可維護的
 
 - 實際依賴已是 Next.js 16，而 README 仍描述 Next.js 14。
 - 基準 production build 可完成，但依賴稽核發現 17 項問題（1 critical、12 high、4 moderate）。
-- API Key 登驗會把使用者 API key 當作身份並存入資料庫，不符合本產品的安全邊界。
+- API Key 登入會把使用者 API key 當作身份並存入資料庫，不符合本產品的安全邊界。
 - Prisma schema 含 credits、billing 與多組無關影像產品資料表。
 - 缺少公開文章、slug、內容 HTML 清理、完整 metadata、sitemap 與 robots 實作。
 
-移植時必須更新至相容且無已知高風險警示的依賴組合，移除 Stripe、Credits、Pricing、Subscription、MuAPI、使用者自帶 API key 與無關資料模型。
+移植時必須更新至相容且無已知高風險警示的依賴組合，移除 Stripe、Credits、Pricing、Subscription、MuAPI、Google OAuth、使用者自帶 API key 與無關資料模型。
 
 ## 3. 系統架構與路由
 
@@ -45,20 +45,56 @@ MVP 的優先順序是：可靠發布與公開閱讀、基本 SEO、可維護的
 
 ### 3.2 管理路由
 
-- `/login`：Google 登入。
+- `/login`：管理帳號與密碼登入，不提供公開註冊。
 - `/admin`：文章與分類管理。
 - `/admin/posts/new`：建立文章與使用 AI 產生草稿。
 - `/admin/posts/[id]`：編輯、發布、撤回與刪除文章。
+- `/admin/users`：OWNER 建立、停用、重設及管理後台帳號。
 
-管理互動使用 Client Components。所有 `/admin/**` 頁面及寫入 API 必須同時驗證登入狀態與 `ADMIN_EMAILS` 白名單，不可只依賴前端隱藏。未授權使用者不得讀取草稿或呼叫生成、建立、更新、刪除 API。
+管理互動使用 Client Components。所有 `/admin/**` 頁面及管理 API 必須在伺服器端驗證登入狀態、帳號啟用狀態與所需角色，不可只依賴前端隱藏。未授權使用者不得讀取草稿或呼叫生成、建立、更新、刪除 API。
 
 ## 4. 資料模型與發布流程
 
 ### 4.1 User
 
-保留 NextAuth/Prisma 所需的 `User`、`Account`、`Session` 與 `VerificationToken`。`User` 不包含 credits、subscription 或第三方 AI key。
+`User` 包含：
 
-### 4.2 Category
+- `id`
+- `username`（唯一，以正規化後的小寫值登入）
+- `displayName`
+- `passwordHash`（Argon2id；不得儲存或記錄明文密碼）
+- `role`：`OWNER` 或 `EDITOR`
+- `isActive`
+- `mustChangePassword`
+- `failedLoginAttempts`
+- `lockedUntil`
+- `passwordChangedAt`
+- `createdAt`
+- `updatedAt`
+
+不保留 OAuth `Account`、`VerificationToken`、credits、subscription 或第三方 AI key。
+
+`Session` 包含隨機 token 的單向 hash、`userId`、`expiresAt` 與 `createdAt`。瀏覽器 Cookie 只保存原始隨機 token，使用 `HttpOnly`、`Secure`（production）及 `SameSite=Lax`，預設 7 天到期。每次受保護請求以 token hash 查詢 server-side session 並重新確認帳號仍啟用；停用帳號或密碼重設時刪除該帳號全部 session，使既有登入立即失效。
+
+OWNER 可管理文章、分類與後台帳號。EDITOR 可管理文章、分類及使用 AI 生成，但不可讀取帳號清單或修改帳號。建立新帳號時預設角色為 EDITOR。系統必須拒絕刪除、停用或降級最後一位啟用中的 OWNER。
+
+系統不提供公開註冊、忘記密碼郵件、Google 登入或其他社群登入。OWNER 建立帳號或重設密碼時設定一次性臨時密碼；該帳號首次登入後必須先更改密碼，才能使用其他管理功能。
+
+密碼至少 12 個字元，必須包含英文字母與數字。登入錯誤一律使用不透露帳號是否存在的通用訊息；同一帳號連續失敗 5 次後鎖定 15 分鐘，成功登入後清除失敗計數。
+
+### 4.2 初始 OWNER
+
+第一個 OWNER 由明確的一次性命令建立，讀取：
+
+```env
+INITIAL_OWNER_USERNAME=
+INITIAL_OWNER_PASSWORD=
+INITIAL_OWNER_DISPLAY_NAME=
+```
+
+初始化命令僅在資料庫沒有 OWNER 時執行；如果已存在 OWNER，必須拒絕覆寫或重設。初始化成功後，部署者必須移除 `INITIAL_OWNER_PASSWORD`。Vercel build 與一般 migration 不得自動執行 OWNER 初始化，避免建置期間意外建立或變更帳號。
+
+### 4.3 Category
 
 分類包含：
 
@@ -75,7 +111,7 @@ MVP 的優先順序是：可靠發布與公開閱讀、基本 SEO、可維護的
 - `software`
 - `social`
 
-### 4.3 Post
+### 4.4 Post
 
 文章包含：
 
@@ -240,7 +276,7 @@ AdSense script 僅在允許廣告的公開網站載入一次，不得在 `/admin
 - 發布失敗、slug 衝突與欄位錯誤使用可理解的繁體中文訊息。
 - 資料庫與未預期的伺服器錯誤對使用者只回傳通用訊息，詳細內容留在 server log。
 - 公開查詢一律附加 `PUBLISHED` 條件。
-- 管理 API 一律驗證 session、`ADMIN_EMAILS` 白名單與資料存在性。
+- 管理 API 一律驗證 server-side session、帳號啟用狀態、角色與資料存在性。
 - AdSense 缺少單一 slot ID 時只略過該 placement，不影響其他 placement 或頁面。
 
 ## 10. 驗證策略與驗收條件
@@ -252,7 +288,11 @@ AdSense script 僅在允許廣告的公開網站載入一次，不得在 `/admin
 - slug 產生、正規化與重複錯誤。
 - HTML sanitizer 移除 script、`ins.adsbygoogle`、event handler 與危險 URL。
 - DeepSeek、OpenAI、Gemini adapter 的設定、輸出正規化與錯誤分類。
-- 未登入及非白名單帳號無法存取管理能力。
+- 未登入、停用或角色不足的帳號無法存取對應管理能力。
+- 密碼只以 Argon2id hash 儲存，登入鎖定與成功後清除失敗次數符合規格。
+- 初始化命令只在沒有 OWNER 時建立第一個帳號，且無法覆寫既有 OWNER。
+- 新帳號預設為 EDITOR，首次登入必須更改臨時密碼。
+- 系統無法刪除、停用或降級最後一位啟用中的 OWNER。
 - 草稿不會出現在公開查詢與 sitemap。
 - canonical fallback、metadata、Open Graph 與 Article JSON-LD。
 - AdSense 全域關閉、路由排除、缺少 slot、單次 script 載入與單次節點初始化。
@@ -284,6 +324,6 @@ AdSense script 僅在允許廣告的公開網站載入一次，不得在 `/admin
 
 ## 11. 部署需求
 
-Vercel 必須設定 PostgreSQL、NextAuth、Google OAuth、網站網址、聯絡信箱、管理者白名單、所選 LLM provider 及其 server-only 金鑰。AdSense 所有環境變數預設為關閉或空值；未取得核准時，production 不得產生廣告 script、節點或空白版位。
+Vercel 必須設定 PostgreSQL、Auth session secret、網站網址、聯絡信箱、所選 LLM provider 及其 server-only 金鑰。初始 OWNER 的環境變數只在執行一次性初始化命令時提供，成功後移除密碼。AdSense 所有環境變數預設為關閉或空值；未取得核准時，production 不得產生廣告 script、節點或空白版位。
 
 Prisma migration 與三個初始分類必須提供可重複執行的部署／seed 流程。README 應列出本機開發、環境變數、資料庫初始化、測試、build 與 Vercel 部署步驟。
