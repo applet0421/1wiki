@@ -6,7 +6,7 @@
 
 **Architecture:** 單一 Next.js App Router 應用以 Server Components 輸出公開內容，管理區透過 server actions 操作 PostgreSQL/Prisma。身份系統使用 Argon2id、資料庫 session 與 OWNER/EDITOR 權限；AI、文章清理、SEO 與廣告配置各自封裝成獨立模組。
 
-**Tech Stack:** Node.js 22、Next.js 16.3.4、React 19.2.8、TypeScript 7.0.2、Tailwind CSS 4.3.3、PostgreSQL 17、Prisma 7.10.0、Argon2id、Zod 4.5.4、sanitize-html 2.17.7、Cheerio 1.2.0、Vitest 5.0.0、Playwright 1.62.1
+**Tech Stack:** Node.js 22、Next.js 16.3.4、React 19.2.8、TypeScript 6.0.3、Tailwind CSS 4.3.3、PostgreSQL 17、Prisma 7.10.0、Argon2id、Zod 4.5.4、sanitize-html 2.17.7、Cheerio 1.2.0、Vitest 5.0.0、Playwright 1.62.1
 
 **Spec:** `docs/superpowers/specs/2026-09-04-1wiki-adsense-seo-mvp-design.md`
 
