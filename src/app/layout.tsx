@@ -10,6 +10,9 @@ export const metadata: Metadata = {
     template: `%s｜${siteConfig.shortName}`,
   },
   description: siteConfig.description,
+  manifest: "/manifest.webmanifest",
+  icons: { icon: "/icon.svg" },
+  openGraph: { type: "website", locale: "zh_TW", siteName: siteConfig.shortName, title: siteConfig.name, description: siteConfig.description, images: ["/og-default.svg"] },
 };
 
 export const viewport: Viewport = {

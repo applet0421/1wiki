@@ -135,3 +135,32 @@ export function listCategories(client: PrismaClient) {
     orderBy: { name: "asc" },
   });
 }
+
+export function listPublishedPosts(client: PrismaClient, limit = 12) {
+  return client.post.findMany({
+    where: { status: "PUBLISHED" },
+    include: { category: true, author: { select: { displayName: true } } },
+    orderBy: { publishedAt: "desc" },
+    take: limit,
+  });
+}
+
+export function getPublishedPostBySlug(client: PrismaClient, slug: string) {
+  return client.post.findFirst({
+    where: { slug, status: "PUBLISHED" },
+    include: { category: true, author: { select: { displayName: true } } },
+  });
+}
+
+export function getPublishedCategory(client: PrismaClient, slug: string) {
+  return client.category.findUnique({
+    where: { slug },
+    include: {
+      posts: {
+        where: { status: "PUBLISHED" },
+        include: { category: true, author: { select: { displayName: true } } },
+        orderBy: { publishedAt: "desc" },
+      },
+    },
+  });
+}
