@@ -161,6 +161,16 @@ td small { display: block; color: #a45a00; margin-top: .3rem; }
 .article-sidebar { padding-top: 12rem; }
 .sidebar-note { position: sticky; top: 6rem; display: grid; gap: .7rem; }
 .sidebar-note span { color: var(--brand); font-size: .78rem; font-weight: 850; text-transform: uppercase; }
+.desktop-ad-only { display: none; margin-bottom: 1.5rem; }
+.ad-container, .ad-preview { width: 100%; margin: 1.75rem auto; text-align: center; }
+.ad-container ins { display: block; width: 100%; }
+.ad-banner { min-height: 100px; }
+.ad-rectangle { min-height: 280px; }
+.ad-preview { display: grid; place-items: center; border: 1px dashed #cbd5e1; border-radius: .75rem; background: #eef2f7; color: #64748b; font: 700 .75rem/1.4 ui-monospace, monospace; }
+@media (min-width: 1024px) {
+  .desktop-ad-only { display: block; }
+  .ad-banner { min-height: 90px; }
+}
 @media (max-width: 900px) {
   .category-grid, .article-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .article-layout { grid-template-columns: 1fr; }
