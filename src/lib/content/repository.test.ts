@@ -9,6 +9,7 @@ import {
   getCategoryAncestors,
   getCategoryDescendantIds,
   getPublishedCategory,
+  getPublishedCategoryTreePage,
   getPublishedPostBySlug,
   hasPublishedPosts,
   listAdminPosts,
@@ -262,5 +263,24 @@ describe("content repository", () => {
   it("does not expose a category without published posts", async () => {
     const { category } = await fixture();
     await expect(getPublishedCategory(prisma, "zh-tw", category.slug)).resolves.toBeNull();
+  });
+
+  it("aggregates published articles and ancestors across a category subtree", async () => {
+    const { author, category: root } = await fixture();
+    const child = await createCategory(prisma, categoryInput({ name: "ChatGPT", slug: "chatgpt", parentId: root.id }));
+    const leaf = await createCategory(prisma, categoryInput({ name: "Prompt", slug: "prompt", parentId: child.id }));
+    const rootPost = await savePost(prisma, author.id, postInput(root.id, { title: "Root article", slug: "root-article", status: "PUBLISHED" }), new Date("2026-09-01T00:00:00Z"));
+    const childPost = await savePost(prisma, author.id, postInput(child.id, { title: "Child article", slug: "child-article", status: "PUBLISHED" }), new Date("2026-09-02T00:00:00Z"));
+    const leafPost = await savePost(prisma, author.id, postInput(leaf.id, { title: "Leaf article", slug: "leaf-article", status: "PUBLISHED" }), new Date("2026-09-03T00:00:00Z"));
+
+    const result = await getPublishedCategoryTreePage(prisma, "zh-tw", ["ai"]);
+    expect(result?.children).toEqual([expect.objectContaining({ id: child.id })]);
+    expect(result?.posts.map((post) => post.id)).toEqual([leafPost.id, childPost.id, rootPost.id]);
+    expect(result?.ancestors).toEqual([]);
+
+    await expect(getPublishedCategoryTreePage(prisma, "zh-tw", ["ai", "chatgpt", "prompt"]))
+      .resolves.toMatchObject({ ancestors: [{ id: root.id }, { id: child.id }] });
+    await expect(getPublishedCategoryTreePage(prisma, "zh-tw", ["chatgpt", "ai"]))
+      .resolves.toBeNull();
   });
 });

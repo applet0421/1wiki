@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
-import { Breadcrumbs } from "@/components/site/breadcrumbs";
+import { CategoryBreadcrumbs } from "@/components/site/category-breadcrumbs";
 import { JsonLd } from "@/components/site/json-ld";
 import { ArticleBody } from "@/components/site/article-body";
 import { AdSlot } from "@/components/ads/ad-slot";
@@ -10,6 +10,7 @@ import { AdsenseScript } from "@/components/ads/adsense-script";
 import { getAdSlotConfig, getLiveAdsenseClientId, getPublicAdEnvironment } from "@/lib/adsense/config";
 import { getSiteUrl } from "@/lib/config/site";
 import { getPublishedPostBySlug } from "@/lib/content/repository";
+import { getCategoryHref } from "@/lib/content/category-tree";
 import { decodeRouteSlug } from "@/lib/content/slug";
 import { prisma } from "@/lib/db/prisma";
 import { buildPostMetadata } from "@/lib/seo/metadata";
@@ -45,6 +46,10 @@ export default async function ArticlePage({ params }: Props) {
   const context = { pathname, published: true };
   const hasLiveSlot = (["article_after_intro", "article_mid", "article_end", "sidebar_desktop"] as const).some((placement) => getAdSlotConfig(placement, adEnvironment, context)?.mode === "live");
   const clientId = hasLiveSlot ? getLiveAdsenseClientId(adEnvironment, pathname) : null;
-  const categoryHref = ["ai", "software", "social"].includes(post.category.slug) ? `/${locale}/${post.category.slug}` : `/${locale}/category/${post.category.slug}`;
-  return <><AdsenseScript clientId={clientId} /><main className="public-main article-layout"><article className="article-page"><JsonLd value={buildArticleJsonLd(post, getSiteUrl(), locale)} /><Breadcrumbs categoryName={post.category.name} categorySlug={post.category.slug} title={post.title} locale={locale} dictionary={dictionary} /><header className="article-header"><p className="eyebrow">{post.category.name}</p><h1>{post.title}</h1><p className="article-excerpt">{post.excerpt}</p><div className="article-meta"><span>{post.author.displayName}</span><time dateTime={post.publishedAt?.toISOString()}>{post.publishedAt ? new Intl.DateTimeFormat(dateLocale, { dateStyle: "long" }).format(post.publishedAt) : ""}</time>{post.updatedAt > (post.publishedAt || post.createdAt) ? <span>{dictionary.article.updated} {new Intl.DateTimeFormat(dateLocale, { dateStyle: "medium" }).format(post.updatedAt)}</span> : null}</div></header><ArticleBody html={post.contentHtml} pathname={pathname} adEnvironment={adEnvironment} /><aside className="related-box"><strong>{dictionary.article.explore} {post.category.name}</strong><p>{post.category.description}</p><Link href={categoryHref}>{dictionary.article.categoryLink}</Link></aside></article><aside className="article-sidebar"><div className="desktop-ad-only"><AdSlot placement="sidebar_desktop" config={getAdSlotConfig("sidebar_desktop", adEnvironment, context)} /></div></aside></main></>;
+  const ancestors = [
+    ...(post.category.parent?.parent ? [post.category.parent.parent] : []),
+    ...(post.category.parent ? [post.category.parent] : []),
+  ];
+  const categoryHref = getCategoryHref(locale, [...ancestors.map(({ slug }) => slug), post.category.slug]);
+  return <><AdsenseScript clientId={clientId} /><main className="public-main article-layout"><article className="article-page"><JsonLd value={buildArticleJsonLd(post, getSiteUrl(), locale)} /><CategoryBreadcrumbs ancestors={ancestors} current={post.category} articleTitle={post.title} locale={locale} /><header className="article-header"><p className="eyebrow">{post.category.name}</p><h1>{post.title}</h1><p className="article-excerpt">{post.excerpt}</p><div className="article-meta"><span>{post.author.displayName}</span><time dateTime={post.publishedAt?.toISOString()}>{post.publishedAt ? new Intl.DateTimeFormat(dateLocale, { dateStyle: "long" }).format(post.publishedAt) : ""}</time>{post.updatedAt > (post.publishedAt || post.createdAt) ? <span>{dictionary.article.updated} {new Intl.DateTimeFormat(dateLocale, { dateStyle: "medium" }).format(post.updatedAt)}</span> : null}</div></header><ArticleBody html={post.contentHtml} pathname={pathname} adEnvironment={adEnvironment} /><aside className="related-box"><strong>{dictionary.article.explore} {post.category.name}</strong><p>{post.category.description}</p><Link href={categoryHref}>{dictionary.article.categoryLink}</Link></aside></article><aside className="article-sidebar"><div className="desktop-ad-only"><AdSlot placement="sidebar_desktop" config={getAdSlotConfig("sidebar_desktop", adEnvironment, context)} /></div></aside></main></>;
 }

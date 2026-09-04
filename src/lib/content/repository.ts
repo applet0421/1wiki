@@ -2,6 +2,7 @@ import { Prisma, type Category, type PrismaClient } from "@prisma/client";
 import { load } from "cheerio";
 import { categoryInputSchema, postInputSchema, type CategoryInput, type PostInput } from "./schema";
 import { sanitizeArticleHtml } from "./sanitize";
+import { buildCategoryTree } from "./category-tree";
 import type { Locale } from "@/lib/i18n/config";
 
 type DatabaseClient = PrismaClient | Prisma.TransactionClient;
@@ -279,8 +280,62 @@ export function listPublishedPosts(client: PrismaClient, locale: Locale, limit =
 export function getPublishedPostBySlug(client: PrismaClient, locale: Locale, slug: string) {
   return client.post.findFirst({
     where: { locale, slug, status: "PUBLISHED" },
-    include: { category: true, author: { select: { displayName: true } } },
+    include: {
+      category: { include: { parent: { include: { parent: true } } } },
+      author: { select: { displayName: true } },
+    },
   });
+}
+
+export async function getPublishedCategoryTreePage(
+  client: PrismaClient,
+  locale: Locale,
+  slugs: string[],
+) {
+  const category = await resolveCategoryPath(client, locale, slugs);
+  if (!category) return null;
+
+  const [ancestors, descendantIds] = await Promise.all([
+    getCategoryAncestors(client, category.id),
+    getCategoryDescendantIds(client, category.id),
+  ]);
+  const [categoryRows, posts] = await Promise.all([
+    client.category.findMany({
+      where: { id: { in: descendantIds } },
+      include: {
+        _count: { select: { posts: { where: { locale, status: "PUBLISHED" } } } },
+      },
+    }),
+    client.post.findMany({
+      where: { locale, status: "PUBLISHED", categoryId: { in: descendantIds } },
+      include: {
+        category: { include: { parent: { include: { parent: true } } } },
+        author: { select: { displayName: true } },
+      },
+      orderBy: { publishedAt: "desc" },
+    }),
+  ]);
+
+  const tree = buildCategoryTree(categoryRows.map((row) => ({
+    id: row.id,
+    locale,
+    name: row.name,
+    slug: row.slug,
+    description: row.description,
+    parentId: row.id === category.id ? null : row.parentId,
+    sortOrder: row.sortOrder,
+    showInNavigation: row.showInNavigation,
+    directPostCount: row._count.posts,
+  })));
+  const current = tree[0];
+  if (!current || current.aggregatePostCount === 0) return null;
+
+  return {
+    category,
+    ancestors,
+    children: current.children.filter((child) => child.aggregatePostCount > 0),
+    posts,
+  };
 }
 
 export function getPublishedCategory(client: PrismaClient, locale: Locale, slug: string) {
