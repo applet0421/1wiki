@@ -13,8 +13,7 @@ describe("site configuration", () => {
     expect(getSiteUrl()).toBe("https://1wiki.example");
   });
 
-  it("uses the approved Traditional Chinese identity", () => {
-    expect(siteConfig.name).toBe("1Wiki｜AI、軟體、3C 使用教學與疑難解答");
-    expect(siteConfig.locale).toBe("zh-Hant-TW");
+  it("keeps only the language-neutral site identity", () => {
+    expect(siteConfig).toEqual({ shortName: "1Wiki" });
   });
 });
