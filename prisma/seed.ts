@@ -4,9 +4,9 @@ import { prisma } from "../src/lib/db/prisma";
 import { defaultLocale } from "../src/lib/i18n/config";
 
 const initialCategories = [
-  { name: "AI 教學", slug: "ai", description: "AI 工具使用、設定與疑難排解。" },
-  { name: "軟體教學", slug: "software", description: "電腦與手機軟體的操作與修復指南。" },
-  { name: "社群平台", slug: "social", description: "LINE、YouTube 與社群服務的使用解答。" },
+  { name: "AI 教學", slug: "ai", description: "AI 工具使用、設定與疑難排解。", showInNavigation: true, sortOrder: 0 },
+  { name: "軟體教學", slug: "software", description: "電腦與手機軟體的操作與修復指南。", showInNavigation: true, sortOrder: 0 },
+  { name: "社群平台", slug: "social", description: "LINE、YouTube 與社群服務的使用解答。", showInNavigation: true, sortOrder: 0 },
 ] as const;
 
 export async function seedCategories(client: PrismaClient): Promise<void> {
@@ -16,6 +16,8 @@ export async function seedCategories(client: PrismaClient): Promise<void> {
       update: {
         name: category.name,
         description: category.description,
+        showInNavigation: category.showInNavigation,
+        sortOrder: category.sortOrder,
       },
       create: { ...category, locale: defaultLocale },
     });

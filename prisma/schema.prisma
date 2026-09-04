@@ -32,20 +32,20 @@ enum LLMUsageStatus {
 }
 
 model User {
-  id                  String    @id @default(cuid())
-  username            String    @unique
-  displayName         String
-  passwordHash        String    @db.Text
-  role                UserRole  @default(EDITOR)
-  isActive            Boolean   @default(true)
-  mustChangePassword  Boolean   @default(true)
-  failedLoginAttempts Int       @default(0)
-  lockedUntil         DateTime?
-  passwordChangedAt   DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  sessions            Session[]
-  posts               Post[]
+  id                    String          @id @default(cuid())
+  username              String          @unique
+  displayName           String
+  passwordHash          String          @db.Text
+  role                  UserRole        @default(EDITOR)
+  isActive              Boolean         @default(true)
+  mustChangePassword    Boolean         @default(true)
+  failedLoginAttempts   Int             @default(0)
+  lockedUntil           DateTime?
+  passwordChangedAt     DateTime?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  sessions              Session[]
+  posts                 Post[]
   promptVersionsCreated PromptVersion[]
   modelPricesCreated    LLMModelPrice[]
 }
@@ -63,47 +63,53 @@ model Session {
 }
 
 model Category {
-  id          String   @id @default(cuid())
-  locale      String
-  name        String
-  slug        String
-  description String   @default("") @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  posts       Post[]
+  id               String     @id @default(cuid())
+  locale           String
+  name             String
+  slug             String
+  description      String     @default("") @db.Text
+  parentId         String?
+  showInNavigation Boolean    @default(false)
+  sortOrder        Int        @default(0)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  parent           Category?  @relation("CategoryTree", fields: [parentId, locale], references: [id, locale], onDelete: Restrict)
+  children         Category[] @relation("CategoryTree")
+  posts            Post[]
 
   @@unique([id, locale])
   @@unique([locale, slug])
+  @@index([locale, parentId, sortOrder])
 }
 
 model Post {
-  id             String     @id @default(cuid())
-  locale         String
-  title          String
-  slug           String
-  excerpt        String     @default("") @db.Text
-  contentHtml    String     @default("") @db.Text
-  coverImage     String?    @db.Text
-  status         PostStatus @default(DRAFT)
-  authorId       String
-  categoryId     String
-  seoTitle       String?    @db.Text
-  seoDescription String?    @db.Text
-  seoKeywords    String?    @db.Text
-  canonicalUrl   String?    @db.Text
-  aiContentType  AIContentType?
-  primaryKeyword String?    @db.Text
-  searchIntent   String?    @db.Text
-  aiSourceSupport AISourceSupport?
+  id                  String           @id @default(cuid())
+  locale              String
+  title               String
+  slug                String
+  excerpt             String           @default("") @db.Text
+  contentHtml         String           @default("") @db.Text
+  coverImage          String?          @db.Text
+  status              PostStatus       @default(DRAFT)
+  authorId            String
+  categoryId          String
+  seoTitle            String?          @db.Text
+  seoDescription      String?          @db.Text
+  seoKeywords         String?          @db.Text
+  canonicalUrl        String?          @db.Text
+  aiContentType       AIContentType?
+  primaryKeyword      String?          @db.Text
+  searchIntent        String?          @db.Text
+  aiSourceSupport     AISourceSupport?
   aiNeedsVerification Json?
-  publishedAt    DateTime?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-  author         User       @relation(fields: [authorId], references: [id], onDelete: Restrict)
-  category       Category   @relation(fields: [categoryId, locale], references: [id, locale], onDelete: Restrict)
+  publishedAt         DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  author              User             @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  category            Category         @relation(fields: [categoryId, locale], references: [id, locale], onDelete: Restrict)
 
-  @@index([status, publishedAt])
   @@unique([locale, slug])
+  @@index([status, publishedAt])
   @@index([locale, status, publishedAt])
   @@index([categoryId, status])
   @@index([authorId])
@@ -155,23 +161,23 @@ model LLMModelPrice {
 }
 
 model LLMUsage {
-  id                                       String           @id @default(cuid())
-  promptDefinitionId                       String
-  promptVersionId                          String
-  provider                                 String
-  model                                    String
-  status                                   LLMUsageStatus
-  inputTokens                              Int?
-  outputTokens                             Int?
-  totalTokens                              Int?
-  durationMs                               Int
-  errorSummary                             String?          @db.VarChar(500)
-  inputUsdPerMillionTokensSnapshot         Decimal?         @db.Decimal(18, 8)
-  outputUsdPerMillionTokensSnapshot        Decimal?         @db.Decimal(18, 8)
-  estimatedCostUsd                         Decimal?         @db.Decimal(18, 10)
-  createdAt                                DateTime         @default(now())
-  promptDefinition                         PromptDefinition @relation(fields: [promptDefinitionId], references: [id], onDelete: Restrict)
-  promptVersion                            PromptVersion    @relation(fields: [promptVersionId], references: [id], onDelete: Restrict)
+  id                                String           @id @default(cuid())
+  promptDefinitionId                String
+  promptVersionId                   String
+  provider                          String
+  model                             String
+  status                            LLMUsageStatus
+  inputTokens                       Int?
+  outputTokens                      Int?
+  totalTokens                       Int?
+  durationMs                        Int
+  errorSummary                      String?          @db.VarChar(500)
+  inputUsdPerMillionTokensSnapshot  Decimal?         @db.Decimal(18, 8)
+  outputUsdPerMillionTokensSnapshot Decimal?         @db.Decimal(18, 8)
+  estimatedCostUsd                  Decimal?         @db.Decimal(18, 10)
+  createdAt                         DateTime         @default(now())
+  promptDefinition                  PromptDefinition @relation(fields: [promptDefinitionId], references: [id], onDelete: Restrict)
+  promptVersion                     PromptVersion    @relation(fields: [promptVersionId], references: [id], onDelete: Restrict)
 
   @@index([createdAt])
   @@index([promptDefinitionId, createdAt])

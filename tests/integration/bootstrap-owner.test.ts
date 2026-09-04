@@ -21,6 +21,16 @@ describe("database initialization", () => {
 
     const categories = await prisma.category.findMany({ orderBy: { slug: "asc" } });
     expect(categories.map(({ slug }) => slug)).toEqual(["ai", "social", "software"]);
+    expect(categories).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        slug: "ai",
+        parentId: null,
+        showInNavigation: true,
+        sortOrder: 0,
+      }),
+    ]));
+    expect(categories.every(({ parentId }) => parentId === null)).toBe(true);
+    expect(categories.every(({ showInNavigation }) => showInNavigation)).toBe(true);
   });
 
   it("creates the first owner and refuses to overwrite it", async () => {

@@ -15,6 +15,9 @@ export const categoryInputSchema = z.object({
   name: z.string().trim().min(1, "分類名稱不能空白").max(80),
   slug: slugSchema,
   description: z.string().trim().max(300).default(""),
+  parentId: z.string().cuid("請選擇有效的上層分類").nullable().default(null),
+  showInNavigation: z.boolean().default(false),
+  sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
 });
 
 export const postInputSchema = z.object({
