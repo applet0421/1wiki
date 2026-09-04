@@ -16,6 +16,16 @@ enum PostStatus {
   PUBLISHED
 }
 
+enum AIContentType {
+  TROUBLESHOOTING
+  HOW_TO
+}
+
+enum AISourceSupport {
+  STRONG
+  MEDIUM
+}
+
 model User {
   id                  String    @id @default(cuid())
   username            String    @unique
@@ -69,6 +79,11 @@ model Post {
   seoDescription String?    @db.Text
   seoKeywords    String?    @db.Text
   canonicalUrl   String?    @db.Text
+  aiContentType  AIContentType?
+  primaryKeyword String?    @db.Text
+  searchIntent   String?    @db.Text
+  aiSourceSupport AISourceSupport?
+  aiNeedsVerification Json?
   publishedAt    DateTime?
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt

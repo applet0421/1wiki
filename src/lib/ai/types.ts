@@ -4,3 +4,33 @@ export type GenerateArticleInput = { topic: string; keyword: string; instruction
 export type RewriteArticleInput = { sourceTitle: string; sourceContentHtml: string };
 export type GeneratedArticle = { title: string; slug: string; contentHtml: string; excerpt: string; seoTitle: string; seoDescription: string; seoKeywords: string };
 export type ProviderRequest = { apiKey: string; model: string; prompt: string; fetcher?: typeof fetch };
+export type AIContentType = "TROUBLESHOOTING" | "HOW_TO";
+export type SourceSupport = "STRONG" | "MEDIUM";
+export type ContentIdea = {
+  type: AIContentType;
+  title: string;
+  primaryKeyword: string;
+  searchIntent: string;
+  support: SourceSupport;
+};
+export type AnalyzeSourceInput = { sourceContent: string };
+export type AnalyzeSourceResult = { ideas: ContentIdea[] };
+export type AICategoryOption = { id: string; name: string };
+export type GenerateFromIdeaInput = {
+  sourceContent: string;
+  idea: ContentIdea;
+  categories: AICategoryOption[];
+};
+export type GeneratedContentDraft = GeneratedArticle & {
+  categoryId: string;
+  needsVerification: string[];
+};
+export type GeneratedDraftResult = { postId: string };
+
+export type StructuredProviderRequest<T> = ProviderRequest & {
+  jsonSchema: Record<string, unknown>;
+  schemaName: string;
+  parse: (value: unknown) => T;
+  maxTokens?: number;
+  systemPrompt?: string;
+};

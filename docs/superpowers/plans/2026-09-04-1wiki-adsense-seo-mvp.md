@@ -1,5 +1,7 @@
 # 1Wiki AdSense SEO 科技教學站 MVP Implementation Plan
 
+最後更新：2026-09-04
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 建立可部署至 Vercel 的繁體中文科技教學站，包含帳密後台、文章與分類管理、DeepSeek/OpenAI/Gemini 草稿生成、完整公開 SEO，以及預設關閉的手動 AdSense placements。
@@ -12,6 +14,8 @@
 
 ## Global Constraints
 
+- 現階段採本機優先流程：所有修改先在本機完成並通過適用測試、lint 與 production build。
+- 未取得專案負責人明確確認前，不得部署至 Vercel，也不得變更遠端環境變數或遠端資料庫；部署工作需作為本機驗證完成後的獨立階段執行。
 - 品牌固定為「1Wiki｜AI、軟體、3C 使用教學與疑難解答」，預設語言為 `zh-Hant-TW`。
 - 正式網址只由 `NEXT_PUBLIC_SITE_URL` 決定，不得寫死部署網域。
 - 正式 repository 是 `applet0421/1wiki`；`SamurAIGPT/blogger-cms` 僅作為 MIT 授權的 upstream 與選擇性移植來源。

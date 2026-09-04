@@ -4,12 +4,19 @@
 
 1Wiki 是以繁體中文提供 AI、軟體、社群與 3C 使用教學及疑難解答的極簡內容網站。MVP 已包含公開網站、文章後台、帳密權限、AI 初稿、SEO 與手動 AdSense 版位。
 
+## 目前開發與發布政策
+
+- 現階段所有功能與文件變更一律先在本機完成。
+- 變更需先通過適用的本機測試、lint 與 production build 驗證。
+- 在專案負責人明確確認前，不部署至 Vercel，不更新遠端環境變數或遠端資料庫。
+- 部署前需先整理變更內容、測試結果、已知限制與必要的資料庫 migration，再另行執行發布。
+
 ## MVP 功能
 
 - 公開首頁、AI／軟體／社群分類、文章頁與政策頁
 - OWNER／EDITOR 後台帳號，無公開註冊與第三方登入
 - 文章、分類、Rich Text Editor 與 SEO 欄位管理
-- DeepSeek（預設）、OpenAI、Gemini 三選一的 AI 文章初稿
+- DeepSeek（預設）、OpenAI、Gemini 三選一的 AI 文章初稿、來源分析與選題生成
 - canonical、Open Graph、Article structured data、sitemap 與 robots
 - 手動 AdSense slot；Auto ads 預設關閉
 - PostgreSQL、Prisma、Next.js App Router，可部署至 Vercel
@@ -51,7 +58,7 @@ DEEPSEEK_API_KEY=
 DEEPSEEK_MODEL=deepseek-v4-flash
 ```
 
-API key 只在伺服器端使用。產生結果會先填入文章表單，不會自動儲存或發布；供應商失敗時不會暗中切換到另一家。
+API key 只在伺服器端使用。一般「新增文章」仍可用主題與關鍵字快速填入初稿；後台「AI 生成」則會先分析使用者貼上的參考內容，提出 Troubleshooting／How-to 主題，再依選定搜尋意圖建立草稿。AI 生成內容一律需要人工檢查並手動發布，供應商失敗時不會暗中切換到另一家。
 
 ## AdSense
 
@@ -80,7 +87,9 @@ npm run test:e2e
 
 端到端測試會先建立測試資料，再以正式建置模式驗證公開文章、草稿隔離、登入權限、政策頁與 360／390／768／1280px 下的 AdSense 關閉狀態。測試資料庫不得指向正式資料庫，因為測試會清空其中的 1Wiki 資料表。
 
-## Vercel 部署
+## Vercel 部署（確認後執行）
+
+以下流程目前僅作為發布手冊保留。完成本機修改與驗證後，仍需取得專案負責人的明確確認，才可操作 Vercel、遠端資料庫或正式環境設定。
 
 1. 建立 Vercel 專案並連接本 repository。
 2. 建立可從 Vercel 連線的 PostgreSQL，填入 Production、Preview 所需環境變數。

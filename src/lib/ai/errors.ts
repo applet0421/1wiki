@@ -34,15 +34,19 @@ export async function executeProviderRequest(fetcher: typeof fetch, url: string,
   }
 }
 
-export function parseArticleJson(value: unknown) {
+export function parseStructuredJson<T>(value: unknown, parse: (value: unknown) => T): T {
   try {
     const json = typeof value === "string"
       ? value.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "")
       : value;
     const parsed = typeof json === "string" ? JSON.parse(json) : json;
-    return generatedArticleSchema.parse(parsed);
+    return parse(parsed);
   } catch {
     throw new AIProviderError("invalid_output");
   }
+}
+
+export function parseArticleJson(value: unknown) {
+  return parseStructuredJson(value, (parsed) => generatedArticleSchema.parse(parsed));
 }
 import { generatedArticleSchema } from "./schema";

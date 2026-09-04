@@ -28,7 +28,7 @@ MVP 的優先順序是：可靠發布與公開閱讀、基本 SEO、可維護的
 
 ## 3. 系統架構與路由
 
-系統是單一 Next.js App Router 應用程式，部署於 Vercel；資料存於 PostgreSQL，由 Prisma 存取。
+系統是單一 Next.js App Router 應用程式，目標部署平台為 Vercel；資料存於 PostgreSQL，由 Prisma 存取。現階段所有修改與驗證先在本機進行，未取得專案負責人明確確認前，不操作 Vercel、遠端環境變數或遠端資料庫。
 
 ### 3.1 公開路由
 
@@ -323,6 +323,8 @@ AdSense script 僅在允許廣告的公開網站載入一次，不得在 `/admin
 - 360、390、768、1280px 沒有水平溢出，廣告容器不覆蓋內容。
 
 ## 11. 部署需求
+
+部署是本機開發與驗證完成後的獨立階段。每次準備發布前，需先整理變更內容、適用測試結果、production build 結果、已知限制及必要的資料庫 migration，並取得專案負責人的明確確認；確認前不得部署或更新任何遠端環境。
 
 Vercel 必須設定 PostgreSQL、Auth session secret、網站網址、聯絡信箱、所選 LLM provider 及其 server-only 金鑰。初始 OWNER 的環境變數只在執行一次性初始化命令時提供，成功後移除密碼。AdSense 所有環境變數預設為關閉或空值；未取得核准時，production 不得產生廣告 script、節點或空白版位。
 

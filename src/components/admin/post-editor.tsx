@@ -9,7 +9,11 @@ import { SeoFields } from "./seo-fields";
 import { TitleSlugFields } from "./title-slug-fields";
 
 type CategoryOption = { id: string; name: string };
-type EditablePost = { id: string; title: string; slug: string; excerpt: string; contentHtml: string; coverImage: string | null; categoryId: string; seoTitle: string | null; seoDescription: string | null; seoKeywords: string | null; canonicalUrl: string | null };
+type EditablePost = { id: string; title: string; slug: string; excerpt: string; contentHtml: string; coverImage: string | null; categoryId: string; seoTitle: string | null; seoDescription: string | null; seoKeywords: string | null; canonicalUrl: string | null; aiContentType?: "TROUBLESHOOTING" | "HOW_TO" | null; primaryKeyword?: string | null; searchIntent?: string | null; aiSourceSupport?: "STRONG" | "MEDIUM" | null; aiNeedsVerification?: unknown };
+
+function verificationNotes(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
 
 export function PostEditor({ categories, post, error, provider = "deepseek", initialGenerated, showAIGenerator = true }: { categories: CategoryOption[]; post?: EditablePost; error?: string; provider?: string; initialGenerated?: GeneratedArticle; showAIGenerator?: boolean }) {
   const [generated, setGenerated] = useState<GeneratedArticle | null>(initialGenerated || null);
@@ -26,8 +30,14 @@ export function PostEditor({ categories, post, error, provider = "deepseek", ini
     seoKeywords: generated.seoKeywords,
     canonicalUrl: post?.canonicalUrl || null,
   } : post;
+  const notes = verificationNotes(post?.aiNeedsVerification);
   return <form action={savePostAction} className="admin-grid">
     {post ? <input type="hidden" name="id" value={post.id} /> : null}{error ? <p className="form-error" role="alert">{error}</p> : null}
+    {post?.aiContentType ? <section className="panel ai-review" role="region" aria-label="AI 審核資訊">
+      <div><p className="eyebrow">AI 審核資訊</p><h2>{post.aiContentType === "TROUBLESHOOTING" ? "Troubleshooting" : "How-to"} · {post.aiSourceSupport === "STRONG" ? "Strong" : "Medium"}</h2></div>
+      <dl><div><dt>主要關鍵字</dt><dd>{post.primaryKeyword}</dd></div><div><dt>搜尋意圖</dt><dd>{post.searchIntent}</dd></div></dl>
+      {notes.length > 0 ? <div className="verification-warning"><strong>發布前需要查證</strong><ul>{notes.map((note) => <li key={note}>{note}</li>)}</ul></div> : <p className="form-success">AI 未標記待查證項目，發布前仍請人工檢查全文。</p>}
+    </section> : null}
     {showAIGenerator ? <AIGenerator provider={provider} onGenerated={setGenerated} /> : null}
     <fieldset key={generated?.title || "stored"} className="panel form-grid"><legend>文章內容</legend>
       <TitleSlugFields initialTitle={source?.title} initialSlug={source?.slug} />

@@ -26,6 +26,11 @@ export const postInputSchema = z.object({
   seoDescription: z.string().trim().max(170).default(""),
   seoKeywords: z.string().trim().max(500).default(""),
   canonicalUrl: z.union([z.literal(""), z.url()]).default(""),
+  aiContentType: z.enum(["TROUBLESHOOTING", "HOW_TO"]).optional(),
+  primaryKeyword: z.string().trim().max(180).optional(),
+  searchIntent: z.string().trim().max(500).optional(),
+  aiSourceSupport: z.enum(["STRONG", "MEDIUM"]).optional(),
+  aiNeedsVerification: z.array(z.string().trim().min(1).max(500)).max(20).optional(),
 });
 
 export type PostInput = z.infer<typeof postInputSchema>;

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db/prisma";
 import { resetDatabase } from "../../../tests/helpers/database";
 import { hashPassword } from "@/lib/auth/password";
-import { createCategory, deleteCategory, savePost } from "./repository";
+import { createCategory, deleteCategory, findAvailablePostSlug, savePost } from "./repository";
 
 describe("content repository", () => {
   beforeEach(resetDatabase);
@@ -93,5 +93,38 @@ describe("content repository", () => {
     });
     await savePost(prisma, author.id, postInput(extra.id));
     await expect(deleteCategory(prisma, extra.id)).rejects.toThrow("仍有文章");
+  });
+
+  it("finds the next numbered slug without overwriting an existing post", async () => {
+    const { author, category } = await fixture();
+    await savePost(prisma, author.id, postInput(category.id, { slug: "line-fix" }));
+    await savePost(prisma, author.id, postInput(category.id, { slug: "line-fix-2" }));
+
+    await expect(findAvailablePostSlug(prisma, "line-fix")).resolves.toBe("line-fix-3");
+  });
+
+  it("stores AI review metadata and preserves it through a standard editor save", async () => {
+    const { author, category } = await fixture();
+    const generated = await savePost(prisma, author.id, postInput(category.id, {
+      aiContentType: "TROUBLESHOOTING",
+      primaryKeyword: "LINE 收不到通知",
+      searchIntent: "排除 LINE 通知問題",
+      aiSourceSupport: "STRONG",
+      aiNeedsVerification: ["確認 Android 選單名稱"],
+    }));
+
+    await savePost(prisma, author.id, postInput(category.id, {
+      id: generated.id,
+      title: "人工修改後標題",
+    }));
+
+    const stored = await prisma.post.findUniqueOrThrow({ where: { id: generated.id } });
+    expect(stored).toMatchObject({
+      aiContentType: "TROUBLESHOOTING",
+      primaryKeyword: "LINE 收不到通知",
+      searchIntent: "排除 LINE 通知問題",
+      aiSourceSupport: "STRONG",
+      aiNeedsVerification: ["確認 Android 選單名稱"],
+    });
   });
 });

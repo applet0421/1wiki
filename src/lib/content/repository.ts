@@ -48,6 +48,11 @@ export async function savePost(
     seoDescription: nullable(input.seoDescription),
     seoKeywords: nullable(input.seoKeywords),
     canonicalUrl: nullable(input.canonicalUrl),
+    ...(input.aiContentType === undefined ? {} : { aiContentType: input.aiContentType }),
+    ...(input.primaryKeyword === undefined ? {} : { primaryKeyword: nullable(input.primaryKeyword) }),
+    ...(input.searchIntent === undefined ? {} : { searchIntent: nullable(input.searchIntent) }),
+    ...(input.aiSourceSupport === undefined ? {} : { aiSourceSupport: input.aiSourceSupport }),
+    ...(input.aiNeedsVerification === undefined ? {} : { aiNeedsVerification: input.aiNeedsVerification }),
   };
 
   try {
@@ -74,6 +79,18 @@ export async function savePost(
   } catch (error) {
     mapPrismaError(error);
   }
+}
+
+export async function findAvailablePostSlug(client: PrismaClient, requestedSlug: string): Promise<string> {
+  const base = requestedSlug.trim();
+  let candidate = base;
+  let suffix = 2;
+  while (await client.post.findUnique({ where: { slug: candidate }, select: { id: true } })) {
+    const ending = `-${suffix}`;
+    candidate = `${base.slice(0, 160 - ending.length).replace(/-+$/u, "")}${ending}`;
+    suffix += 1;
+  }
+  return candidate;
 }
 
 export async function deletePost(client: PrismaClient, postId: string) {

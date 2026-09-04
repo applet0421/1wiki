@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { callDeepSeek } from "./deepseek";
-import { callGemini } from "./gemini";
-import { callOpenAI } from "./openai";
-import { AIProviderError, parseArticleJson } from "../errors";
+import { callDeepSeek, callDeepSeekStructured } from "./deepseek";
+import { callGemini, callGeminiStructured } from "./gemini";
+import { callOpenAI, callOpenAIStructured } from "./openai";
+import { AIProviderError, parseArticleJson, parseStructuredJson } from "../errors";
+import { contentIdeasJsonSchema, contentIdeasResponseSchema } from "../schema";
 
 const article = {
   title: "ChatGPT 登入修復",
@@ -14,6 +15,16 @@ const article = {
   seoKeywords: "ChatGPT,登入",
 };
 const json = JSON.stringify(article);
+const ideas = { ideas: [{ type: "HOW_TO", title: "LINE 備份教學", primaryKeyword: "LINE 備份", searchIntent: "備份聊天記錄", support: "STRONG" }] };
+const ideasJson = JSON.stringify(ideas);
+const structuredRequest = {
+  apiKey: "secret",
+  model: "model",
+  prompt: "analyze",
+  jsonSchema: contentIdeasJsonSchema,
+  schemaName: "content_ideas",
+  parse: (value: unknown) => parseStructuredJson(value, (parsed) => contentIdeasResponseSchema.parse(parsed)),
+};
 
 describe("AI provider adapters", () => {
   it("accepts a valid article JSON wrapped in a Markdown code fence", () => {
@@ -54,5 +65,22 @@ describe("AI provider adapters", () => {
     expect(error).toBeInstanceOf(AIProviderError);
     expect(error.category).toBe("rate_limit");
     expect(error.message).not.toContain("top-secret-key");
+  });
+
+  it("parses content ideas from DeepSeek structured output", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ choices: [{ message: { content: ideasJson } }] }), { status: 200 }));
+    await expect(callDeepSeekStructured({ ...structuredRequest, fetcher })).resolves.toEqual(ideas);
+  });
+
+  it("parses content ideas from OpenAI structured output", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ output: [{ content: [{ type: "output_text", text: ideasJson }] }] }), { status: 200 }));
+    await expect(callOpenAIStructured({ ...structuredRequest, fetcher })).resolves.toEqual(ideas);
+    expect(JSON.parse(String(fetcher.mock.calls[0][1]?.body)).text.format.name).toBe("content_ideas");
+  });
+
+  it("parses content ideas from Gemini structured output", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: ideasJson }] } }] }), { status: 200 }));
+    await expect(callGeminiStructured({ ...structuredRequest, fetcher })).resolves.toEqual(ideas);
+    expect(JSON.parse(String(fetcher.mock.calls[0][1]?.body)).generationConfig.responseSchema).toEqual(contentIdeasJsonSchema);
   });
 });

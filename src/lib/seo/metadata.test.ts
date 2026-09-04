@@ -28,4 +28,11 @@ describe("buildPostMetadata", () => {
     const metadata = buildPostMetadata({ ...post, seoTitle: "SEO 標題", seoDescription: "SEO 說明", canonicalUrl: "https://canonical.example/post" });
     expect(metadata).toMatchObject({ title: "SEO 標題", description: "SEO 說明", alternates: { canonical: "https://canonical.example/post" } });
   });
+
+  it("does not expose internal AI review metadata", () => {
+    const generatedPost = { ...post, aiContentType: "HOW_TO", searchIntent: "完成設定", aiNeedsVerification: ["待查證"] };
+    const metadata = buildPostMetadata(generatedPost);
+    expect(JSON.stringify(metadata)).not.toContain("完成設定");
+    expect(JSON.stringify(metadata)).not.toContain("待查證");
+  });
 });
