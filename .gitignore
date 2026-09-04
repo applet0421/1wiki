@@ -10,3 +10,5 @@ work/
 *.tsbuildinfo
 *.log
 .DS_Store
+.vercel
+.env*
