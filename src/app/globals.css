@@ -103,6 +103,21 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand); outline:
 .filter-row label { display: grid; gap: .45rem; min-width: 12rem; color: #344054; font-size: .9rem; font-weight: 700; }
 .row-actions { justify-content: flex-start; flex-wrap: wrap; }
 .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; }
+.category-tree { display: grid; gap: .9rem; }
+.category-tree-row { display: grid; gap: .7rem; border: 1px solid #dce3ee; border-radius: 1rem; background: rgb(255 255 255 / 90%); padding: 1.15rem; box-shadow: 0 .75rem 2rem rgb(23 32 51 / 6%); }
+.category-tree-summary { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.category-tree-summary h2 { margin: .25rem 0; }
+.category-tree-summary p { margin: .3rem 0; }
+.category-tree-summary .row-actions { justify-content: flex-end; }
+.category-tree-summary details { position: relative; }
+.category-tree-summary summary { list-style: none; }
+.category-tree-summary summary::-webkit-details-marker { display: none; }
+.category-edit-form { width: min(44rem, calc(100vw - 4rem)); margin-top: .75rem; border: 1px solid #dce3ee; border-radius: .85rem; background: #f8fafc; padding: 1rem; }
+.checkbox-label { display: flex !important; align-items: center; align-self: center; grid-template-columns: auto 1fr; }
+.checkbox-label input { width: auto; min-height: auto; }
+.form-warning { margin: 0; border-radius: .65rem; background: #fff7ed; padding: .75rem; color: #9a4a00; font-size: .85rem; }
+.form-hint { margin: 0; color: #a32626; font-size: .82rem; }
+.button:disabled { cursor: not-allowed; opacity: .55; }
 .status { display: inline-flex; border-radius: 999px; padding: .3rem .6rem; font-size: .75rem; font-weight: 800; }
 .status-published { background: #dcfce7; color: #166534; }
 .status-draft { background: #eef2f7; color: #526078; }
@@ -183,6 +198,10 @@ td small { display: block; color: #a45a00; margin-top: .3rem; }
   .span-2 { grid-column: auto; }
   .heading-row { align-items: flex-start; }
   .heading-actions { flex-wrap: wrap; justify-content: flex-end; }
+  .category-tree-row { margin-inline-start: 0 !important; }
+  .category-tree-summary { display: grid; }
+  .category-tree-summary .row-actions { justify-content: flex-start; }
+  .category-edit-form { width: 100%; }
   .rewrite-intro { grid-template-columns: 1fr; gap: .25rem; }
   .ai-review dl { grid-template-columns: 1fr; }
   .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

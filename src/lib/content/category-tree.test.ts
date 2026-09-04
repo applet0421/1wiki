@@ -7,9 +7,9 @@ import {
 } from "./category-tree";
 
 const rows = [
-  { id: "root", locale: "zh-tw", name: "AI", slug: "ai", parentId: null, sortOrder: 1, showInNavigation: true, directPostCount: 1 },
-  { id: "child", locale: "zh-tw", name: "ChatGPT", slug: "chatgpt", parentId: "root", sortOrder: 0, showInNavigation: false, directPostCount: 2 },
-  { id: "leaf", locale: "zh-tw", name: "Prompt", slug: "prompt", parentId: "child", sortOrder: 0, showInNavigation: false, directPostCount: 3 },
+  { id: "root", locale: "zh-tw", name: "AI", slug: "ai", description: "", parentId: null, sortOrder: 1, showInNavigation: true, directPostCount: 1 },
+  { id: "child", locale: "zh-tw", name: "ChatGPT", slug: "chatgpt", description: "", parentId: "root", sortOrder: 0, showInNavigation: false, directPostCount: 2 },
+  { id: "leaf", locale: "zh-tw", name: "Prompt", slug: "prompt", description: "", parentId: "child", sortOrder: 0, showInNavigation: false, directPostCount: 3 },
 ] satisfies CategoryRow[];
 
 describe("category tree", () => {

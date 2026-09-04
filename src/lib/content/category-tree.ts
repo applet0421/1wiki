@@ -5,6 +5,7 @@ export type CategoryRow = {
   locale: Locale;
   name: string;
   slug: string;
+  description: string;
   parentId: string | null;
   sortOrder: number;
   showInNavigation: boolean;
