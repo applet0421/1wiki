@@ -3,12 +3,10 @@ import { rewriteArticle } from "./rewrite-article";
 
 describe("rewriteArticle", () => {
   it("sanitizes source HTML before prompting and sanitizes generated HTML", async () => {
-    const fetcher = vi.fn<typeof fetch>(async (_input, init) => {
-      const request = JSON.parse(String(init?.body)) as { messages: Array<{ content: string }> };
-      const prompt = request.messages.at(-1)?.content || "";
-      expect(prompt).toContain("<p>原文內容</p>");
-      expect(prompt).not.toContain('alert("bad")');
-      return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({
+    const execute = vi.fn(async (input: { variables: Record<string, string> }) => {
+      expect(input.variables.sourceContentHtml).toContain("<p>原文內容</p>");
+      expect(input.variables.sourceContentHtml).not.toContain('alert("bad")');
+      return {
         title: "台灣 AI 工具完整指南",
         slug: "taiwan-ai-tools-guide",
         contentHtml: '<h2 onclick="bad()">重點</h2><script>bad()</script><p>改寫內容</p>',
@@ -16,7 +14,7 @@ describe("rewriteArticle", () => {
         seoTitle: "台灣 AI 工具完整指南",
         seoDescription: "認識 AI 工具功能、應用方式與選擇重點。",
         seoKeywords: "AI 工具, 人工智慧, 台灣",
-      }) } }] }), { status: 200 });
+      };
     });
 
     const result = await rewriteArticle({
@@ -24,11 +22,11 @@ describe("rewriteArticle", () => {
       sourceTitle: "原始標題",
       sourceContentHtml: '<p>原文內容</p><script>alert("bad")</script>',
     }, {
-      env: { DEEPSEEK_API_KEY: "key", DEEPSEEK_MODEL: "model" },
-      fetcher,
+      execute,
     });
 
     expect(result.contentHtml).toBe("<h2>重點</h2><p>改寫內容</p>");
+    expect(execute).toHaveBeenCalledWith(expect.objectContaining({ key: "ARTICLE_REWRITE" }), expect.anything());
   });
 
   it("rejects source articles without a title or meaningful content", async () => {

@@ -1,13 +1,12 @@
 import sanitizeHtml from "sanitize-html";
 import { sanitizeArticleHtml } from "@/lib/content/sanitize";
-import { resolveAIConfig } from "./config";
-import { buildRewriteArticlePrompt } from "./prompt";
-import { callDeepSeek } from "./providers/deepseek";
-import { callGemini } from "./providers/gemini";
-import { callOpenAI } from "./providers/openai";
+import { executeLLMCall } from "./execute-llm";
+import { parseArticleJson } from "./errors";
+import { rewritePromptVariables } from "./prompt";
+import { articleJsonSchema } from "./schema";
 import type { GeneratedArticle, RewriteArticleInput } from "./types";
 
-type Options = { env?: Record<string, string | undefined>; fetcher?: typeof fetch };
+type Options = { env?: Record<string, string | undefined>; fetcher?: typeof fetch; execute?: typeof executeLLMCall };
 
 function normalizeSource(input: RewriteArticleInput): RewriteArticleInput {
   const sourceTitle = input.sourceTitle.trim();
@@ -25,18 +24,14 @@ function normalizeSource(input: RewriteArticleInput): RewriteArticleInput {
 
 export async function rewriteArticle(input: RewriteArticleInput, options: Options = {}): Promise<GeneratedArticle> {
   const source = normalizeSource(input);
-  const config = resolveAIConfig(options.env);
-  const request = {
-    apiKey: config.apiKey,
-    model: config.model,
-    prompt: buildRewriteArticlePrompt(source),
-    fetcher: options.fetcher,
-  };
-  const rewritten = config.provider === "openai"
-    ? await callOpenAI(request)
-    : config.provider === "gemini"
-      ? await callGemini(request)
-      : await callDeepSeek(request);
+  const execute = options.execute ?? executeLLMCall;
+  const rewritten = await execute({
+    key: "ARTICLE_REWRITE",
+    variables: rewritePromptVariables(source),
+    jsonSchema: articleJsonSchema,
+    schemaName: "article",
+    parse: parseArticleJson,
+  }, { env: options.env, fetcher: options.fetcher });
 
   return { ...rewritten, contentHtml: sanitizeArticleHtml(rewritten.contentHtml) };
 }
