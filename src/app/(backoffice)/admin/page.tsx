@@ -1,15 +1,22 @@
 import Link from "next/link";
-import { listAdminPosts } from "@/lib/content/repository";
+import { listAdminPosts, listCategories } from "@/lib/content/repository";
 import { prisma } from "@/lib/db/prisma";
 import { deletePostAction, togglePostStatusAction } from "./posts/actions";
 import { getLocaleConfig, isLocale, supportedLocales } from "@/lib/i18n/config";
 
-type AdminPageProps = { searchParams: Promise<{ error?: string; success?: string; locale?: string }> };
+type AdminPageProps = { searchParams: Promise<{ error?: string; success?: string; locale?: string; category?: string }> };
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   const params = await searchParams;
   const locale = params.locale && isLocale(params.locale) ? params.locale : undefined;
-  const posts = await listAdminPosts(prisma, locale);
+  const listedCategories = await listCategories(prisma, locale);
+  const categories = locale
+    ? listedCategories.filter((item) => item.locale === locale)
+    : listedCategories;
+  const category = params.category && categories.some((item) => item.id === params.category)
+    ? params.category
+    : undefined;
+  const posts = await listAdminPosts(prisma, locale, category);
   return (
     <section className="admin-grid">
       <div className="section-heading heading-row">
@@ -22,7 +29,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       </div>
       {params.error ? <p className="form-error" role="alert">{params.error}</p> : null}
       {params.success ? <p className="form-success">文章已儲存。</p> : null}
-      <form method="get" className="panel filter-row"><label>內容語系<select name="locale" defaultValue={locale || ""}><option value="">全部語系</option>{supportedLocales.map((value) => <option key={value} value={value}>{getLocaleConfig(value).label}</option>)}</select></label><button className="button button-quiet" type="submit">篩選</button></form>
+      <form method="get" className="panel filter-row">
+        <label>內容語系<select name="locale" defaultValue={locale || ""}><option value="">全部語系</option>{supportedLocales.map((value) => <option key={value} value={value}>{getLocaleConfig(value).label}</option>)}</select></label>
+        <label>文章分類<select name="category" defaultValue={category || ""}><option value="">全部分類</option>{categories.map((item) => <option key={item.id} value={item.id}>{locale ? item.name : `${item.name}（${getLocaleConfig(item.locale as (typeof supportedLocales)[number]).label}）`}</option>)}</select></label>
+        <button className="button button-quiet" type="submit">篩選</button>
+      </form>
       <div className="panel table-wrap">
         {posts.length === 0 ? <p className="muted">尚未建立文章。</p> : (
           <table>

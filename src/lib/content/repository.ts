@@ -145,9 +145,12 @@ export async function deleteCategory(client: PrismaClient, categoryId: string) {
   return client.category.delete({ where: { id: categoryId } });
 }
 
-export function listAdminPosts(client: PrismaClient, locale?: Locale) {
+export function listAdminPosts(client: PrismaClient, locale?: Locale, categoryId?: string) {
   return client.post.findMany({
-    where: locale ? { locale } : undefined,
+    where: {
+      ...(locale ? { locale } : {}),
+      ...(categoryId ? { categoryId } : {}),
+    },
     include: { category: true, author: { select: { displayName: true } } },
     orderBy: { updatedAt: "desc" },
   });

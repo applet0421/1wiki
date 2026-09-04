@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db/prisma";
 import { resetDatabase } from "../../../tests/helpers/database";
 import { hashPassword } from "@/lib/auth/password";
-import { createCategory, deleteCategory, findAvailablePostSlug, getPublishedCategory, getPublishedPostBySlug, hasPublishedPosts, savePost } from "./repository";
+import { createCategory, deleteCategory, findAvailablePostSlug, getPublishedCategory, getPublishedPostBySlug, hasPublishedPosts, listAdminPosts, savePost } from "./repository";
 
 describe("content repository", () => {
   beforeEach(resetDatabase);
@@ -153,6 +153,22 @@ describe("content repository", () => {
     await expect(hasPublishedPosts(prisma, "en")).resolves.toBe(false);
     await savePost(prisma, author.id, postInput(category.id, { status: "PUBLISHED" }));
     await expect(hasPublishedPosts(prisma, "zh-tw")).resolves.toBe(true);
+  });
+
+  it("filters admin posts by locale and category together", async () => {
+    const { author, category } = await fixture();
+    const otherCategory = await createCategory(prisma, {
+      locale: "zh-tw",
+      name: "軟體教學",
+      slug: "software-guides",
+      description: "軟體文章",
+    });
+    await savePost(prisma, author.id, postInput(category.id, { title: "AI 文章", slug: "ai-article" }));
+    await savePost(prisma, author.id, postInput(otherCategory.id, { title: "軟體文章", slug: "software-article" }));
+
+    await expect(listAdminPosts(prisma, "zh-tw", otherCategory.id)).resolves.toMatchObject([
+      { title: "軟體文章", locale: "zh-tw", categoryId: otherCategory.id },
+    ]);
   });
 
   it("does not expose a category without published posts", async () => {
