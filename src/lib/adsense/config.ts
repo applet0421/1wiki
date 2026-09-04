@@ -9,6 +9,7 @@ const slotKeys: Record<AdPlacement, string> = {
   feed_inline: "NEXT_PUBLIC_ADSENSE_SLOT_FEED_INLINE",
 };
 const shapes: Record<AdPlacement, "banner" | "rectangle"> = { article_after_intro: "banner", article_mid: "rectangle", article_end: "banner", sidebar_desktop: "rectangle", feed_inline: "banner" };
+const articlePathPattern = new RegExp(`^/(?:${supportedLocales.join("|")})/articles/[^/]+$`);
 
 export function getPublicAdEnvironment(): AdEnvironment {
   return {
@@ -24,7 +25,7 @@ export function getPublicAdEnvironment(): AdEnvironment {
 }
 
 export function getAdSlotConfig(placement: AdPlacement, env: AdEnvironment, context: AdContext): AdSlotConfig | null {
-  const isArticle = /^\/articles\/[^/]+$/.test(context.pathname);
+  const isArticle = articlePathPattern.test(context.pathname);
   if (placement === "feed_inline" || !isArticle || !context.published) return null;
   const shape = shapes[placement];
   const clientId = env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.trim() || "";
@@ -35,7 +36,8 @@ export function getAdSlotConfig(placement: AdPlacement, env: AdEnvironment, cont
 }
 
 export function getLiveAdsenseClientId(env: AdEnvironment, pathname: string): string | null {
-  if (env.NEXT_PUBLIC_ADSENSE_ENABLED !== "true" || !/^\/articles\/[^/]+$/.test(pathname)) return null;
+  if (env.NEXT_PUBLIC_ADSENSE_ENABLED !== "true" || !articlePathPattern.test(pathname)) return null;
   const id = env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.trim() || "";
   return id || null;
 }
+import { supportedLocales } from "@/lib/i18n/config";

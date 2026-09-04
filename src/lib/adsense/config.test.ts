@@ -9,10 +9,11 @@ const complete = {
 
 describe("AdSense configuration", () => {
   it("requires enabled, client, slot and a published article route", () => {
-    expect(getAdSlotConfig("article_mid", complete, { pathname: "/articles/guide", published: true })).toMatchObject({ mode: "live", clientId: "ca-pub-1234567890", slotId: "102" });
-    expect(getAdSlotConfig("article_mid", { ...complete, NEXT_PUBLIC_ADSENSE_ENABLED: "false" }, { pathname: "/articles/guide", published: true })).toBeNull();
-    expect(getAdSlotConfig("article_mid", { ...complete, NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_MID: "" }, { pathname: "/articles/guide", published: true })).toBeNull();
-    expect(getAdSlotConfig("article_mid", complete, { pathname: "/articles/draft", published: false })).toBeNull();
+    expect(getAdSlotConfig("article_mid", complete, { pathname: "/zh-tw/articles/guide", published: true })).toMatchObject({ mode: "live", clientId: "ca-pub-1234567890", slotId: "102" });
+    expect(getAdSlotConfig("article_mid", { ...complete, NEXT_PUBLIC_ADSENSE_ENABLED: "false" }, { pathname: "/zh-tw/articles/guide", published: true })).toBeNull();
+    expect(getAdSlotConfig("article_mid", { ...complete, NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_MID: "" }, { pathname: "/zh-tw/articles/guide", published: true })).toBeNull();
+    expect(getAdSlotConfig("article_mid", complete, { pathname: "/zh-tw/articles/draft", published: false })).toBeNull();
+    expect(getAdSlotConfig("article_mid", complete, { pathname: "/fr/articles/guide", published: true })).toBeNull();
   });
 
   it("excludes non-article routes and keeps feed inline disabled in MVP", () => {
@@ -23,7 +24,7 @@ describe("AdSense configuration", () => {
   });
 
   it("shows a non-ad preview only during development", () => {
-    expect(getAdSlotConfig("article_mid", { NODE_ENV: "development", NEXT_PUBLIC_ADSENSE_ENABLED: "false" }, { pathname: "/articles/guide", published: true }))
+    expect(getAdSlotConfig("article_mid", { NODE_ENV: "development", NEXT_PUBLIC_ADSENSE_ENABLED: "false" }, { pathname: "/en/articles/guide", published: true }))
       .toEqual({ mode: "preview", placement: "article_mid", shape: "rectangle" });
   });
 });

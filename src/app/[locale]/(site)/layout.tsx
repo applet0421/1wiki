@@ -13,5 +13,5 @@ export default async function SiteLayout({ children, params }: { children: React
   if (!isLocale(locale)) notFound();
   const siteUrl = getSiteUrl();
   const dictionary = getDictionary(locale);
-  return <><JsonLd value={buildWebsiteJsonLd(siteUrl)} /><JsonLd value={buildOrganizationJsonLd(siteUrl)} /><SiteHeader locale={locale} dictionary={dictionary} />{children}<SiteFooter locale={locale} dictionary={dictionary} /></>;
+  return <><JsonLd value={buildWebsiteJsonLd(siteUrl, locale)} /><JsonLd value={buildOrganizationJsonLd(siteUrl)} /><SiteHeader locale={locale} dictionary={dictionary} />{children}<SiteFooter locale={locale} dictionary={dictionary} /></>;
 }

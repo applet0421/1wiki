@@ -10,13 +10,13 @@ const env = {
 describe("ArticleBody", () => {
   it("renders at most three body slots in placement order", () => {
     const html = `<p>${"導".repeat(200)}</p><h2>一</h2><p>${"甲".repeat(600)}</p><h2>二</h2><p>${"乙".repeat(600)}</p><h2>三</h2><p>${"丙".repeat(600)}</p>`;
-    render(<ArticleBody html={html} pathname="/articles/long" adEnvironment={env} />);
+    render(<ArticleBody html={html} pathname="/zh-tw/articles/long" adEnvironment={env} />);
     expect(screen.getAllByTestId(/adsense-/).map((node) => node.dataset.adPlacement)).toEqual(["article_after_intro", "article_mid", "article_end"]);
   });
 
   it("omits article_mid for short content", () => {
     const html = `<p>${"導".repeat(399)}</p><h2>一</h2><p>${"甲".repeat(400)}</p><h2>二</h2><p>${"乙".repeat(398)}</p>`;
-    render(<ArticleBody html={html} pathname="/articles/short" adEnvironment={env} />);
+    render(<ArticleBody html={html} pathname="/en/articles/short" adEnvironment={env} />);
     expect(screen.queryByTestId("adsense-article_mid")).not.toBeInTheDocument();
     expect(screen.getByTestId("adsense-article_after_intro")).toBeInTheDocument();
     expect(screen.getByTestId("adsense-article_end")).toBeInTheDocument();
