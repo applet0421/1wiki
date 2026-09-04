@@ -89,6 +89,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand); outline:
 .panel { padding: 1.25rem; }
 .heading-row, .editor-actions, .row-actions { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
 .heading-actions { display: flex; align-items: center; gap: .75rem; }
+.filter-row { display: flex; align-items: end; gap: .75rem; flex-wrap: wrap; }
+.filter-row label { display: grid; gap: .45rem; min-width: 12rem; color: #344054; font-size: .9rem; font-weight: 700; }
 .row-actions { justify-content: flex-start; flex-wrap: wrap; }
 .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; }
 .status { display: inline-flex; border-radius: 999px; padding: .3rem .6rem; font-size: .75rem; font-weight: 800; }

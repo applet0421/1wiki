@@ -7,18 +7,22 @@ import { AIGenerator } from "./ai-generator";
 import { RichTextEditor } from "./rich-text-editor";
 import { SeoFields } from "./seo-fields";
 import { TitleSlugFields } from "./title-slug-fields";
+import { defaultLocale, getLocaleConfig, supportedLocales, type Locale } from "@/lib/i18n/config";
 
-type CategoryOption = { id: string; name: string };
-type EditablePost = { id: string; title: string; slug: string; excerpt: string; contentHtml: string; coverImage: string | null; categoryId: string; seoTitle: string | null; seoDescription: string | null; seoKeywords: string | null; canonicalUrl: string | null; aiContentType?: "TROUBLESHOOTING" | "HOW_TO" | null; primaryKeyword?: string | null; searchIntent?: string | null; aiSourceSupport?: "STRONG" | "MEDIUM" | null; aiNeedsVerification?: unknown };
+type CategoryOption = { id: string; name: string; locale: string };
+type EditablePost = { id: string; locale: string; status: "DRAFT" | "PUBLISHED"; title: string; slug: string; excerpt: string; contentHtml: string; coverImage: string | null; categoryId: string; seoTitle: string | null; seoDescription: string | null; seoKeywords: string | null; canonicalUrl: string | null; aiContentType?: "TROUBLESHOOTING" | "HOW_TO" | null; primaryKeyword?: string | null; searchIntent?: string | null; aiSourceSupport?: "STRONG" | "MEDIUM" | null; aiNeedsVerification?: unknown };
 
 function verificationNotes(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
 
-export function PostEditor({ categories, post, error, provider = "deepseek", initialGenerated, showAIGenerator = true }: { categories: CategoryOption[]; post?: EditablePost; error?: string; provider?: string; initialGenerated?: GeneratedArticle; showAIGenerator?: boolean }) {
+export function PostEditor({ categories, post, error, provider = "deepseek", initialGenerated, showAIGenerator = true, locale = defaultLocale }: { categories: CategoryOption[]; post?: EditablePost; error?: string; provider?: string; initialGenerated?: GeneratedArticle; showAIGenerator?: boolean; locale?: Locale }) {
   const [generated, setGenerated] = useState<GeneratedArticle | null>(initialGenerated || null);
+  const [selectedLocale, setSelectedLocale] = useState<Locale>((post?.locale as Locale | undefined) ?? locale);
   const source: EditablePost | undefined = generated ? {
     id: post?.id || "",
+    locale: post?.locale || selectedLocale,
+    status: post?.status || "DRAFT",
     title: generated.title,
     slug: generated.slug,
     excerpt: generated.excerpt,
@@ -31,6 +35,8 @@ export function PostEditor({ categories, post, error, provider = "deepseek", ini
     canonicalUrl: post?.canonicalUrl || null,
   } : post;
   const notes = verificationNotes(post?.aiNeedsVerification);
+  const matchingCategories = categories.filter((category) => category.locale === selectedLocale);
+  const localeLocked = post?.status === "PUBLISHED";
   return <form action={savePostAction} className="admin-grid">
     {post ? <input type="hidden" name="id" value={post.id} /> : null}{error ? <p className="form-error" role="alert">{error}</p> : null}
     {post?.aiContentType ? <section className="panel ai-review" role="region" aria-label="AI 審核資訊">
@@ -41,7 +47,9 @@ export function PostEditor({ categories, post, error, provider = "deepseek", ini
     {showAIGenerator ? <AIGenerator provider={provider} onGenerated={setGenerated} /> : null}
     <fieldset key={generated?.title || "stored"} className="panel form-grid"><legend>文章內容</legend>
       <TitleSlugFields initialTitle={source?.title} initialSlug={source?.slug} />
-      <label>分類<select name="categoryId" defaultValue={source?.categoryId || ""} required><option value="" disabled>選擇分類</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
+      <label>內容語系<select name="locale" value={selectedLocale} disabled={localeLocked} onChange={(event) => setSelectedLocale(event.target.value as Locale)}>{supportedLocales.map((value) => <option key={value} value={value}>{getLocaleConfig(value).label}</option>)}</select></label>
+      {localeLocked ? <input type="hidden" name="locale" value={selectedLocale} /> : null}
+      <label>分類<select key={selectedLocale} name="categoryId" defaultValue={source?.locale === selectedLocale ? source.categoryId : ""} required><option value="" disabled>選擇分類</option>{matchingCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
       <label className="span-2">摘要<textarea name="excerpt" defaultValue={source?.excerpt || ""} rows={3} maxLength={320} /></label>
       <label className="span-2">封面圖片網址<input name="coverImage" type="url" defaultValue={source?.coverImage || ""} /></label>
       <div className="span-2"><span className="field-label">正文</span><RichTextEditor initialHtml={source?.contentHtml} /></div>

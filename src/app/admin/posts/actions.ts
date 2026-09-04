@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { deletePost, savePost } from "@/lib/content/repository";
 import { prisma } from "@/lib/db/prisma";
+import { localeSchema } from "@/lib/content/schema";
 
 function field(formData: FormData, name: string): string { return String(formData.get(name) || ""); }
 async function requireContentUser() { const user = await getCurrentUser(); if (!user) redirect("/login"); if (user.mustChangePassword) redirect("/change-password"); return user; }
@@ -14,7 +15,7 @@ export async function savePostAction(formData: FormData) {
   const id = field(formData, "id") || undefined;
   try {
     await savePost(prisma, user.id, {
-      id, title: field(formData, "title"), slug: field(formData, "slug"), excerpt: field(formData, "excerpt"),
+      id, locale: localeSchema.parse(field(formData, "locale")), title: field(formData, "title"), slug: field(formData, "slug"), excerpt: field(formData, "excerpt"),
       contentHtml: field(formData, "contentHtml"), coverImage: field(formData, "coverImage"),
       status: field(formData, "intent") === "publish" ? "PUBLISHED" : "DRAFT",
       categoryId: field(formData, "categoryId"), seoTitle: field(formData, "seoTitle"),
@@ -35,7 +36,7 @@ export async function togglePostStatusAction(formData: FormData) {
   if (!current) redirect("/admin?error=找不到文章");
   try {
     await savePost(prisma, user.id, {
-      id: current.id, title: current.title, slug: current.slug, excerpt: current.excerpt, contentHtml: current.contentHtml,
+      id: current.id, locale: localeSchema.parse(current.locale), title: current.title, slug: current.slug, excerpt: current.excerpt, contentHtml: current.contentHtml,
       coverImage: current.coverImage || "", status: field(formData, "status") === "PUBLISHED" ? "PUBLISHED" : "DRAFT",
       categoryId: current.categoryId, seoTitle: current.seoTitle || "", seoDescription: current.seoDescription || "",
       seoKeywords: current.seoKeywords || "", canonicalUrl: current.canonicalUrl || "",

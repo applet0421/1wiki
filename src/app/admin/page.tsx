@@ -2,11 +2,14 @@ import Link from "next/link";
 import { listAdminPosts } from "@/lib/content/repository";
 import { prisma } from "@/lib/db/prisma";
 import { deletePostAction, togglePostStatusAction } from "./posts/actions";
+import { getLocaleConfig, isLocale, supportedLocales } from "@/lib/i18n/config";
 
-type AdminPageProps = { searchParams: Promise<{ error?: string; success?: string }> };
+type AdminPageProps = { searchParams: Promise<{ error?: string; success?: string; locale?: string }> };
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
-  const [posts, params] = await Promise.all([listAdminPosts(prisma), searchParams]);
+  const params = await searchParams;
+  const locale = params.locale && isLocale(params.locale) ? params.locale : undefined;
+  const posts = await listAdminPosts(prisma, locale);
   return (
     <section className="admin-grid">
       <div className="section-heading heading-row">
@@ -19,13 +22,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       </div>
       {params.error ? <p className="form-error" role="alert">{params.error}</p> : null}
       {params.success ? <p className="form-success">文章已儲存。</p> : null}
+      <form method="get" className="panel filter-row"><label>內容語系<select name="locale" defaultValue={locale || ""}><option value="">全部語系</option>{supportedLocales.map((value) => <option key={value} value={value}>{getLocaleConfig(value).label}</option>)}</select></label><button className="button button-quiet" type="submit">篩選</button></form>
       <div className="panel table-wrap">
         {posts.length === 0 ? <p className="muted">尚未建立文章。</p> : (
           <table>
-            <thead><tr><th>文章</th><th>分類</th><th>狀態</th><th>操作</th></tr></thead>
+            <thead><tr><th>文章</th><th>語系</th><th>分類</th><th>狀態</th><th>操作</th></tr></thead>
             <tbody>{posts.map((post) => (
               <tr key={post.id}>
                 <td><strong>{post.title}</strong><small>/{post.slug}</small></td>
+                <td>{getLocaleConfig(post.locale as (typeof supportedLocales)[number]).label}</td>
                 <td>{post.category.name}</td>
                 <td><span className={`status status-${post.status.toLowerCase()}`}>{post.status === "PUBLISHED" ? "已發布" : "草稿"}</span></td>
                 <td><div className="row-actions">

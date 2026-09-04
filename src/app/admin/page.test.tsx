@@ -19,4 +19,11 @@ describe("AdminPage", () => {
     expect(screen.getByRole("link", { name: "AI 生成" })).toHaveAttribute("href", "/admin/posts/generate");
     expect(screen.getByRole("link", { name: "AI 改寫文章" })).toHaveAttribute("href", "/admin/posts/rewrite");
   });
+
+  it("passes a valid locale filter to the repository", async () => {
+    const { listAdminPosts } = await import("@/lib/content/repository");
+    render(await AdminPage({ searchParams: Promise.resolve({ locale: "en" }) }));
+    expect(listAdminPosts).toHaveBeenCalledWith({}, "en");
+    expect(screen.getByLabelText("內容語系")).toHaveValue("en");
+  });
 });
