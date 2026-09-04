@@ -5,7 +5,7 @@ import { slugifyTitle } from "@/lib/content/slug";
 
 export function TitleSlugFields({ initialTitle = "", initialSlug = "" }: { initialTitle?: string; initialSlug?: string }) {
   const [title, setTitle] = useState(initialTitle);
-  const [slug, setSlug] = useState(initialSlug);
+  const [slug, setSlug] = useState(initialSlug || slugifyTitle(initialTitle));
   const [slugWasEdited, setSlugWasEdited] = useState(Boolean(initialSlug));
 
   return <>
