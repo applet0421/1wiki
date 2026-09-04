@@ -10,6 +10,9 @@ export default async function globalSetup() {
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: databaseUrl }) });
 
   try {
+    await prisma.lLMUsage.deleteMany();
+    await prisma.lLMModelPrice.deleteMany();
+    await prisma.promptVersion.deleteMany({ where: { versionNumber: { gt: 1 } } });
     await prisma.session.deleteMany();
     await prisma.post.deleteMany();
     await prisma.user.deleteMany();

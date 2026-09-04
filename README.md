@@ -18,6 +18,7 @@
 - OWNER／EDITOR 後台帳號，無公開註冊與第三方登入
 - 文章、分類、Rich Text Editor 與 SEO 欄位管理
 - DeepSeek（預設）、OpenAI、Gemini 三選一的 AI 文章初稿、來源分析與選題生成
+- OWNER 專用 Prompt 版本管理、歷史回復、LLM Token／失敗／耗時追蹤與美元成本估算
 - canonical、Open Graph、Article structured data、sitemap 與 robots
 - 手動 AdSense slot；Auto ads 預設關閉
 - PostgreSQL、Prisma、Next.js App Router，可部署至 Vercel
@@ -72,6 +73,8 @@ DEEPSEEK_MODEL=deepseek-v4-flash
 
 API key 只在伺服器端使用。一般「新增文章」仍可用主題與關鍵字快速填入初稿；後台「AI 生成」則會先分析使用者貼上的參考內容，提出 Troubleshooting／How-to 主題，再依選定搜尋意圖建立草稿。AI 生成內容一律需要人工檢查並手動發布，供應商失敗時不會暗中切換到另一家。
 
+所有 LLM 呼叫使用的 Prompt 都由 OWNER 在 `/admin/prompts` 管理；儲存或回復會建立不可變的新版本並立即套用。`/admin/llm-usage` 顯示逐次呼叫的 Prompt 版本、Token、狀態與耗時，並可維護各供應商模型的每百萬 Token 美元費率。未設定費率或供應商未回傳 Token 時，成本會標示為「無法估算」，不會以字數猜測。
+
 ## AdSense
 
 預設 `NEXT_PUBLIC_ADSENSE_ENABLED=false`，正式環境不會載入 AdSense script、不會輸出廣告節點，也不會留下預覽空白。開發環境會以淡灰色方框顯示版位名稱。
@@ -108,6 +111,17 @@ npm run test:e2e
 3. 備份正式資料庫後執行 `npm run db:migrate`。`20260904130000_add_content_locales` 會將既有文章與分類回填為 `zh-tw`，並建立語系複合唯一鍵及外鍵；首次部署才另執行 `npm run db:seed` 與一次性的 `npm run bootstrap:owner`。
 4. 使用預設的 `npm run build` 建置並部署。
 5. 登入後台發布第一篇文章，檢查 `/sitemap.xml`、`/robots.txt` 與文章原始碼中的 SEO metadata。
+
+一般正式環境更新順序固定為：
+
+```bash
+npm ci
+npm run db:migrate
+npm run build
+npm start
+```
+
+`20260904180000_prompt_llm_usage` 會同時建立 Prompt、版本、模型費率、用量資料表與四個既有功能的初始 Prompt，因此應先完成 migration 再啟動新版應用。
 
 多語系架構決策見 [`docs/superpowers/specs/2026-09-04-1wiki-locale-architecture-design.md`](docs/superpowers/specs/2026-09-04-1wiki-locale-architecture-design.md)，執行計畫見 [`docs/superpowers/plans/2026-09-04-1wiki-locale-architecture.md`](docs/superpowers/plans/2026-09-04-1wiki-locale-architecture.md)。原始 MVP 的完整需求與決策見 [`docs/superpowers/specs/2026-09-04-1wiki-adsense-seo-mvp-design.md`](docs/superpowers/specs/2026-09-04-1wiki-adsense-seo-mvp-design.md)。
 

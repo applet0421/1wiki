@@ -5,6 +5,7 @@ async function login(page: import("@playwright/test").Page, username: string, pa
   await page.getByLabel("帳號").fill(username);
   await page.getByLabel("密碼").fill(password);
   await page.getByRole("button", { name: "登入" }).click();
+  await expect(page).toHaveURL(/\/admin$/);
 }
 
 test("未登入時會導向登入頁，OWNER 可管理帳號", async ({ page }) => {
@@ -14,6 +15,12 @@ test("未登入時會導向登入頁，OWNER 可管理帳號", async ({ page }) 
   await login(page, "owner", "Owner-password-2026");
   await expect(page).toHaveURL(/\/admin$/);
   await expect(page.getByRole("heading", { name: "文章管理" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Prompt 管理" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "LLM 用量" })).toBeVisible();
+  await page.getByRole("link", { name: "Prompt 管理" }).click();
+  await expect(page.getByRole("heading", { name: "Prompt 管理" })).toBeVisible();
+  await page.getByRole("link", { name: "LLM 用量" }).click();
+  await expect(page.getByRole("heading", { name: "LLM 用量管理" })).toBeVisible();
   await page.getByRole("link", { name: "帳號" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "後台帳號", exact: true })).toBeVisible();
 });
@@ -21,8 +28,10 @@ test("未登入時會導向登入頁，OWNER 可管理帳號", async ({ page }) 
 test("OWNER 可以修改帳號顯示名稱", async ({ page }) => {
   await login(page, "owner", "Owner-password-2026");
   await page.goto("/admin/users");
-  await page.getByLabel("顯示名稱（owner）").fill("新站長");
-  await page.getByRole("button", { name: "更新" }).click();
+  const displayName = page.getByLabel("顯示名稱（owner）");
+  const ownerRow = page.getByRole("row").filter({ has: displayName });
+  await displayName.fill("新站長");
+  await ownerRow.getByRole("button", { name: "更新" }).click();
 
   await expect(page.getByText("帳號設定已更新。")).toBeVisible();
   await expect(page.getByLabel("顯示名稱（owner）")).toHaveValue("新站長");
@@ -32,7 +41,13 @@ test("EDITOR 可進入後台但不能開啟帳號管理", async ({ page }) => {
   await login(page, "editor", "Editor-password-2026");
   await expect(page).toHaveURL(/\/admin$/);
   await expect(page.getByRole("link", { name: "帳號" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Prompt 管理" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "LLM 用量" })).toHaveCount(0);
 
   await page.goto("/admin/users");
+  await expect(page).toHaveURL(/\/admin$/);
+  await page.goto("/admin/prompts");
+  await expect(page).toHaveURL(/\/admin$/);
+  await page.goto("/admin/llm-usage");
   await expect(page).toHaveURL(/\/admin$/);
 });
