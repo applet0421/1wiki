@@ -6,6 +6,7 @@ import { AIProviderError, parseArticleJson } from "../errors";
 
 const article = {
   title: "ChatGPT 登入修復",
+  slug: "chatgpt-login-fix",
   contentHtml: "<h2>檢查</h2><p>依序處理。</p>",
   excerpt: "登入問題排解步驟。",
   seoTitle: "ChatGPT 登入問題修復",

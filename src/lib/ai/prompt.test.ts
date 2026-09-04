@@ -7,6 +7,7 @@ describe("buildArticlePrompt", () => {
 
     expect(prompt).toContain('"title"');
     expect(prompt).toContain('"contentHtml"');
+    expect(prompt).toContain('"slug"');
     expect(prompt).toContain('"excerpt"');
     expect(prompt).toContain('"seoTitle"');
     expect(prompt).toContain('"seoDescription"');

@@ -16,7 +16,7 @@ export function PostEditor({ categories, post, error, provider = "deepseek" }: {
   const source: EditablePost | undefined = generated ? {
     id: post?.id || "",
     title: generated.title,
-    slug: "",
+    slug: generated.slug,
     excerpt: generated.excerpt,
     contentHtml: generated.contentHtml,
     coverImage: post?.coverImage || null,
