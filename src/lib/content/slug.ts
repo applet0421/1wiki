@@ -7,3 +7,7 @@ export function slugifyTitle(title: string): string {
     .replace(/^-+|-+$/g, "")
     .replace(/-{2,}/g, "-");
 }
+
+export function decodeRouteSlug(slug: string): string {
+  return decodeURIComponent(slug);
+}

@@ -10,6 +10,7 @@ import { AdsenseScript } from "@/components/ads/adsense-script";
 import { getAdSlotConfig, getLiveAdsenseClientId, getPublicAdEnvironment } from "@/lib/adsense/config";
 import { getSiteUrl } from "@/lib/config/site";
 import { getPublishedPostBySlug } from "@/lib/content/repository";
+import { decodeRouteSlug } from "@/lib/content/slug";
 import { prisma } from "@/lib/db/prisma";
 import { buildPostMetadata } from "@/lib/seo/metadata";
 import { buildArticleJsonLd } from "@/lib/seo/structured-data";
@@ -18,7 +19,8 @@ export const dynamic = "force-dynamic";
 const getPost = cache((slug: string) => getPublishedPostBySlug(prisma, slug));
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeRouteSlug(rawSlug);
   const post = await getPost(slug);
   if (!post) return {};
   const metadata = buildPostMetadata(post);
@@ -28,7 +30,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ArticlePage({ params }: Props) {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeRouteSlug(rawSlug);
   const post = await getPost(slug);
   if (!post) notFound();
   const pathname = `/articles/${post.slug}`;
