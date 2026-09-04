@@ -6,7 +6,7 @@ vi.mock("@/app/(backoffice)/admin/posts/actions", () => ({ savePostAction: vi.fn
 
 describe("PostEditor AI review metadata", () => {
   it("shows internal generation context and verification warnings", () => {
-    render(<PostEditor locale="zh-tw" categories={[{ id: "category", name: "軟體", locale: "zh-tw" }]} showAIGenerator={false} post={{
+    render(<PostEditor locale="zh-tw" categories={[{ id: "category", label: "軟體", locale: "zh-tw", depth: 1, segments: ["software"] }]} showAIGenerator={false} post={{
       id: "post", title: "LINE 教學", slug: "line-guide", excerpt: "摘要", contentHtml: "<p>內容</p>",
       locale: "zh-tw", status: "DRAFT", coverImage: null, categoryId: "category", seoTitle: "SEO", seoDescription: "說明", seoKeywords: "LINE", canonicalUrl: null,
       aiContentType: "HOW_TO", primaryKeyword: "LINE 通知設定", searchIntent: "開啟 LINE 通知", aiSourceSupport: "MEDIUM",
@@ -23,8 +23,10 @@ describe("PostEditor AI review metadata", () => {
     render(<PostEditor
       locale="en"
       categories={[
-        { id: "en-cat", name: "English AI", locale: "en" },
-        { id: "ja-cat", name: "日本語 AI", locale: "ja" },
+        { id: "en-cat", label: "English AI", locale: "en", depth: 1, segments: ["ai"] },
+        { id: "en-child", label: "— ChatGPT", locale: "en", depth: 2, segments: ["ai", "chatgpt"] },
+        { id: "en-leaf", label: "—— Prompt", locale: "en", depth: 3, segments: ["ai", "chatgpt", "prompt"] },
+        { id: "ja-cat", label: "日本語 AI", locale: "ja", depth: 1, segments: ["ai"] },
       ]}
       provider="deepseek"
       showAIGenerator={false}
@@ -33,6 +35,8 @@ describe("PostEditor AI review metadata", () => {
     const selector = screen.getByLabelText("內容語系");
     expect(selector).toHaveValue("en");
     expect(screen.getByRole("option", { name: "English AI" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "— ChatGPT" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "—— Prompt" })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: "日本語 AI" })).not.toBeInTheDocument();
 
     fireEvent.change(selector, { target: { value: "ja" } });

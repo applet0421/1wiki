@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 import { deletePostAction, togglePostStatusAction } from "./posts/actions";
 import { getLocaleConfig, isLocale, supportedLocales } from "@/lib/i18n/config";
 import { PostFilters } from "@/components/admin/post-filters";
+import { buildCategoryTree, flattenCategoryOptions } from "@/lib/content/category-tree";
 
 type AdminPageProps = { searchParams: Promise<{ error?: string; success?: string; locale?: string; category?: string }> };
 
@@ -18,6 +19,17 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     ? params.category
     : undefined;
   const posts = await listAdminPosts(prisma, locale, category);
+  const categoryOptions = flattenCategoryOptions(buildCategoryTree(listedCategories.map((item) => ({
+    id: item.id,
+    locale: item.locale as (typeof supportedLocales)[number],
+    name: item.name,
+    slug: item.slug,
+    description: item.description,
+    parentId: item.parentId,
+    sortOrder: item.sortOrder,
+    showInNavigation: item.showInNavigation,
+    directPostCount: item._count.posts,
+  }))));
   return (
     <section className="admin-grid">
       <div className="section-heading heading-row">
@@ -31,7 +43,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       {params.error ? <p className="form-error" role="alert">{params.error}</p> : null}
       {params.success ? <p className="form-success">文章已儲存。</p> : null}
       <PostFilters
-        categories={listedCategories.map((item) => ({ id: item.id, locale: item.locale as (typeof supportedLocales)[number], name: item.name }))}
+        categories={categoryOptions}
         initialLocale={locale}
         initialCategory={category}
       />

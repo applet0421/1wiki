@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { savePostAction } from "@/app/(backoffice)/admin/posts/actions";
 import type { GeneratedArticle } from "@/lib/ai/types";
+import type { CategoryOption } from "@/lib/content/category-tree";
 import { AIGenerator } from "./ai-generator";
+import { CategorySelect } from "./category-select";
 import { RichTextEditor } from "./rich-text-editor";
 import { SeoFields } from "./seo-fields";
 import { TitleSlugFields } from "./title-slug-fields";
 import { defaultLocale, getLocaleConfig, supportedLocales, type Locale } from "@/lib/i18n/config";
 
-type CategoryOption = { id: string; name: string; locale: string };
 type EditablePost = { id: string; locale: string; status: "DRAFT" | "PUBLISHED"; title: string; slug: string; excerpt: string; contentHtml: string; coverImage: string | null; categoryId: string; seoTitle: string | null; seoDescription: string | null; seoKeywords: string | null; canonicalUrl: string | null; aiContentType?: "TROUBLESHOOTING" | "HOW_TO" | null; primaryKeyword?: string | null; searchIntent?: string | null; aiSourceSupport?: "STRONG" | "MEDIUM" | null; aiNeedsVerification?: unknown };
 
 function verificationNotes(value: unknown): string[] {
@@ -35,7 +36,6 @@ export function PostEditor({ categories, post, error, provider = "deepseek", ini
     canonicalUrl: post?.canonicalUrl || null,
   } : post;
   const notes = verificationNotes(post?.aiNeedsVerification);
-  const matchingCategories = categories.filter((category) => category.locale === selectedLocale);
   const localeLocked = post?.status === "PUBLISHED";
   return <form action={savePostAction} className="admin-grid">
     {post ? <input type="hidden" name="id" value={post.id} /> : null}{error ? <p className="form-error" role="alert">{error}</p> : null}
@@ -49,7 +49,7 @@ export function PostEditor({ categories, post, error, provider = "deepseek", ini
       <TitleSlugFields initialTitle={source?.title} initialSlug={source?.slug} />
       <label>內容語系<select name="locale" value={selectedLocale} disabled={localeLocked} onChange={(event) => setSelectedLocale(event.target.value as Locale)}>{supportedLocales.map((value) => <option key={value} value={value}>{getLocaleConfig(value).label}</option>)}</select></label>
       {localeLocked ? <input type="hidden" name="locale" value={selectedLocale} /> : null}
-      <label>分類<select key={selectedLocale} name="categoryId" defaultValue={source?.locale === selectedLocale ? source.categoryId : ""} required><option value="" disabled>選擇分類</option>{matchingCategories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
+      <label>分類<CategorySelect key={selectedLocale} name="categoryId" locale={selectedLocale} categories={categories} value={source?.locale === selectedLocale ? source.categoryId : ""} required /></label>
       <label className="span-2">摘要<textarea name="excerpt" defaultValue={source?.excerpt || ""} rows={3} maxLength={320} /></label>
       <label className="span-2">封面圖片網址<input name="coverImage" type="url" defaultValue={source?.coverImage || ""} /></label>
       <div className="span-2"><span className="field-label">正文</span><RichTextEditor initialHtml={source?.contentHtml} /></div>

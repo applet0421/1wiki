@@ -21,10 +21,11 @@ describe("generateContentDraftAction", () => {
   });
 
   it("creates a draft with AI review metadata and an available slug", async () => {
-    const [user, category] = await Promise.all([
+    const [user, rootCategory] = await Promise.all([
       prisma.user.create({ data: { username: "ai-editor", displayName: "AI 編輯", passwordHash: await hashPassword("secure-editor-2026"), mustChangePassword: false } }),
-      prisma.category.create({ data: { locale: "zh-tw", name: "軟體", slug: "software" } }),
+      prisma.category.create({ data: { locale: "zh-tw", name: "AI", slug: "ai" } }),
     ]);
+    const category = await prisma.category.create({ data: { locale: "zh-tw", name: "ChatGPT", slug: "chatgpt", parentId: rootCategory.id } });
     await prisma.post.create({ data: {
       locale: "zh-tw", title: "既有文章", slug: "line-notification-fix", authorId: user.id, categoryId: category.id,
     } });
@@ -45,6 +46,12 @@ describe("generateContentDraftAction", () => {
     const result = await generateContentDraftAction({ locale: "zh-tw", sourceContent: "LINE 官方通知設定說明", idea });
 
     if (!result.ok) throw new Error(result.error);
+    expect(generateFromIdea).toHaveBeenCalledWith(expect.objectContaining({
+      categories: [
+        { id: rootCategory.id, name: "AI" },
+        { id: category.id, name: "— ChatGPT" },
+      ],
+    }));
     const stored = await prisma.post.findUniqueOrThrow({ where: { id: result.data.postId } });
     expect(stored).toMatchObject({
       slug: "line-notification-fix-2",

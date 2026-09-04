@@ -1,16 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import type { CategoryOption } from "@/lib/content/category-tree";
 import { getLocaleConfig, supportedLocales, type Locale } from "@/lib/i18n/config";
-
-type FilterCategory = {
-  id: string;
-  locale: Locale;
-  name: string;
-};
+import { CategorySelect } from "./category-select";
 
 type PostFiltersProps = {
-  categories: FilterCategory[];
+  categories: CategoryOption[];
   initialLocale?: Locale;
   initialCategory?: string;
 };
@@ -18,9 +14,10 @@ type PostFiltersProps = {
 export function PostFilters({ categories, initialLocale, initialCategory }: PostFiltersProps) {
   const [locale, setLocale] = useState<Locale | "">(initialLocale || "");
   const [category, setCategory] = useState(initialCategory || "");
-  const visibleCategories = locale
-    ? categories.filter((item) => item.locale === locale)
-    : categories;
+  const categoryOptions = locale ? categories : categories.map((item) => ({
+    ...item,
+    label: `${item.label}（${getLocaleConfig(item.locale).label}）`,
+  }));
 
   function changeLocale(nextLocale: string) {
     const normalizedLocale = nextLocale as Locale | "";
@@ -33,7 +30,7 @@ export function PostFilters({ categories, initialLocale, initialCategory }: Post
   return (
     <form method="get" className="panel filter-row">
       <label>內容語系<select name="locale" value={locale} onChange={(event) => changeLocale(event.target.value)}><option value="">全部語系</option>{supportedLocales.map((value) => <option key={value} value={value}>{getLocaleConfig(value).label}</option>)}</select></label>
-      <label>文章分類<select name="category" value={category} onChange={(event) => setCategory(event.target.value)}><option value="">全部分類</option>{visibleCategories.map((item) => <option key={item.id} value={item.id}>{locale ? item.name : `${item.name}（${getLocaleConfig(item.locale).label}）`}</option>)}</select></label>
+      <label>文章分類<CategorySelect name="category" locale={locale} categories={categoryOptions} value={category} includeAll onChange={setCategory} /></label>
       <button className="button button-quiet" type="submit">篩選</button>
     </form>
   );

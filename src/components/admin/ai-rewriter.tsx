@@ -3,11 +3,10 @@
 import { useState } from "react";
 import { rewriteArticleAction } from "@/app/(backoffice)/admin/posts/rewrite-actions";
 import type { GeneratedArticle } from "@/lib/ai/types";
+import type { CategoryOption } from "@/lib/content/category-tree";
 import { PostEditor } from "./post-editor";
 import { RichTextEditor } from "./rich-text-editor";
 import { defaultLocale, getLocaleConfig, supportedLocales, type Locale } from "@/lib/i18n/config";
-
-type CategoryOption = { id: string; name: string; locale: string };
 
 export function AIRewriter({ categories, provider }: { categories: CategoryOption[]; provider: string }) {
   const [sourceTitle, setSourceTitle] = useState("");

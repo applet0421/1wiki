@@ -7,6 +7,7 @@ import type { AnalyzeSourceInput, ContentIdea, GenerateFromIdeaInput } from "@/l
 import type { Locale } from "@/lib/i18n/config";
 import { getCurrentUser } from "@/lib/auth/session";
 import { findAvailablePostSlug, savePost } from "@/lib/content/repository";
+import { buildCategoryTree, flattenCategoryOptions } from "@/lib/content/category-tree";
 import { prisma } from "@/lib/db/prisma";
 
 async function authorizedUser() {
@@ -33,7 +34,12 @@ export async function generateContentDraftAction(input: { locale: Locale; source
   if (!user) return { ok: false as const, error: "請先登入後台。" };
   try {
     const idea = contentIdeaSchema.parse(input.idea);
-    const categories = await prisma.category.findMany({ where: { locale: input.locale }, select: { id: true, name: true }, orderBy: { name: "asc" } });
+    const categoryRows = await prisma.category.findMany({ where: { locale: input.locale }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }] });
+    const categories = flattenCategoryOptions(buildCategoryTree(categoryRows.map((category) => ({
+      id: category.id, locale: input.locale, name: category.name, slug: category.slug,
+      description: category.description, parentId: category.parentId, sortOrder: category.sortOrder,
+      showInNavigation: category.showInNavigation, directPostCount: 0,
+    })))).map((category) => ({ id: category.id, name: category.label }));
     const request: GenerateFromIdeaInput = { locale: input.locale, sourceContent: input.sourceContent, idea, categories };
     const generated = await generateFromIdea(request);
     const slug = await findAvailablePostSlug(prisma, input.locale, generated.slug);

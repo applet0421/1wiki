@@ -5,8 +5,9 @@ import AdminPage from "./page";
 vi.mock("@/lib/content/repository", () => ({
   listAdminPosts: vi.fn(async () => []),
   listCategories: vi.fn(async () => [
-    { id: "cat-zh", locale: "zh-tw", name: "AI 教學", slug: "ai", description: null, _count: { posts: 1 } },
-    { id: "cat-en", locale: "en", name: "AI Guides", slug: "ai", description: null, _count: { posts: 1 } },
+    { id: "cat-zh", locale: "zh-tw", name: "AI 教學", slug: "ai", description: "", parentId: null, sortOrder: 0, showInNavigation: true, _count: { posts: 1 } },
+    { id: "cat-en", locale: "en", name: "AI Guides", slug: "ai", description: "", parentId: null, sortOrder: 0, showInNavigation: true, _count: { posts: 1 } },
+    { id: "cat-en-child", locale: "en", name: "ChatGPT", slug: "chatgpt", description: "", parentId: "cat-en", sortOrder: 0, showInNavigation: false, _count: { posts: 0 } },
   ]),
 }));
 
@@ -38,6 +39,7 @@ describe("AdminPage", () => {
     expect(screen.getByLabelText("文章分類")).toHaveValue("cat-en");
     expect(screen.queryByRole("option", { name: "AI 教學" })).not.toBeInTheDocument();
     expect(screen.getByRole("option", { name: "AI Guides" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "— ChatGPT" })).toBeInTheDocument();
     expect(listAdminPosts).toHaveBeenCalledWith({}, "en", "cat-en");
   });
 

@@ -23,7 +23,10 @@ describe("AIRewriter", () => {
   });
 
   it("keeps the source editable and fills a saveable post editor with the rewritten result", async () => {
-    render(<AIRewriter categories={[{ id: "ai", name: "AI", locale: "en" }]} provider="deepseek" />);
+    render(<AIRewriter categories={[
+      { id: "ai", label: "AI", locale: "en", depth: 1, segments: ["ai"] },
+      { id: "chatgpt", label: "— ChatGPT", locale: "en", depth: 2, segments: ["ai", "chatgpt"] },
+    ]} provider="deepseek" />);
     fireEvent.change(screen.getByLabelText("內容語系"), { target: { value: "en" } });
 
     fireEvent.change(screen.getByLabelText("原文章標題"), { target: { value: "原始標題" } });
@@ -38,6 +41,7 @@ describe("AIRewriter", () => {
     expect(screen.getByLabelText("文章正文")).toHaveTextContent("台灣用語內容");
     expect(screen.getByDisplayValue("改寫後 SEO 描述")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "儲存草稿" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "— ChatGPT" })).toBeInTheDocument();
     expect(screen.getByLabelText("原文章標題")).toHaveValue("原始標題");
   });
 
