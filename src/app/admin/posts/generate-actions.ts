@@ -2,8 +2,9 @@
 
 import { getCurrentUser } from "@/lib/auth/session";
 import { generateArticle } from "@/lib/ai/generate-article";
+import type { GenerateArticleInput } from "@/lib/ai/types";
 
-export async function generateArticleAction(input: { topic: string; keyword: string; instructions: string }) {
+export async function generateArticleAction(input: GenerateArticleInput) {
   const user = await getCurrentUser();
   if (!user || user.mustChangePassword) return { ok: false as const, error: "請先登入後台。" };
   if (!input.topic.trim() || !input.keyword.trim()) return { ok: false as const, error: "請填寫主題與主要關鍵字。" };

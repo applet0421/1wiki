@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 
 export default async function RewritePostPage() {
   const categories = await prisma.category.findMany({
-    select: { id: true, name: true },
+    select: { id: true, name: true, locale: true },
     orderBy: { name: "asc" },
   });
 

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { analyzeSource, generateFromIdea } from "@/lib/ai/content-generator";
 import { contentIdeaSchema } from "@/lib/ai/schema";
 import type { AnalyzeSourceInput, ContentIdea, GenerateFromIdeaInput } from "@/lib/ai/types";
+import type { Locale } from "@/lib/i18n/config";
 import { getCurrentUser } from "@/lib/auth/session";
 import { findAvailablePostSlug, savePost } from "@/lib/content/repository";
 import { prisma } from "@/lib/db/prisma";
@@ -27,16 +28,17 @@ export async function analyzeContentAction(input: AnalyzeSourceInput) {
   }
 }
 
-export async function generateContentDraftAction(input: { sourceContent: string; idea: ContentIdea }) {
+export async function generateContentDraftAction(input: { locale: Locale; sourceContent: string; idea: ContentIdea }) {
   const user = await authorizedUser();
   if (!user) return { ok: false as const, error: "請先登入後台。" };
   try {
     const idea = contentIdeaSchema.parse(input.idea);
-    const categories = await prisma.category.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } });
-    const request: GenerateFromIdeaInput = { sourceContent: input.sourceContent, idea, categories };
+    const categories = await prisma.category.findMany({ where: { locale: input.locale }, select: { id: true, name: true }, orderBy: { name: "asc" } });
+    const request: GenerateFromIdeaInput = { locale: input.locale, sourceContent: input.sourceContent, idea, categories };
     const generated = await generateFromIdea(request);
-    const slug = await findAvailablePostSlug(prisma, generated.slug);
+    const slug = await findAvailablePostSlug(prisma, input.locale, generated.slug);
     const post = await savePost(prisma, user.id, {
+      locale: input.locale,
       title: generated.title,
       slug,
       excerpt: generated.excerpt,

@@ -44,7 +44,7 @@ export function PostEditor({ categories, post, error, provider = "deepseek", ini
       <dl><div><dt>主要關鍵字</dt><dd>{post.primaryKeyword}</dd></div><div><dt>搜尋意圖</dt><dd>{post.searchIntent}</dd></div></dl>
       {notes.length > 0 ? <div className="verification-warning"><strong>發布前需要查證</strong><ul>{notes.map((note) => <li key={note}>{note}</li>)}</ul></div> : <p className="form-success">AI 未標記待查證項目，發布前仍請人工檢查全文。</p>}
     </section> : null}
-    {showAIGenerator ? <AIGenerator provider={provider} onGenerated={setGenerated} /> : null}
+    {showAIGenerator ? <AIGenerator provider={provider} locale={selectedLocale} onGenerated={setGenerated} /> : null}
     <fieldset key={generated?.title || "stored"} className="panel form-grid"><legend>文章內容</legend>
       <TitleSlugFields initialTitle={source?.title} initialSlug={source?.slug} />
       <label>內容語系<select name="locale" value={selectedLocale} disabled={localeLocked} onChange={(event) => setSelectedLocale(event.target.value as Locale)}>{supportedLocales.map((value) => <option key={value} value={value}>{getLocaleConfig(value).label}</option>)}</select></label>

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { analyzeContentAction, generateContentDraftAction } from "@/app/admin/posts/generate/actions";
 import type { ContentIdea } from "@/lib/ai/types";
+import { defaultLocale, getLocaleConfig, supportedLocales, type Locale } from "@/lib/i18n/config";
 
 const typeLabels = { TROUBLESHOOTING: "Troubleshooting", HOW_TO: "How-to" } as const;
 const supportLabels = { STRONG: "Strong", MEDIUM: "Medium" } as const;
@@ -11,6 +12,7 @@ const supportLabels = { STRONG: "Strong", MEDIUM: "Medium" } as const;
 export function AIContentGenerator({ provider }: { provider: string }) {
   const router = useRouter();
   const [sourceContent, setSourceContent] = useState("");
+  const [locale, setLocale] = useState<Locale>(defaultLocale);
   const [ideas, setIdeas] = useState<ContentIdea[] | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [error, setError] = useState("");
@@ -22,7 +24,7 @@ export function AIContentGenerator({ provider }: { provider: string }) {
     setAnalyzing(true);
     setError("");
     try {
-      const result = await analyzeContentAction({ sourceContent });
+      const result = await analyzeContentAction({ locale, sourceContent });
       if (!result.ok) {
         setError(result.error);
         return;
@@ -41,7 +43,7 @@ export function AIContentGenerator({ provider }: { provider: string }) {
     setGenerating(true);
     setError("");
     try {
-      const result = await generateContentDraftAction({ sourceContent, idea: ideas[selectedIndex] });
+      const result = await generateContentDraftAction({ locale, sourceContent, idea: ideas[selectedIndex] });
       if (!result.ok) {
         setError(result.error);
         return;
@@ -58,6 +60,7 @@ export function AIContentGenerator({ provider }: { provider: string }) {
     <section className="panel generator-step">
       <div className="step-heading"><span>1</span><div><p className="eyebrow">參考來源 · {provider}</p><h2>輸入參考內容</h2></div></div>
       <p className="muted">貼上文章、官方說明、產品資料、自己的筆記或實測內容。來源只作為事實素材，不會自動發布。</p>
+      <label className="form-stack">內容語系<select value={locale} onChange={(event) => setLocale(event.target.value as Locale)}>{supportedLocales.map((value) => <option key={value} value={value}>{getLocaleConfig(value).label}</option>)}</select></label>
       <label className="form-stack">參考內容<textarea aria-label="參考內容" rows={14} maxLength={50_000} value={sourceContent} onChange={(event) => setSourceContent(event.target.value)} placeholder="在這裡貼上參考內容……" /></label>
       <div className="generator-actions"><small className="muted">{sourceContent.length.toLocaleString()} / 50,000</small><button type="button" className="button button-primary" disabled={!sourceContent.trim() || analyzing || generating} onClick={analyze}>{analyzing ? "分析中…" : "分析內容"}</button></div>
     </section>

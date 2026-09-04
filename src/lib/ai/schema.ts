@@ -33,10 +33,10 @@ export const articleJsonSchema = {
   type: "object",
   additionalProperties: false,
   properties: {
-    title: { type: "string", description: "繁體中文文章標題" },
+    title: { type: "string", description: "指定語言的文章標題" },
     slug: { type: "string", description: "英文小寫 kebab-case 網址代稱" },
     contentHtml: { type: "string", description: "只含文章內容的安全 HTML" },
-    excerpt: { type: "string", description: "不超過 160 字的繁體中文摘要" },
+    excerpt: { type: "string", description: "不超過 160 字的指定語言摘要" },
     seoTitle: { type: "string", description: "搜尋結果標題" },
     seoDescription: { type: "string", description: "搜尋結果說明" },
     seoKeywords: { type: "string", description: "逗號分隔關鍵字" },

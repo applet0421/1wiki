@@ -20,6 +20,7 @@ describe("rewriteArticle", () => {
     });
 
     const result = await rewriteArticle({
+      locale: "zh-tw",
       sourceTitle: "原始標題",
       sourceContentHtml: '<p>原文內容</p><script>alert("bad")</script>',
     }, {
@@ -31,7 +32,7 @@ describe("rewriteArticle", () => {
   });
 
   it("rejects source articles without a title or meaningful content", async () => {
-    await expect(rewriteArticle({ sourceTitle: " ", sourceContentHtml: "<p><br></p>" }))
+    await expect(rewriteArticle({ locale: "zh-tw", sourceTitle: " ", sourceContentHtml: "<p><br></p>" }))
       .rejects.toThrow("請填寫原文章標題與內容");
   });
 });

@@ -23,10 +23,10 @@ describe("generateContentDraftAction", () => {
   it("creates a draft with AI review metadata and an available slug", async () => {
     const [user, category] = await Promise.all([
       prisma.user.create({ data: { username: "ai-editor", displayName: "AI 編輯", passwordHash: await hashPassword("secure-editor-2026"), mustChangePassword: false } }),
-      prisma.category.create({ data: { name: "軟體", slug: "software" } }),
+      prisma.category.create({ data: { locale: "zh-tw", name: "軟體", slug: "software" } }),
     ]);
     await prisma.post.create({ data: {
-      title: "既有文章", slug: "line-notification-fix", authorId: user.id, categoryId: category.id,
+      locale: "zh-tw", title: "既有文章", slug: "line-notification-fix", authorId: user.id, categoryId: category.id,
     } });
     vi.mocked(getCurrentUser).mockResolvedValue(user);
     vi.mocked(generateFromIdea).mockResolvedValue({
@@ -42,12 +42,13 @@ describe("generateContentDraftAction", () => {
     });
 
     const idea = { type: "TROUBLESHOOTING" as const, title: "LINE 收不到通知", primaryKeyword: "LINE 收不到通知", searchIntent: "排除 LINE 通知問題", support: "STRONG" as const };
-    const result = await generateContentDraftAction({ sourceContent: "LINE 官方通知設定說明", idea });
+    const result = await generateContentDraftAction({ locale: "zh-tw", sourceContent: "LINE 官方通知設定說明", idea });
 
     if (!result.ok) throw new Error(result.error);
     const stored = await prisma.post.findUniqueOrThrow({ where: { id: result.data.postId } });
     expect(stored).toMatchObject({
       slug: "line-notification-fix-2",
+      locale: "zh-tw",
       status: "DRAFT",
       categoryId: category.id,
       aiContentType: "TROUBLESHOOTING",

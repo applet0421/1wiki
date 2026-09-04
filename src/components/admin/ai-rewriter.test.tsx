@@ -23,13 +23,16 @@ describe("AIRewriter", () => {
   });
 
   it("keeps the source editable and fills a saveable post editor with the rewritten result", async () => {
-    render(<AIRewriter categories={[{ id: "ai", name: "AI" }]} provider="deepseek" />);
+    render(<AIRewriter categories={[{ id: "ai", name: "AI", locale: "en" }]} provider="deepseek" />);
+    fireEvent.change(screen.getByLabelText("內容語系"), { target: { value: "en" } });
 
     fireEvent.change(screen.getByLabelText("原文章標題"), { target: { value: "原始標題" } });
     const sourceEditor = screen.getByLabelText("原文章內容");
     sourceEditor.innerHTML = "<h2>原始段落</h2><p>原始內容</p>";
     fireEvent.input(sourceEditor);
     fireEvent.click(screen.getByRole("button", { name: "使用 AI 改寫" }));
+
+    expect(rewriteArticleAction).toHaveBeenCalledWith(expect.objectContaining({ locale: "en" }));
 
     expect(await screen.findByLabelText("標題")).toHaveValue("改寫後標題");
     expect(screen.getByLabelText("文章正文")).toHaveTextContent("台灣用語內容");

@@ -1,7 +1,9 @@
+import type { Locale } from "@/lib/i18n/config";
+
 export type AIProvider = "deepseek" | "openai" | "gemini";
 export type AIConfig = { provider: AIProvider; apiKey: string; model: string };
-export type GenerateArticleInput = { topic: string; keyword: string; instructions?: string };
-export type RewriteArticleInput = { sourceTitle: string; sourceContentHtml: string };
+export type GenerateArticleInput = { locale: Locale; topic: string; keyword: string; instructions?: string };
+export type RewriteArticleInput = { locale: Locale; sourceTitle: string; sourceContentHtml: string };
 export type GeneratedArticle = { title: string; slug: string; contentHtml: string; excerpt: string; seoTitle: string; seoDescription: string; seoKeywords: string };
 export type ProviderRequest = { apiKey: string; model: string; prompt: string; fetcher?: typeof fetch };
 export type AIContentType = "TROUBLESHOOTING" | "HOW_TO";
@@ -13,10 +15,11 @@ export type ContentIdea = {
   searchIntent: string;
   support: SourceSupport;
 };
-export type AnalyzeSourceInput = { sourceContent: string };
+export type AnalyzeSourceInput = { locale: Locale; sourceContent: string };
 export type AnalyzeSourceResult = { ideas: ContentIdea[] };
 export type AICategoryOption = { id: string; name: string };
 export type GenerateFromIdeaInput = {
+  locale: Locale;
   sourceContent: string;
   idea: ContentIdea;
   categories: AICategoryOption[];

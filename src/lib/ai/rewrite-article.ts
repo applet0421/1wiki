@@ -20,7 +20,7 @@ function normalizeSource(input: RewriteArticleInput): RewriteArticleInput {
   if (sourceTitle.length > 180) throw new Error("原文章標題不可超過 180 字。");
   if (sourceContentHtml.length > 100_000) throw new Error("原文章內容過長，請縮短至 100,000 字元以內。");
 
-  return { sourceTitle, sourceContentHtml };
+  return { ...input, sourceTitle, sourceContentHtml };
 }
 
 export async function rewriteArticle(input: RewriteArticleInput, options: Options = {}): Promise<GeneratedArticle> {

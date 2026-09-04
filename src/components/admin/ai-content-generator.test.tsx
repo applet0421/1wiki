@@ -24,12 +24,14 @@ describe("AIContentGenerator", () => {
 
   it("analyzes a source, requires one idea, then opens the created draft", async () => {
     render(<AIContentGenerator provider="deepseek" />);
+    fireEvent.change(screen.getByLabelText("內容語系"), { target: { value: "ja" } });
     const source = screen.getByLabelText("參考內容");
     expect(source).toHaveAttribute("maxlength", "50000");
     expect(screen.getByRole("button", { name: "分析內容" })).toBeDisabled();
 
     fireEvent.change(source, { target: { value: "LINE 通知設定參考資料" } });
     fireEvent.click(screen.getByRole("button", { name: "分析內容" }));
+    await waitFor(() => expect(analyzeContentAction).toHaveBeenCalledWith({ locale: "ja", sourceContent: "LINE 通知設定參考資料" }));
 
     expect(await screen.findByRole("radio", { name: /LINE 收不到通知/ })).toBeInTheDocument();
     expect(screen.getByText("Strong")).toBeInTheDocument();
@@ -39,6 +41,7 @@ describe("AIContentGenerator", () => {
     fireEvent.click(screen.getByRole("radio", { name: /LINE 收不到通知/ }));
     fireEvent.click(screen.getByRole("button", { name: "生成文章" }));
 
+    await waitFor(() => expect(generateContentDraftAction).toHaveBeenCalledWith(expect.objectContaining({ locale: "ja" })));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/admin/posts/post-123?success=generated"));
   });
 

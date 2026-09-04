@@ -36,7 +36,7 @@ function isSupportedIdea(idea: { support: "STRONG" | "MEDIUM" | "WEAK" }): idea 
 export async function analyzeSource(input: AnalyzeSourceInput, options: Options = {}): Promise<AnalyzeSourceResult> {
   const sourceContent = normalizeSource(input.sourceContent);
   const response = await callStructured({
-    apiKey: "", model: "", prompt: buildAnalyzeSourcePrompt({ sourceContent }), fetcher: options.fetcher,
+    apiKey: "", model: "", prompt: buildAnalyzeSourcePrompt({ locale: input.locale, sourceContent }), fetcher: options.fetcher,
     jsonSchema: contentIdeasJsonSchema, schemaName: "content_ideas", maxTokens: 1800,
     parse: (value) => parseStructuredJson(value, (parsed) => contentIdeasResponseSchema.parse(parsed)),
   }, options.env);
