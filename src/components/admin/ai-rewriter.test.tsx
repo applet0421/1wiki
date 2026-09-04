@@ -5,6 +5,7 @@ import { AIRewriter } from "./ai-rewriter";
 
 const rewrittenArticle = {
   title: "改寫後標題",
+  slug: "rewritten-article-title",
   contentHtml: "<h2>改寫重點</h2><p>台灣用語內容</p>",
   excerpt: "改寫後摘要",
   seoTitle: "改寫後 SEO 標題",

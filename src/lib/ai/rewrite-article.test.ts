@@ -10,6 +10,7 @@ describe("rewriteArticle", () => {
       expect(prompt).not.toContain('alert("bad")');
       return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({
         title: "台灣 AI 工具完整指南",
+        slug: "taiwan-ai-tools-guide",
         contentHtml: '<h2 onclick="bad()">重點</h2><script>bad()</script><p>改寫內容</p>',
         excerpt: "快速掌握 AI 工具特色。",
         seoTitle: "台灣 AI 工具完整指南",
