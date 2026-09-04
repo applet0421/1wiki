@@ -24,7 +24,12 @@ describe("AI provider adapters", () => {
     await expect(callDeepSeek({ apiKey: "secret", model: "deepseek-v4-flash", prompt: "prompt", fetcher })).resolves.toEqual(article);
     const [url, request] = fetcher.mock.calls[0];
     expect(url).toBe("https://api.deepseek.com/chat/completions");
-    expect(JSON.parse(String(request?.body))).toMatchObject({ model: "deepseek-v4-flash", response_format: { type: "json_object" } });
+    expect(JSON.parse(String(request?.body))).toMatchObject({
+      model: "deepseek-v4-flash",
+      response_format: { type: "json_object" },
+      thinking: { type: "disabled" },
+      max_tokens: 2400,
+    });
   });
 
   it("calls OpenAI Responses with a strict JSON schema", async () => {
