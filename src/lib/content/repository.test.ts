@@ -13,6 +13,8 @@ import {
   getPublishedPostBySlug,
   hasPublishedPosts,
   listAdminPosts,
+  listNavigationCategories,
+  listPublishedRootCategories,
   resolveCategoryPath,
   savePost,
   updateCategory,
@@ -282,5 +284,23 @@ describe("content repository", () => {
       .resolves.toMatchObject({ ancestors: [{ id: root.id }, { id: child.id }] });
     await expect(getPublishedCategoryTreePage(prisma, "zh-tw", ["chatgpt", "ai"]))
       .resolves.toBeNull();
+  });
+
+  it("lists ordered navigation roots and published root aggregates", async () => {
+    const { author, category: root } = await fixture();
+    await updateCategory(prisma, root.id, categoryInput({ name: "AI", slug: "ai", showInNavigation: true, sortOrder: 1 }));
+    const child = await createCategory(prisma, categoryInput({ name: "ChatGPT", slug: "chatgpt", parentId: root.id, showInNavigation: true }));
+    const leaf = await createCategory(prisma, categoryInput({ name: "Prompt", slug: "prompt", parentId: child.id }));
+    await createCategory(prisma, categoryInput({ name: "軟體", slug: "software", showInNavigation: true, sortOrder: 2 }));
+    await createCategory(prisma, categoryInput({ name: "隱藏", slug: "hidden", showInNavigation: false, sortOrder: 0 }));
+    await savePost(prisma, author.id, postInput(leaf.id, { status: "PUBLISHED", slug: "leaf-guide" }));
+
+    await expect(listNavigationCategories(prisma, "zh-tw")).resolves.toMatchObject([
+      { name: "AI", parentId: null, showInNavigation: true },
+      { name: "軟體", parentId: null, showInNavigation: true },
+    ]);
+    await expect(listPublishedRootCategories(prisma, "zh-tw")).resolves.toMatchObject([
+      { id: root.id, publishedPostCount: 1 },
+    ]);
   });
 });

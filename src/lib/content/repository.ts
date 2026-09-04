@@ -271,7 +271,10 @@ export function listCategories(client: PrismaClient, locale?: Locale) {
 export function listPublishedPosts(client: PrismaClient, locale: Locale, limit = 12) {
   return client.post.findMany({
     where: { locale, status: "PUBLISHED" },
-    include: { category: true, author: { select: { displayName: true } } },
+    include: {
+      category: { include: { parent: { include: { parent: true } } } },
+      author: { select: { displayName: true } },
+    },
     orderBy: { publishedAt: "desc" },
     take: limit,
   });
@@ -361,4 +364,33 @@ export function listPublishedCategories(client: PrismaClient, locale: Locale) {
     include: { _count: { select: { posts: { where: { locale, status: "PUBLISHED" } } } } },
     orderBy: { name: "asc" },
   });
+}
+
+export function listNavigationCategories(client: PrismaClient, locale: Locale) {
+  return client.category.findMany({
+    where: { locale, parentId: null, showInNavigation: true },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+  });
+}
+
+export async function listPublishedRootCategories(client: PrismaClient, locale: Locale) {
+  const categories = await client.category.findMany({
+    where: { locale },
+    include: {
+      _count: { select: { posts: { where: { locale, status: "PUBLISHED" } } } },
+    },
+  });
+  return buildCategoryTree(categories.map((category) => ({
+    id: category.id,
+    locale,
+    name: category.name,
+    slug: category.slug,
+    description: category.description,
+    parentId: category.parentId,
+    sortOrder: category.sortOrder,
+    showInNavigation: category.showInNavigation,
+    directPostCount: category._count.posts,
+  })))
+    .filter((category) => category.aggregatePostCount > 0)
+    .map((category) => ({ ...category, publishedPostCount: category.aggregatePostCount }));
 }
