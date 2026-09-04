@@ -181,6 +181,34 @@ describe("content repository", () => {
     }))).rejects.toThrow("移動後的分類層級會超過三級");
   });
 
+  it("serializes concurrent moves so they cannot create a fourth level", async () => {
+    for (let index = 0; index < 4; index += 1) {
+      const suffix = `-${index}`;
+      const movableRoot = await createCategory(prisma, categoryInput({ name: `Movable${suffix}`, slug: `movable${suffix}` }));
+      const firstRoot = await createCategory(prisma, categoryInput({ name: `First${suffix}`, slug: `first${suffix}` }));
+      const secondRoot = await createCategory(prisma, categoryInput({ name: `Second${suffix}`, slug: `second${suffix}` }));
+      const firstChild = await createCategory(prisma, categoryInput({ name: `First child${suffix}`, slug: `first-child${suffix}`, parentId: firstRoot.id }));
+      const secondChild = await createCategory(prisma, categoryInput({ name: `Second child${suffix}`, slug: `second-child${suffix}`, parentId: secondRoot.id }));
+
+      const results = await Promise.allSettled([
+        updateCategory(prisma, movableRoot.id, categoryInput({
+          name: movableRoot.name,
+          slug: movableRoot.slug,
+          parentId: firstChild.id,
+        })),
+        updateCategory(prisma, firstChild.id, categoryInput({
+          name: firstChild.name,
+          slug: firstChild.slug,
+          parentId: secondChild.id,
+        })),
+      ]);
+
+      expect(results.filter(({ status }) => status === "rejected")).toHaveLength(1);
+      await expect(getCategoryAncestors(prisma, firstChild.id)).resolves.not.toHaveLength(3);
+      await expect(getCategoryAncestors(prisma, movableRoot.id)).resolves.not.toHaveLength(3);
+    }
+  });
+
   it("prevents deleting a category that still has children", async () => {
     const root = await createCategory(prisma, categoryInput({ name: "AI", slug: "ai" }));
     await createCategory(prisma, categoryInput({ name: "ChatGPT", slug: "chatgpt", parentId: root.id }));

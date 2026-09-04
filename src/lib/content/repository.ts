@@ -6,6 +6,7 @@ import { buildCategoryTree } from "./category-tree";
 import type { Locale } from "@/lib/i18n/config";
 
 type DatabaseClient = PrismaClient | Prisma.TransactionClient;
+const CATEGORY_TRANSACTION_ATTEMPTS = 3;
 
 function nullable(value: string): string | null {
   const trimmed = value.trim();
@@ -22,6 +23,28 @@ function mapPrismaError(error: unknown): never {
     if (error.code === "P2025") throw new Error("找不到指定資料");
   }
   throw error;
+}
+
+async function runCategoryTransaction<T>(
+  client: PrismaClient,
+  operation: (transaction: Prisma.TransactionClient) => Promise<T>,
+): Promise<T> {
+  for (let attempt = 1; attempt <= CATEGORY_TRANSACTION_ATTEMPTS; attempt += 1) {
+    try {
+      return await client.$transaction(operation, {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      });
+    } catch (error) {
+      const isWriteConflict =
+        error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034";
+      if (!isWriteConflict) throw error;
+      if (attempt === CATEGORY_TRANSACTION_ATTEMPTS) {
+        throw new Error("分類已由其他操作更新，請重新嘗試");
+      }
+    }
+  }
+
+  throw new Error("分類更新失敗");
 }
 
 export async function savePost(
@@ -110,7 +133,7 @@ export async function deletePost(client: PrismaClient, postId: string) {
 
 export async function createCategory(client: PrismaClient, rawInput: CategoryInput) {
   const input = categoryInputSchema.parse(rawInput);
-  return client.$transaction(async (transaction) => {
+  return runCategoryTransaction(client, async (transaction) => {
     await validateCategoryPlacement(transaction, input);
     try {
       return await transaction.category.create({
@@ -128,7 +151,7 @@ export async function updateCategory(
   rawInput: CategoryInput,
 ) {
   const input = categoryInputSchema.parse(rawInput);
-  return client.$transaction(async (transaction) => {
+  return runCategoryTransaction(client, async (transaction) => {
     const current = await transaction.category.findUnique({ where: { id: categoryId } });
     if (!current) throw new Error("找不到指定分類");
     if (current.locale !== input.locale) throw new Error("分類語系不可變更");

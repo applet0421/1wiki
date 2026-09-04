@@ -13,8 +13,8 @@ type Props = { params: Promise<{ locale: string; slugs: string[] }> };
 
 export const dynamic = "force-dynamic";
 
-const getCategoryPage = cache((locale: Locale, slugs: string[]) =>
-  getPublishedCategoryTreePage(prisma, locale, slugs));
+const getCategoryPage = cache((locale: Locale, path: string) =>
+  getPublishedCategoryTreePage(prisma, locale, path.split("/")));
 
 function validSlugs(slugs: string[]): boolean {
   return slugs.length >= 1 && slugs.length <= 3;
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slugs: rawSlugs } = await params;
   if (!isLocale(locale) || !validSlugs(rawSlugs)) return {};
   const slugs = rawSlugs.map(decodeRouteSlug);
-  const data = await getCategoryPage(locale, slugs);
+  const data = await getCategoryPage(locale, slugs.join("/"));
   if (!data) return {};
   return {
     title: data.category.name,
@@ -37,7 +37,7 @@ export default async function CategoryPage({ params }: Props) {
   const { locale, slugs: rawSlugs } = await params;
   if (!isLocale(locale) || !validSlugs(rawSlugs)) notFound();
   const slugs = rawSlugs.map(decodeRouteSlug);
-  const data = await getCategoryPage(locale, slugs);
+  const data = await getCategoryPage(locale, slugs.join("/"));
   if (!data) notFound();
   return <CategoryPageContent data={data} locale={locale} dictionary={getDictionary(locale)} />;
 }
