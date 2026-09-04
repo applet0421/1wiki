@@ -1,3 +1,6 @@
+import { generatedArticleSchema } from "./schema";
+import type { NormalizedTokenUsage } from "./types";
+
 export type AIErrorCategory = "configuration" | "authentication" | "rate_limit" | "timeout" | "upstream" | "invalid_output";
 
 const publicMessages: Record<AIErrorCategory, string> = {
@@ -10,6 +13,8 @@ const publicMessages: Record<AIErrorCategory, string> = {
 };
 
 export class AIProviderError extends Error {
+  usage?: NormalizedTokenUsage;
+
   constructor(public readonly category: AIErrorCategory) {
     super(publicMessages[category]);
     this.name = "AIProviderError";
@@ -49,4 +54,3 @@ export function parseStructuredJson<T>(value: unknown, parse: (value: unknown) =
 export function parseArticleJson(value: unknown) {
   return parseStructuredJson(value, (parsed) => generatedArticleSchema.parse(parsed));
 }
-import { generatedArticleSchema } from "./schema";

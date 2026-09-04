@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { callDeepSeek, callDeepSeekStructured } from "./deepseek";
-import { callGemini, callGeminiStructured } from "./gemini";
-import { callOpenAI, callOpenAIStructured } from "./openai";
+import { callDeepSeek, callDeepSeekStructured, callDeepSeekStructuredWithUsage } from "./deepseek";
+import { callGemini, callGeminiStructured, callGeminiStructuredWithUsage } from "./gemini";
+import { callOpenAI, callOpenAIStructured, callOpenAIStructuredWithUsage } from "./openai";
 import { AIProviderError, parseArticleJson, parseStructuredJson } from "../errors";
 import { contentIdeasJsonSchema, contentIdeasResponseSchema } from "../schema";
 
@@ -82,5 +82,48 @@ describe("AI provider adapters", () => {
     const fetcher = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: ideasJson }] } }] }), { status: 200 }));
     await expect(callGeminiStructured({ ...structuredRequest, fetcher })).resolves.toEqual(ideas);
     expect(JSON.parse(String(fetcher.mock.calls[0][1]?.body)).generationConfig.responseSchema).toEqual(contentIdeasJsonSchema);
+  });
+
+  it("returns normalized OpenAI token usage from the audited wrapper", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({
+      output: [{ content: [{ type: "output_text", text: ideasJson }] }],
+      usage: { input_tokens: 101, output_tokens: 49, total_tokens: 150 },
+    }), { status: 200 }));
+    await expect(callOpenAIStructuredWithUsage({ ...structuredRequest, fetcher })).resolves.toEqual({
+      value: ideas,
+      usage: { inputTokens: 101, outputTokens: 49, totalTokens: 150 },
+    });
+  });
+
+  it("returns normalized DeepSeek token usage from the audited wrapper", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({
+      choices: [{ message: { content: ideasJson } }],
+      usage: { prompt_tokens: 90, completion_tokens: 10, total_tokens: 100 },
+    }), { status: 200 }));
+    await expect(callDeepSeekStructuredWithUsage({ ...structuredRequest, fetcher })).resolves.toEqual({
+      value: ideas,
+      usage: { inputTokens: 90, outputTokens: 10, totalTokens: 100 },
+    });
+  });
+
+  it("returns normalized Gemini token usage from the audited wrapper", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({
+      candidates: [{ content: { parts: [{ text: ideasJson }] } }],
+      usageMetadata: { promptTokenCount: 80, candidatesTokenCount: 20, totalTokenCount: 100 },
+    }), { status: 200 }));
+    await expect(callGeminiStructuredWithUsage({ ...structuredRequest, fetcher })).resolves.toEqual({
+      value: ideas,
+      usage: { inputTokens: 80, outputTokens: 20, totalTokens: 100 },
+    });
+  });
+
+  it("retains usage when structured output parsing fails", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({
+      output: [{ content: [{ type: "output_text", text: "not json" }] }],
+      usage: { input_tokens: 7, output_tokens: 2, total_tokens: 9 },
+    }), { status: 200 }));
+    const error = await callOpenAIStructuredWithUsage({ ...structuredRequest, fetcher }).catch((caught) => caught);
+    expect(error).toBeInstanceOf(AIProviderError);
+    expect(error.usage).toEqual({ inputTokens: 7, outputTokens: 2, totalTokens: 9 });
   });
 });

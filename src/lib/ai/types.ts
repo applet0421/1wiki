@@ -2,6 +2,8 @@ import type { Locale } from "@/lib/i18n/config";
 
 export type AIProvider = "deepseek" | "openai" | "gemini";
 export type AIConfig = { provider: AIProvider; apiKey: string; model: string };
+export type NormalizedTokenUsage = { inputTokens: number | null; outputTokens: number | null; totalTokens: number | null };
+export type ProviderResult<T> = { value: T; usage: NormalizedTokenUsage };
 export type GenerateArticleInput = { locale: Locale; topic: string; keyword: string; instructions?: string };
 export type RewriteArticleInput = { locale: Locale; sourceTitle: string; sourceContentHtml: string };
 export type GeneratedArticle = { title: string; slug: string; contentHtml: string; excerpt: string; seoTitle: string; seoDescription: string; seoKeywords: string };

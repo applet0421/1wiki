@@ -1,12 +1,23 @@
 import { executeProviderRequest, parseArticleJson } from "../errors";
-import type { GeneratedArticle, ProviderRequest, StructuredProviderRequest } from "../types";
+import { normalizeDeepSeekUsage } from "../provider-usage";
+import type { GeneratedArticle, ProviderRequest, ProviderResult, StructuredProviderRequest } from "../types";
 
-export async function callDeepSeekStructured<T>({ apiKey, model, prompt, fetcher = fetch, parse, maxTokens = 2400, systemPrompt = "你是 1Wiki 的科技教學編輯。只輸出符合要求的 JSON。" }: StructuredProviderRequest<T>): Promise<T> {
+export async function callDeepSeekStructuredWithUsage<T>({ apiKey, model, prompt, fetcher = fetch, parse, maxTokens = 2400, systemPrompt = "你是 1Wiki 的科技教學編輯。只輸出符合要求的 JSON。" }: StructuredProviderRequest<T>): Promise<ProviderResult<T>> {
   const result = await executeProviderRequest(fetcher, "https://api.deepseek.com/chat/completions", {
     method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({ model, response_format: { type: "json_object" }, thinking: { type: "disabled" }, max_tokens: maxTokens, messages: [{ role: "system", content: systemPrompt }, { role: "user", content: prompt }] }),
-  }) as { choices?: Array<{ message?: { content?: string } }> };
-  return parse(result.choices?.[0]?.message?.content);
+  }) as { choices?: Array<{ message?: { content?: string } }>; usage?: unknown };
+  const usage = normalizeDeepSeekUsage(result.usage);
+  try {
+    return { value: parse(result.choices?.[0]?.message?.content), usage };
+  } catch (error) {
+    if (error && typeof error === "object") Object.assign(error, { usage });
+    throw error;
+  }
+}
+
+export async function callDeepSeekStructured<T>(request: StructuredProviderRequest<T>): Promise<T> {
+  return (await callDeepSeekStructuredWithUsage(request)).value;
 }
 
 export async function callDeepSeek({ apiKey, model, prompt, fetcher = fetch }: ProviderRequest): Promise<GeneratedArticle> {
