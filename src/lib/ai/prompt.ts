@@ -13,6 +13,7 @@ export function buildArticlePrompt(input: GenerateArticleInput): string {
 只輸出 JSON 物件，不要輸出任何說明、前言或 Markdown code fence。JSON 必須且只能包含下列字串欄位：
 {
   "title": "文章標題（1–180 字）",
+  "slug": "僅限英文小寫、數字與連字號的 kebab-case 網址代稱，例如 chatgpt-cannot-login-fix（1–160 字）",
   "contentHtml": "只含正文的安全 HTML",
   "excerpt": "摘要（1–320 字）",
   "seoTitle": "搜尋結果標題（1–70 字）",

@@ -5,7 +5,7 @@ describe("generateArticle", () => {
   it("normalizes and sanitizes the selected provider output without writing data", async () => {
     const fetcher = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({
       title: "  安全教學  ", contentHtml: '<p onclick="bad()">內容</p><script>bad()</script>', excerpt: " 摘要 ",
-      seoTitle: " SEO ", seoDescription: " 說明 ", seoKeywords: " AI, 教學 ",
+      slug: " ai-login-guide ", seoTitle: " SEO ", seoDescription: " 說明 ", seoKeywords: " AI, 教學 ",
     }) } }] }), { status: 200 }));
 
     const result = await generateArticle(
@@ -14,7 +14,7 @@ describe("generateArticle", () => {
     );
 
     expect(result).toEqual({
-      title: "安全教學", contentHtml: "<p>內容</p>", excerpt: "摘要",
+      title: "安全教學", slug: "ai-login-guide", contentHtml: "<p>內容</p>", excerpt: "摘要",
       seoTitle: "SEO", seoDescription: "說明", seoKeywords: "AI, 教學",
     });
   });
