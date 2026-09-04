@@ -3,13 +3,14 @@ import { listAdminPosts, listCategories } from "@/lib/content/repository";
 import { prisma } from "@/lib/db/prisma";
 import { deletePostAction, togglePostStatusAction } from "./posts/actions";
 import { getLocaleConfig, isLocale, supportedLocales } from "@/lib/i18n/config";
+import { PostFilters } from "@/components/admin/post-filters";
 
 type AdminPageProps = { searchParams: Promise<{ error?: string; success?: string; locale?: string; category?: string }> };
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   const params = await searchParams;
   const locale = params.locale && isLocale(params.locale) ? params.locale : undefined;
-  const listedCategories = await listCategories(prisma, locale);
+  const listedCategories = await listCategories(prisma);
   const categories = locale
     ? listedCategories.filter((item) => item.locale === locale)
     : listedCategories;
@@ -29,11 +30,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       </div>
       {params.error ? <p className="form-error" role="alert">{params.error}</p> : null}
       {params.success ? <p className="form-success">文章已儲存。</p> : null}
-      <form method="get" className="panel filter-row">
-        <label>內容語系<select name="locale" defaultValue={locale || ""}><option value="">全部語系</option>{supportedLocales.map((value) => <option key={value} value={value}>{getLocaleConfig(value).label}</option>)}</select></label>
-        <label>文章分類<select name="category" defaultValue={category || ""}><option value="">全部分類</option>{categories.map((item) => <option key={item.id} value={item.id}>{locale ? item.name : `${item.name}（${getLocaleConfig(item.locale as (typeof supportedLocales)[number]).label}）`}</option>)}</select></label>
-        <button className="button button-quiet" type="submit">篩選</button>
-      </form>
+      <PostFilters
+        categories={listedCategories.map((item) => ({ id: item.id, locale: item.locale as (typeof supportedLocales)[number], name: item.name }))}
+        initialLocale={locale}
+        initialCategory={category}
+      />
       <div className="panel table-wrap">
         {posts.length === 0 ? <p className="muted">尚未建立文章。</p> : (
           <table>

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import AdminPage from "./page";
 
@@ -39,5 +39,14 @@ describe("AdminPage", () => {
     expect(screen.queryByRole("option", { name: "AI 教學" })).not.toBeInTheDocument();
     expect(screen.getByRole("option", { name: "AI Guides" })).toBeInTheDocument();
     expect(listAdminPosts).toHaveBeenCalledWith({}, "en", "cat-en");
+  });
+
+  it("updates category options immediately when the locale changes", async () => {
+    render(await AdminPage({ searchParams: Promise.resolve({}) }));
+
+    fireEvent.change(screen.getByLabelText("內容語系"), { target: { value: "en" } });
+
+    expect(screen.queryByRole("option", { name: "AI 教學（繁體中文）" })).not.toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "AI Guides" })).toBeInTheDocument();
   });
 });
