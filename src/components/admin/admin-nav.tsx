@@ -9,7 +9,13 @@ export function AdminNav({ user }: { user: SessionUser }) {
       <nav aria-label="後台導覽">
         <Link href="/admin">文章</Link>
         <Link href="/admin/categories">分類</Link>
-        {user.role === "OWNER" ? <Link href="/admin/users">帳號</Link> : null}
+        {user.role === "OWNER" ? (
+          <>
+            <Link href="/admin/prompts">Prompt 管理</Link>
+            <Link href="/admin/llm-usage">LLM 用量</Link>
+            <Link href="/admin/users">帳號</Link>
+          </>
+        ) : null}
         <Link href="/change-password">密碼</Link>
       </nav>
       <div className="admin-user">
