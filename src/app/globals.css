@@ -89,9 +89,16 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand); outline:
 .panel { padding: 1.25rem; }
 .heading-row, .editor-actions, .row-actions { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
 .heading-actions { display: flex; align-items: center; gap: .75rem; }
-.language-switcher { display: flex; align-items: center; gap: .25rem; flex-wrap: wrap; }
-.language-switcher a { padding: .35rem .5rem; border-radius: .45rem; font-size: .82rem; text-decoration: none; }
-.language-switcher a[aria-current="page"] { text-decoration: underline; text-underline-offset: .22rem; font-weight: 800; }
+.language-switcher { position: relative; align-items: center; }
+.language-trigger { display: inline-flex; align-items: center; gap: .45rem; border: 0; border-radius: .55rem; background: transparent; padding: .45rem .55rem; color: var(--foreground); font: inherit; font-weight: 800; cursor: pointer; }
+.language-trigger:hover { color: var(--brand); background: rgb(39 100 231 / 6%); }
+.language-trigger:focus-visible { outline: 3px solid rgb(39 100 231 / 18%); outline-offset: 2px; }
+.language-trigger svg { transition: transform .16s ease; }
+.language-trigger[aria-expanded="true"] svg { transform: rotate(180deg); }
+.language-menu { position: absolute; top: calc(100% + .55rem); right: 0; display: grid; min-width: 10rem; overflow: hidden; border: 1px solid #dce3ee; border-radius: .75rem; background: rgb(255 255 255 / 98%); padding: .35rem; box-shadow: 0 1rem 2.5rem rgb(23 32 51 / 14%); }
+.language-menu a { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-radius: .5rem; padding: .65rem .75rem; font-size: .85rem; text-decoration: none; white-space: nowrap; }
+.language-menu a:hover { background: #f1f5f9; }
+.language-menu a[aria-current="page"] { color: var(--brand); font-weight: 800; }
 .filter-row { display: flex; align-items: end; gap: .75rem; flex-wrap: wrap; }
 .filter-row label { display: grid; gap: .45rem; min-width: 12rem; color: #344054; font-size: .9rem; font-weight: 700; }
 .row-actions { justify-content: flex-start; flex-wrap: wrap; }

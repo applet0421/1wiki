@@ -126,4 +126,18 @@ describe("AI provider adapters", () => {
     expect(error).toBeInstanceOf(AIProviderError);
     expect(error.usage).toEqual({ inputTokens: 7, outputTokens: 2, totalTokens: 9 });
   });
+
+  it("reports a specific error when DeepSeek truncates structured output", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({
+      choices: [{ finish_reason: "length", message: { content: '{"title":"未完成"' } }],
+      usage: { prompt_tokens: 100, completion_tokens: 2400, total_tokens: 2500 },
+    }), { status: 200 }));
+
+    const error = await callDeepSeekStructuredWithUsage({ ...structuredRequest, fetcher }).catch((caught) => caught);
+
+    expect(error).toBeInstanceOf(AIProviderError);
+    expect(error.category).toBe("output_limit");
+    expect(error.message).toBe("AI 生成內容超過長度上限，請縮短補充要求後重試。");
+    expect(error.usage).toEqual({ inputTokens: 100, outputTokens: 2400, totalTokens: 2500 });
+  });
 });

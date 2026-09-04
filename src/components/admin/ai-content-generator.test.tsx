@@ -53,6 +53,8 @@ describe("AIContentGenerator", () => {
     fireEvent.click(screen.getByRole("button", { name: "分析內容" }));
 
     expect(await screen.findByText("目前沒有發現適合建立獨立文章的主題。")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("分析完成");
+    expect(screen.getByRole("status")).toHaveTextContent("Troubleshooting／How-to");
     expect(source).toHaveValue("沒有文章機會的參考資料");
   });
 

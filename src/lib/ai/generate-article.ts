@@ -13,6 +13,7 @@ export async function generateArticle(input: GenerateArticleInput, options: Opti
     variables: articlePromptVariables(input),
     jsonSchema: articleJsonSchema,
     schemaName: "article",
+    maxTokens: 4200,
     parse: parseArticleJson,
   }, { env: options.env, fetcher: options.fetcher }) as GeneratedArticle;
   return { ...generated, contentHtml: sanitizeArticleHtml(generated.contentHtml) };

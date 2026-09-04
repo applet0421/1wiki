@@ -23,7 +23,7 @@ describe("PromptEditor", () => {
     expect(screen.getByText("文章：［topic 範例］")).toBeInTheDocument();
     expect(screen.getByLabelText("User Prompt")).toHaveValue("文章：{{topic}}");
     expect(screen.getByText("v1")).toBeInTheDocument();
-    expect(screen.getByText(/系統建立/)).toBeInTheDocument();
+    expect(screen.getByText(/系統建立/).textContent).toBe("系統建立 · 2026/9/4 下午6:00:00");
     expect(screen.getByRole("button", { name: "回復此版本" })).toBeInTheDocument();
   });
 });

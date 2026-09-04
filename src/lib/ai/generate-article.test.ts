@@ -18,7 +18,7 @@ describe("generateArticle", () => {
       title: "安全教學", slug: "ai-login-guide", contentHtml: "<p>內容</p>", excerpt: "摘要",
       seoTitle: "SEO", seoDescription: "說明", seoKeywords: "AI, 教學",
     });
-    expect(execute).toHaveBeenCalledWith(expect.objectContaining({ key: "ARTICLE_GENERATE" }), expect.anything());
+    expect(execute).toHaveBeenCalledWith(expect.objectContaining({ key: "ARTICLE_GENERATE", maxTokens: 4200 }), expect.anything());
   });
 
   it("rejects malformed provider JSON as invalid output", async () => {

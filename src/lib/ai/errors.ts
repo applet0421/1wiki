@@ -1,7 +1,7 @@
 import { generatedArticleSchema } from "./schema";
 import type { NormalizedTokenUsage } from "./types";
 
-export type AIErrorCategory = "configuration" | "authentication" | "rate_limit" | "timeout" | "upstream" | "invalid_output";
+export type AIErrorCategory = "configuration" | "authentication" | "rate_limit" | "timeout" | "upstream" | "invalid_output" | "output_limit";
 
 const publicMessages: Record<AIErrorCategory, string> = {
   configuration: "AI 服務尚未正確設定。",
@@ -10,6 +10,7 @@ const publicMessages: Record<AIErrorCategory, string> = {
   timeout: "AI 服務回應逾時，請稍後再試。",
   upstream: "AI 服務目前無法完成請求，請稍後再試。",
   invalid_output: "AI 回傳內容格式不正確，請調整題目後重試。",
+  output_limit: "AI 生成內容超過長度上限，請縮短補充要求後重試。",
 };
 
 export class AIProviderError extends Error {

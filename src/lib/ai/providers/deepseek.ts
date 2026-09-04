@@ -1,4 +1,4 @@
-import { executeProviderRequest, parseArticleJson } from "../errors";
+import { AIProviderError, executeProviderRequest, parseArticleJson } from "../errors";
 import { normalizeDeepSeekUsage } from "../provider-usage";
 import type { GeneratedArticle, ProviderRequest, ProviderResult, StructuredProviderRequest } from "../types";
 
@@ -6,8 +6,13 @@ export async function callDeepSeekStructuredWithUsage<T>({ apiKey, model, prompt
   const result = await executeProviderRequest(fetcher, "https://api.deepseek.com/chat/completions", {
     method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({ model, response_format: { type: "json_object" }, thinking: { type: "disabled" }, max_tokens: maxTokens, messages: [{ role: "system", content: systemPrompt }, { role: "user", content: prompt }] }),
-  }) as { choices?: Array<{ message?: { content?: string } }>; usage?: unknown };
+  }) as { choices?: Array<{ finish_reason?: string; message?: { content?: string } }>; usage?: unknown };
   const usage = normalizeDeepSeekUsage(result.usage);
+  if (result.choices?.[0]?.finish_reason === "length") {
+    const error = new AIProviderError("output_limit");
+    error.usage = usage;
+    throw error;
+  }
   try {
     return { value: parse(result.choices?.[0]?.message?.content), usage };
   } catch (error) {

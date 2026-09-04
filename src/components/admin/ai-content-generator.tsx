@@ -63,6 +63,7 @@ export function AIContentGenerator({ provider }: { provider: string }) {
       <label className="form-stack">內容語系<select value={locale} onChange={(event) => setLocale(event.target.value as Locale)}>{supportedLocales.map((value) => <option key={value} value={value}>{getLocaleConfig(value).label}</option>)}</select></label>
       <label className="form-stack">參考內容<textarea aria-label="參考內容" rows={14} maxLength={50_000} value={sourceContent} onChange={(event) => setSourceContent(event.target.value)} placeholder="在這裡貼上參考內容……" /></label>
       <div className="generator-actions"><small className="muted">{sourceContent.length.toLocaleString()} / 50,000</small><button type="button" className="button button-primary" disabled={!sourceContent.trim() || analyzing || generating} onClick={analyze}>{analyzing ? "分析中…" : "分析內容"}</button></div>
+      {error ? <p className="form-error" role="alert">{error}</p> : ideas !== null ? <p className="form-success" role="status">{ideas.length === 0 ? "分析完成，但未找到符合 Troubleshooting／How-to 且資料支援足夠的主題。請改貼含明確問題、解法或操作步驟的內容。" : `分析完成，找到 ${ideas.length} 個可建立的主題。`}</p> : null}
     </section>
 
     <section className="panel generator-step" aria-labelledby="ideas-heading">
@@ -76,7 +77,6 @@ export function AIContentGenerator({ provider }: { provider: string }) {
     <section className="panel generator-step">
       <div className="step-heading"><span>3</span><div><p className="eyebrow">文章草稿</p><h2>生成並進入編輯器</h2></div></div>
       {selectedIndex === null || !ideas?.[selectedIndex] ? <p className="muted generator-placeholder">先選擇一個文章主題。</p> : <div className="selected-idea"><strong>{ideas[selectedIndex].title}</strong><p className="muted">AI 會依照「{ideas[selectedIndex].searchIntent}」重新撰寫，並從現有分類中自動選擇最合適的一項。</p></div>}
-      {error ? <p className="form-error" role="alert">{error}</p> : null}
       <div className="generator-actions"><span /><button type="button" className="button button-primary" disabled={selectedIndex === null || generating || analyzing} onClick={generate}>{generating ? "生成草稿中…" : "生成文章"}</button></div>
     </section>
   </div>;

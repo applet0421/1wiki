@@ -74,7 +74,7 @@ export function PromptEditor({ active, versions, saveAction, restoreAction }: Pr
           <div className="version-row" key={version.versionNumber}>
             <div>
               <strong>v{version.versionNumber}</strong>
-              <small>{version.createdByName || "系統建立"} · {new Date(version.createdAt).toLocaleString("zh-TW", { timeZone: "Asia/Taipei" })}</small>
+              <small>{version.createdByName || "系統建立"} · {new Date(version.createdAt).toLocaleString("zh-TW", { timeZone: "Asia/Taipei" }).replace(/\s+/gu, " ")}</small>
             </div>
             {version.versionNumber === active.versionNumber ? <span className="status status-published">目前啟用</span> : (
               <form action={restoreAction}>
