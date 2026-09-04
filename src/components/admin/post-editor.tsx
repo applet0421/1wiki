@@ -11,8 +11,8 @@ import { TitleSlugFields } from "./title-slug-fields";
 type CategoryOption = { id: string; name: string };
 type EditablePost = { id: string; title: string; slug: string; excerpt: string; contentHtml: string; coverImage: string | null; categoryId: string; seoTitle: string | null; seoDescription: string | null; seoKeywords: string | null; canonicalUrl: string | null };
 
-export function PostEditor({ categories, post, error, provider = "deepseek" }: { categories: CategoryOption[]; post?: EditablePost; error?: string; provider?: string }) {
-  const [generated, setGenerated] = useState<GeneratedArticle | null>(null);
+export function PostEditor({ categories, post, error, provider = "deepseek", initialGenerated, showAIGenerator = true }: { categories: CategoryOption[]; post?: EditablePost; error?: string; provider?: string; initialGenerated?: GeneratedArticle; showAIGenerator?: boolean }) {
+  const [generated, setGenerated] = useState<GeneratedArticle | null>(initialGenerated || null);
   const source: EditablePost | undefined = generated ? {
     id: post?.id || "",
     title: generated.title,
@@ -28,7 +28,7 @@ export function PostEditor({ categories, post, error, provider = "deepseek" }: {
   } : post;
   return <form action={savePostAction} className="admin-grid">
     {post ? <input type="hidden" name="id" value={post.id} /> : null}{error ? <p className="form-error" role="alert">{error}</p> : null}
-    <AIGenerator provider={provider} onGenerated={setGenerated} />
+    {showAIGenerator ? <AIGenerator provider={provider} onGenerated={setGenerated} /> : null}
     <fieldset key={generated?.title || "stored"} className="panel form-grid"><legend>文章內容</legend>
       <TitleSlugFields initialTitle={source?.title} initialSlug={source?.slug} />
       <label>分類<select name="categoryId" defaultValue={source?.categoryId || ""} required><option value="" disabled>選擇分類</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>

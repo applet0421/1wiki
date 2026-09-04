@@ -11,7 +11,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     <section className="admin-grid">
       <div className="section-heading heading-row">
         <div><p className="eyebrow">內容中心</p><h1>文章管理</h1></div>
-        <Link href="/admin/posts/new" className="button button-primary">新增文章</Link>
+        <div className="heading-actions">
+          <Link href="/admin/posts/rewrite" className="button button-quiet">AI 改寫文章</Link>
+          <Link href="/admin/posts/new" className="button button-primary">新增文章</Link>
+        </div>
       </div>
       {params.error ? <p className="form-error" role="alert">{params.error}</p> : null}
       {params.success ? <p className="form-success">文章已儲存。</p> : null}
