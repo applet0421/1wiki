@@ -51,3 +51,30 @@ test("EDITOR 可進入後台但不能開啟帳號管理", async ({ page }) => {
   await page.goto("/admin/llm-usage");
   await expect(page).toHaveURL(/\/admin$/);
 });
+
+test("OWNER 可建立三級分類且不能建立第四級或刪除有子分類的根分類", async ({ page }) => {
+  await login(page, "owner", "Owner-password-2026");
+  await page.goto("/admin/categories");
+  const createForm = page.locator("form").filter({ has: page.getByRole("heading", { name: "建立分類" }) });
+
+  await createForm.getByLabel("名稱").fill("測試根分類");
+  await createForm.getByLabel("網址代稱").fill("e2e-root");
+  await createForm.getByRole("button", { name: "建立分類" }).click();
+  await expect(page.getByText("分類已建立。")).toBeVisible();
+
+  await createForm.getByLabel("名稱").fill("測試子分類");
+  await createForm.getByLabel("網址代稱").fill("e2e-child");
+  await createForm.getByLabel("上層分類").selectOption({ label: "測試根分類" });
+  await createForm.getByRole("button", { name: "建立分類" }).click();
+  await expect(page.getByRole("heading", { name: "測試子分類" })).toBeVisible();
+
+  await createForm.getByLabel("名稱").fill("測試末分類");
+  await createForm.getByLabel("網址代稱").fill("e2e-leaf");
+  await createForm.getByLabel("上層分類").selectOption({ label: "— 測試子分類" });
+  await createForm.getByRole("button", { name: "建立分類" }).click();
+  await expect(page.getByRole("heading", { name: "測試末分類" })).toBeVisible();
+
+  await expect(createForm.getByRole("option", { name: "—— 測試末分類" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "刪除 測試根分類" })).toBeDisabled();
+  await expect(page.getByText("分類仍有子分類，無法刪除").last()).toBeVisible();
+});

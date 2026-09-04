@@ -44,11 +44,14 @@ export default async function globalSetup() {
       }),
     ]);
     const [ai] = await Promise.all([
-      prisma.category.create({ data: { locale: "zh-tw", name: "AI 教學", slug: "ai", description: "AI 工具使用教學" } }),
-      prisma.category.create({ data: { locale: "zh-tw", name: "軟體教學", slug: "software", description: "軟體疑難解答" } }),
-      prisma.category.create({ data: { locale: "zh-tw", name: "社群平台", slug: "social", description: "社群平台教學" } }),
-      prisma.category.create({ data: { locale: "en", name: "AI", slug: "ai", description: "AI guides" } }),
+      prisma.category.create({ data: { locale: "zh-tw", name: "AI 教學", slug: "ai", description: "AI 工具使用教學", showInNavigation: true, sortOrder: 0 } }),
+      prisma.category.create({ data: { locale: "zh-tw", name: "軟體教學", slug: "software", description: "軟體疑難解答", showInNavigation: true, sortOrder: 1 } }),
+      prisma.category.create({ data: { locale: "zh-tw", name: "社群平台", slug: "social", description: "社群平台教學", showInNavigation: true, sortOrder: 2 } }),
+      prisma.category.create({ data: { locale: "en", name: "AI", slug: "ai", description: "AI guides", showInNavigation: true } }),
+      prisma.category.create({ data: { locale: "ja", name: "AI", slug: "ai", description: "AI ガイド", showInNavigation: true } }),
     ]);
+    const chatgpt = await prisma.category.create({ data: { locale: "zh-tw", name: "ChatGPT", slug: "chatgpt", description: "ChatGPT 使用教學", parentId: ai.id } });
+    const prompt = await prisma.category.create({ data: { locale: "zh-tw", name: "Prompt 撰寫", slug: "prompt", description: "Prompt 撰寫方法", parentId: chatgpt.id } });
 
     const longSection = "遇到登入問題時，先確認網路、瀏覽器時間與帳號資料是否正確，再依序清除快取並重新登入。".repeat(24);
     await prisma.post.createMany({
@@ -61,7 +64,7 @@ export default async function globalSetup() {
           contentHtml: `<p>先從最常見的狀況開始檢查，通常幾分鐘內就能排除問題。</p><h2>確認帳號與網路</h2><p>${longSection}</p><h2>清除瀏覽器資料</h2><p>${longSection}</p><h2>仍然無法登入</h2><p>${longSection}</p>`,
           status: "PUBLISHED",
           publishedAt: new Date("2026-09-04T00:00:00.000Z"),
-          categoryId: ai.id,
+          categoryId: prompt.id,
           authorId: owner.id,
           seoTitle: "ChatGPT 無法登入：完整排解步驟｜1Wiki",
           seoDescription: "依序排除 ChatGPT 無法登入的帳號、網路與瀏覽器問題。",
@@ -73,7 +76,7 @@ export default async function globalSetup() {
           excerpt: "這篇內容不應出現在公開網站。",
           contentHtml: "<p>草稿內容</p>",
           status: "DRAFT",
-          categoryId: ai.id,
+          categoryId: prompt.id,
           authorId: editor.id,
         },
       ],

@@ -10,6 +10,8 @@ import { SiteFooter } from "@/components/site/footer";
 import { listNavigationCategories } from "@/lib/content/repository";
 import { prisma } from "@/lib/db/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function SiteLayout({ children, params }: { children: ReactNode; params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();

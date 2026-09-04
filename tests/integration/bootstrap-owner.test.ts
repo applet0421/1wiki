@@ -15,12 +15,12 @@ describe("database initialization", () => {
     await prisma.$disconnect();
   });
 
-  it("seeds the three initial categories idempotently", async () => {
+  it("seeds independent locale roots and a zh-tw hierarchy idempotently", async () => {
     await seedCategories(prisma);
     await seedCategories(prisma);
 
-    const categories = await prisma.category.findMany({ orderBy: { slug: "asc" } });
-    expect(categories.map(({ slug }) => slug)).toEqual(["ai", "social", "software"]);
+    const categories = await prisma.category.findMany({ orderBy: [{ locale: "asc" }, { slug: "asc" }] });
+    expect(categories).toHaveLength(11);
     expect(categories).toEqual(expect.arrayContaining([
       expect.objectContaining({
         slug: "ai",
@@ -29,8 +29,10 @@ describe("database initialization", () => {
         sortOrder: 0,
       }),
     ]));
-    expect(categories.every(({ parentId }) => parentId === null)).toBe(true);
-    expect(categories.every(({ showInNavigation }) => showInNavigation)).toBe(true);
+    expect(categories.filter(({ parentId }) => parentId === null)).toHaveLength(9);
+    expect(categories.filter(({ parentId }) => parentId === null).every(({ showInNavigation }) => showInNavigation)).toBe(true);
+    expect(categories.find(({ slug, parentId }) => slug === "prompt" && Boolean(parentId)))
+      .toMatchObject({ showInNavigation: false });
   });
 
   it("creates the first owner and refuses to overwrite it", async () => {
