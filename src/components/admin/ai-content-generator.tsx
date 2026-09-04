@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { analyzeContentAction, generateContentDraftAction } from "@/app/admin/posts/generate/actions";
+import { analyzeContentAction, generateContentDraftAction } from "@/app/(backoffice)/admin/posts/generate/actions";
 import type { ContentIdea } from "@/lib/ai/types";
 import { defaultLocale, getLocaleConfig, supportedLocales, type Locale } from "@/lib/i18n/config";
 

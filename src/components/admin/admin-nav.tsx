@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { SessionUser } from "@/lib/auth/session-core";
-import { logoutAction } from "@/app/(auth)/login/actions";
+import { logoutAction } from "@/app/(backoffice)/(auth)/login/actions";
 
 export function AdminNav({ user }: { user: SessionUser }) {
   return (

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { GeneratedArticle } from "@/lib/ai/types";
-import { generateArticleAction } from "@/app/admin/posts/generate-actions";
+import { generateArticleAction } from "@/app/(backoffice)/admin/posts/generate-actions";
 import type { Locale } from "@/lib/i18n/config";
 
 export function AIGenerator({ provider, locale, onGenerated }: { provider: string; locale: Locale; onGenerated: (article: GeneratedArticle) => void }) {

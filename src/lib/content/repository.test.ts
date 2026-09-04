@@ -25,7 +25,7 @@ describe("content repository", () => {
   function postInput(categoryId: string, overrides: Record<string, unknown> = {}) {
     return {
       title: "ChatGPT 無法登入",
-      locale: "zh-tw",
+      locale: "zh-tw" as const,
       slug: "chatgpt-無法登入",
       excerpt: "依序排除 ChatGPT 登入問題。",
       contentHtml: "<p>先確認網路。</p>",

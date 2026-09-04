@@ -1,5 +1,19 @@
 import { expect, test } from "@playwright/test";
 
+test("根網址與舊網址永久轉址到繁體中文並保留 query", async ({ request }) => {
+  const root = await request.get("/?source=bookmark", { maxRedirects: 0 });
+  expect(root.status()).toBe(308);
+  expect(root.headers().location).toContain("/zh-tw?source=bookmark");
+
+  const article = await request.get("/articles/chatgpt-login-guide?ref=old", { maxRedirects: 0 });
+  expect(article.status()).toBe(308);
+  expect(article.headers().location).toContain("/zh-tw/articles/chatgpt-login-guide?ref=old");
+});
+
+test("不支援的語系回傳 404", async ({ request }) => {
+  expect((await request.get("/fr", { maxRedirects: 0 })).status()).toBe(404);
+});
+
 test("公開網站呈現已發布文章，且草稿不可存取", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /科技卡住了/ })).toBeVisible();

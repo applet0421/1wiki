@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { savePostAction } from "@/app/admin/posts/actions";
+import { savePostAction } from "@/app/(backoffice)/admin/posts/actions";
 import type { GeneratedArticle } from "@/lib/ai/types";
 import { AIGenerator } from "./ai-generator";
 import { RichTextEditor } from "./rich-text-editor";

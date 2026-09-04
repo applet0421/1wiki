@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { PostEditor } from "./post-editor";
 
-vi.mock("@/app/admin/posts/actions", () => ({ savePostAction: vi.fn() }));
+vi.mock("@/app/(backoffice)/admin/posts/actions", () => ({ savePostAction: vi.fn() }));
 
 describe("PostEditor AI review metadata", () => {
   it("shows internal generation context and verification warnings", () => {

@@ -1,11 +1,11 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { analyzeContentAction, generateContentDraftAction } from "@/app/admin/posts/generate/actions";
+import { analyzeContentAction, generateContentDraftAction } from "@/app/(backoffice)/admin/posts/generate/actions";
 import { AIContentGenerator } from "./ai-content-generator";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
-vi.mock("@/app/admin/posts/generate/actions", () => ({
+vi.mock("@/app/(backoffice)/admin/posts/generate/actions", () => ({
   analyzeContentAction: vi.fn(),
   generateContentDraftAction: vi.fn(),
 }));

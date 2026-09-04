@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { rewriteArticleAction } from "@/app/admin/posts/rewrite-actions";
+import { rewriteArticleAction } from "@/app/(backoffice)/admin/posts/rewrite-actions";
 import { AIRewriter } from "./ai-rewriter";
 
 const rewrittenArticle = {
@@ -13,7 +13,7 @@ const rewrittenArticle = {
   seoKeywords: "AI, 台灣",
 };
 
-vi.mock("@/app/admin/posts/rewrite-actions", () => ({
+vi.mock("@/app/(backoffice)/admin/posts/rewrite-actions", () => ({
   rewriteArticleAction: vi.fn(),
 }));
 

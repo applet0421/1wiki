@@ -1,4 +1,4 @@
-import { createUserAction } from "@/app/admin/users/actions";
+import { createUserAction } from "@/app/(backoffice)/admin/users/actions";
 
 export function UserForm() {
   return (

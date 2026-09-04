@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { rewriteArticleAction } from "@/app/admin/posts/rewrite-actions";
+import { rewriteArticleAction } from "@/app/(backoffice)/admin/posts/rewrite-actions";
 import type { GeneratedArticle } from "@/lib/ai/types";
 import { PostEditor } from "./post-editor";
 import { RichTextEditor } from "./rich-text-editor";

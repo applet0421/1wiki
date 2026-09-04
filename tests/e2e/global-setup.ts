@@ -40,15 +40,16 @@ export default async function globalSetup() {
       }),
     ]);
     const [ai] = await Promise.all([
-      prisma.category.create({ data: { name: "AI 教學", slug: "ai", description: "AI 工具使用教學" } }),
-      prisma.category.create({ data: { name: "軟體教學", slug: "software", description: "軟體疑難解答" } }),
-      prisma.category.create({ data: { name: "社群平台", slug: "social", description: "社群平台教學" } }),
+      prisma.category.create({ data: { locale: "zh-tw", name: "AI 教學", slug: "ai", description: "AI 工具使用教學" } }),
+      prisma.category.create({ data: { locale: "zh-tw", name: "軟體教學", slug: "software", description: "軟體疑難解答" } }),
+      prisma.category.create({ data: { locale: "zh-tw", name: "社群平台", slug: "social", description: "社群平台教學" } }),
     ]);
 
     const longSection = "遇到登入問題時，先確認網路、瀏覽器時間與帳號資料是否正確，再依序清除快取並重新登入。".repeat(24);
     await prisma.post.createMany({
       data: [
         {
+          locale: "zh-tw",
           title: "ChatGPT 無法登入怎麼辦？",
           slug: "chatgpt-login-guide",
           excerpt: "整理 ChatGPT 無法登入的常見原因與逐步解法。",
@@ -61,6 +62,7 @@ export default async function globalSetup() {
           seoDescription: "依序排除 ChatGPT 無法登入的帳號、網路與瀏覽器問題。",
         },
         {
+          locale: "zh-tw",
           title: "尚未發布的內部草稿",
           slug: "draft-guide",
           excerpt: "這篇內容不應出現在公開網站。",
