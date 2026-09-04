@@ -18,6 +18,11 @@ type SearchParams = {
 };
 
 const number = new Intl.NumberFormat("zh-TW");
+const successMessages: Record<string, string> = {
+  "price-created": "模型費率已新增。",
+  "price-updated": "模型費率已更新。",
+  "price-deleted": "模型費率已刪除。",
+};
 
 function pageHref(params: SearchParams, page: number) {
   const query = new URLSearchParams();
@@ -58,7 +63,7 @@ export default async function UsagePage({ searchParams }: { searchParams: Promis
         <p className="muted">追蹤每次模型呼叫的 Prompt 版本、Token、成功狀態與估算成本。</p>
       </div>
       {params.error ? <p className="form-error" role="alert">{params.error}</p> : null}
-      {params.success ? <p className="form-success">模型費率已新增。</p> : null}
+      {params.success && successMessages[params.success] ? <p className="form-success">{successMessages[params.success]}</p> : null}
       <div className="metric-grid">{cards.map(([label, value]) => <div className="metric-card" key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>
       <form method="get" className="panel filter-row usage-filters">
         <label>開始日期<input type="date" name="from" defaultValue={params.from || dateValue(filters.from)} /></label>

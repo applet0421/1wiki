@@ -1,14 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createModelPriceAction } from "./actions";
+import * as priceActions from "./actions";
 
-const { getCurrentUser, create, redirect } = vi.hoisted(() => ({
+const { getCurrentUser, create, update, remove, redirect } = vi.hoisted(() => ({
   getCurrentUser: vi.fn(),
   create: vi.fn(),
+  update: vi.fn(),
+  remove: vi.fn(),
   redirect: vi.fn((path: string) => { throw new Error(`redirect:${path}`); }),
 }));
 
 vi.mock("@/lib/auth/session", () => ({ getCurrentUser }));
-vi.mock("@/lib/db/prisma", () => ({ prisma: { lLMModelPrice: { create } } }));
+vi.mock("@/lib/db/prisma", () => ({ prisma: { lLMModelPrice: { create, update, delete: remove } } }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect }));
 
@@ -27,14 +29,14 @@ describe("createModelPriceAction", () => {
 
   it("rejects editors before validating or writing rates", async () => {
     getCurrentUser.mockResolvedValueOnce({ id: "editor", role: "EDITOR", isActive: true });
-    await expect(createModelPriceAction(validForm())).rejects.toThrow("權限不足");
+    await expect(priceActions.createModelPriceAction(validForm())).rejects.toThrow("權限不足");
     expect(create).not.toHaveBeenCalled();
   });
 
   it("stores exact decimal strings for an owner", async () => {
     getCurrentUser.mockResolvedValueOnce({ id: "owner", role: "OWNER", isActive: true });
     create.mockResolvedValueOnce({ id: "price-1" });
-    await expect(createModelPriceAction(validForm())).rejects.toThrow("redirect:/admin/llm-usage?success=price-created");
+    await expect(priceActions.createModelPriceAction(validForm())).rejects.toThrow("redirect:/admin/llm-usage?success=price-created");
     const data = create.mock.calls[0][0].data;
     expect(data).toMatchObject({ provider: "openai", model: "gpt-5", createdById: "owner" });
     expect(data.inputUsdPerMillionTokens.toString()).toBe("0.15");
@@ -45,7 +47,42 @@ describe("createModelPriceAction", () => {
     getCurrentUser.mockResolvedValueOnce({ id: "owner", role: "OWNER", isActive: true });
     const form = validForm();
     form.set("inputRate", "0");
-    await expect(createModelPriceAction(form)).rejects.toThrow(/redirect:\/admin\/llm-usage\?error=/);
+    await expect(priceActions.createModelPriceAction(form)).rejects.toThrow(/redirect:\/admin\/llm-usage\?error=/);
     expect(create).not.toHaveBeenCalled();
+  });
+
+  it("updates an existing rate without changing historical usage", async () => {
+    getCurrentUser.mockResolvedValueOnce({ id: "owner", role: "OWNER", isActive: true });
+    update.mockResolvedValueOnce({ id: "price-1" });
+    const form = validForm();
+    form.set("id", "price-1");
+
+    const updateAction = (priceActions as typeof priceActions & { updateModelPriceAction(formData: FormData): Promise<void> }).updateModelPriceAction;
+    await expect(updateAction(form)).rejects.toThrow("redirect:/admin/llm-usage?success=price-updated");
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: "price-1" },
+      data: expect.objectContaining({ provider: "openai", model: "gpt-5" }),
+    }));
+  });
+
+  it("deletes a rate for an owner", async () => {
+    getCurrentUser.mockResolvedValueOnce({ id: "owner", role: "OWNER", isActive: true });
+    remove.mockResolvedValueOnce({ id: "price-1" });
+    const form = new FormData();
+    form.set("id", "price-1");
+
+    const deleteAction = (priceActions as typeof priceActions & { deleteModelPriceAction(formData: FormData): Promise<void> }).deleteModelPriceAction;
+    await expect(deleteAction(form)).rejects.toThrow("redirect:/admin/llm-usage?success=price-deleted");
+    expect(remove).toHaveBeenCalledWith({ where: { id: "price-1" } });
+  });
+
+  it("rejects editors before deleting a rate", async () => {
+    getCurrentUser.mockResolvedValueOnce({ id: "editor", role: "EDITOR", isActive: true });
+    const form = new FormData();
+    form.set("id", "price-1");
+
+    const deleteAction = (priceActions as typeof priceActions & { deleteModelPriceAction(formData: FormData): Promise<void> }).deleteModelPriceAction;
+    await expect(deleteAction(form)).rejects.toThrow("權限不足");
+    expect(remove).not.toHaveBeenCalled();
   });
 });

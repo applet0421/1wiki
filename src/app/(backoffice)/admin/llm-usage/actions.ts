@@ -15,32 +15,44 @@ const modelPriceSchema = z.object({
   outputRate: z.coerce.number().positive().finite(),
   effectiveAt: z.coerce.date(),
 });
+const modelPriceIdSchema = z.string().trim().min(1).max(191);
 
 function message(error: unknown): string {
   if (error instanceof z.ZodError) return "請填寫有效的供應商、模型、正數費率與生效時間。";
-  if (error instanceof Error && error.message.includes("Unique")) return "相同模型與生效時間的費率已存在。";
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return "相同模型與生效時間的費率已存在。";
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") return "找不到指定模型費率。";
   return "模型費率儲存失敗。";
+}
+
+function parseModelPrice(formData: FormData) {
+  const inputRate = String(formData.get("inputRate") || "").trim();
+  const outputRate = String(formData.get("outputRate") || "").trim();
+  const parsed = modelPriceSchema.parse({
+    provider: String(formData.get("provider") || "").trim().toLowerCase(),
+    model: String(formData.get("model") || ""),
+    inputRate,
+    outputRate,
+    effectiveAt: String(formData.get("effectiveAt") || ""),
+  });
+  return {
+    parsed,
+    data: {
+      provider: parsed.provider,
+      model: parsed.model,
+      inputUsdPerMillionTokens: new Prisma.Decimal(inputRate),
+      outputUsdPerMillionTokens: new Prisma.Decimal(outputRate),
+      effectiveAt: parsed.effectiveAt,
+    },
+  };
 }
 
 export async function createModelPriceAction(formData: FormData) {
   const owner = assertOwner(await getCurrentUser());
-  const rawInputRate = String(formData.get("inputRate") || "").trim();
-  const rawOutputRate = String(formData.get("outputRate") || "").trim();
   try {
-    const parsed = modelPriceSchema.parse({
-      provider: String(formData.get("provider") || "").trim().toLowerCase(),
-      model: String(formData.get("model") || ""),
-      inputRate: rawInputRate,
-      outputRate: rawOutputRate,
-      effectiveAt: String(formData.get("effectiveAt") || ""),
-    });
+    const { data } = parseModelPrice(formData);
     await prisma.lLMModelPrice.create({
       data: {
-        provider: parsed.provider,
-        model: parsed.model,
-        inputUsdPerMillionTokens: new Prisma.Decimal(rawInputRate),
-        outputUsdPerMillionTokens: new Prisma.Decimal(rawOutputRate),
-        effectiveAt: parsed.effectiveAt,
+        ...data,
         createdById: owner.id,
       },
     });
@@ -49,4 +61,29 @@ export async function createModelPriceAction(formData: FormData) {
   }
   revalidatePath("/admin/llm-usage");
   redirect("/admin/llm-usage?success=price-created");
+}
+
+export async function updateModelPriceAction(formData: FormData) {
+  assertOwner(await getCurrentUser());
+  try {
+    const id = modelPriceIdSchema.parse(String(formData.get("id") || ""));
+    const { data } = parseModelPrice(formData);
+    await prisma.lLMModelPrice.update({ where: { id }, data });
+  } catch (error) {
+    redirect(`/admin/llm-usage?error=${encodeURIComponent(message(error))}`);
+  }
+  revalidatePath("/admin/llm-usage");
+  redirect("/admin/llm-usage?success=price-updated");
+}
+
+export async function deleteModelPriceAction(formData: FormData) {
+  assertOwner(await getCurrentUser());
+  try {
+    const id = modelPriceIdSchema.parse(String(formData.get("id") || ""));
+    await prisma.lLMModelPrice.delete({ where: { id } });
+  } catch (error) {
+    redirect(`/admin/llm-usage?error=${encodeURIComponent(message(error))}`);
+  }
+  revalidatePath("/admin/llm-usage");
+  redirect("/admin/llm-usage?success=price-deleted");
 }

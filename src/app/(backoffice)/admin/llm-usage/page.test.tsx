@@ -36,4 +36,20 @@ describe("LLM usage page", () => {
     expect(screen.getByText(/ARTICLE_REWRITE · v2/)).toBeInTheDocument();
     expect(screen.getByText("無法估算")).toBeInTheDocument();
   });
+
+  it.each([
+    ["price-updated", "模型費率已更新。"],
+    ["price-deleted", "模型費率已刪除。"],
+  ])("shows the matching confirmation for %s", async (success, expected) => {
+    getCurrentUser.mockResolvedValueOnce({ role: "OWNER" });
+    getUsageDashboard.mockResolvedValueOnce({
+      totals: { calls: 0, successes: 0, successRate: null, inputTokens: 0, outputTokens: 0, estimatedCostUsd: "0" },
+      rows: [], totalRows: 0, page: 1, pageSize: 50,
+      filterOptions: { promptKeys: [], providers: [], models: [] },
+    });
+
+    render(await UsagePage({ searchParams: Promise.resolve({ success }) }));
+
+    expect(screen.getByText(expected)).toBeInTheDocument();
+  });
 });
