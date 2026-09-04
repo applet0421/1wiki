@@ -8,5 +8,15 @@ export function buildArticlePrompt(input: GenerateArticleInput): string {
 
 正文使用 p、h2、h3、strong、em、ul、ol、li、blockquote、code、pre、br、a 等安全 HTML。
 不得加入 script、style、iframe、ins、廣告碼或 Markdown code fence。
-不得捏造個人實測經驗；不確定的資訊應明確提醒讀者核對官方設定。`;
+不得捏造個人實測經驗；不確定的資訊應明確提醒讀者核對官方設定。
+
+只輸出 JSON 物件，不要輸出任何說明、前言或 Markdown code fence。JSON 必須且只能包含下列字串欄位：
+{
+  "title": "文章標題（1–180 字）",
+  "contentHtml": "只含正文的安全 HTML",
+  "excerpt": "摘要（1–320 字）",
+  "seoTitle": "搜尋結果標題（1–70 字）",
+  "seoDescription": "搜尋結果說明（1–170 字）",
+  "seoKeywords": "以逗號分隔的關鍵字"
+}`;
 }

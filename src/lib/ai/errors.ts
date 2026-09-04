@@ -36,7 +36,10 @@ export async function executeProviderRequest(fetcher: typeof fetch, url: string,
 
 export function parseArticleJson(value: unknown) {
   try {
-    const parsed = typeof value === "string" ? JSON.parse(value) : value;
+    const json = typeof value === "string"
+      ? value.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "")
+      : value;
+    const parsed = typeof json === "string" ? JSON.parse(json) : json;
     return generatedArticleSchema.parse(parsed);
   } catch {
     throw new AIProviderError("invalid_output");

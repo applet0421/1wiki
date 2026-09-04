@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { callDeepSeek } from "./deepseek";
 import { callGemini } from "./gemini";
 import { callOpenAI } from "./openai";
-import { AIProviderError } from "../errors";
+import { AIProviderError, parseArticleJson } from "../errors";
 
 const article = {
   title: "ChatGPT 登入修復",
@@ -15,6 +15,10 @@ const article = {
 const json = JSON.stringify(article);
 
 describe("AI provider adapters", () => {
+  it("accepts a valid article JSON wrapped in a Markdown code fence", () => {
+    expect(parseArticleJson("```json\n" + json + "\n```")).toEqual(article);
+  });
+
   it("calls DeepSeek chat completions with JSON output", async () => {
     const fetcher = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ choices: [{ message: { content: json } }] }), { status: 200 }));
     await expect(callDeepSeek({ apiKey: "secret", model: "deepseek-v4-flash", prompt: "prompt", fetcher })).resolves.toEqual(article);
