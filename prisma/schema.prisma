@@ -57,18 +57,23 @@ model Session {
 
 model Category {
   id          String   @id @default(cuid())
+  locale      String
   name        String
-  slug        String   @unique
+  slug        String
   description String   @default("") @db.Text
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   posts       Post[]
+
+  @@unique([id, locale])
+  @@unique([locale, slug])
 }
 
 model Post {
   id             String     @id @default(cuid())
+  locale         String
   title          String
-  slug           String     @unique
+  slug           String
   excerpt        String     @default("") @db.Text
   contentHtml    String     @default("") @db.Text
   coverImage     String?    @db.Text
@@ -88,9 +93,11 @@ model Post {
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
   author         User       @relation(fields: [authorId], references: [id], onDelete: Restrict)
-  category       Category   @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  category       Category   @relation(fields: [categoryId, locale], references: [id, locale], onDelete: Restrict)
 
   @@index([status, publishedAt])
+  @@unique([locale, slug])
+  @@index([locale, status, publishedAt])
   @@index([categoryId, status])
   @@index([authorId])
 }

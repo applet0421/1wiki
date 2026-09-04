@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db/prisma";
 import { resetDatabase } from "../../../tests/helpers/database";
 import { hashPassword } from "@/lib/auth/password";
-import { createCategory, deleteCategory, findAvailablePostSlug, savePost } from "./repository";
+import { createCategory, deleteCategory, findAvailablePostSlug, getPublishedCategory, getPublishedPostBySlug, hasPublishedPosts, savePost } from "./repository";
 
 describe("content repository", () => {
   beforeEach(resetDatabase);
@@ -17,7 +17,7 @@ describe("content repository", () => {
           mustChangePassword: false,
         },
       }),
-      prisma.category.create({ data: { name: "AI", slug: "ai" } }),
+      prisma.category.create({ data: { locale: "zh-tw", name: "AI", slug: "ai" } }),
     ]);
     return { author, category };
   }
@@ -25,6 +25,7 @@ describe("content repository", () => {
   function postInput(categoryId: string, overrides: Record<string, unknown> = {}) {
     return {
       title: "ChatGPT 無法登入",
+      locale: "zh-tw",
       slug: "chatgpt-無法登入",
       excerpt: "依序排除 ChatGPT 登入問題。",
       contentHtml: "<p>先確認網路。</p>",
@@ -87,6 +88,7 @@ describe("content repository", () => {
     await expect(deleteCategory(prisma, category.id)).rejects.toThrow("預設分類");
 
     const extra = await createCategory(prisma, {
+      locale: "zh-tw",
       name: "3C 教學",
       slug: "devices",
       description: "裝置問題",
@@ -100,7 +102,7 @@ describe("content repository", () => {
     await savePost(prisma, author.id, postInput(category.id, { slug: "line-fix" }));
     await savePost(prisma, author.id, postInput(category.id, { slug: "line-fix-2" }));
 
-    await expect(findAvailablePostSlug(prisma, "line-fix")).resolves.toBe("line-fix-3");
+    await expect(findAvailablePostSlug(prisma, "zh-tw", "line-fix")).resolves.toBe("line-fix-3");
   });
 
   it("stores AI review metadata and preserves it through a standard editor save", async () => {
@@ -126,5 +128,35 @@ describe("content repository", () => {
       aiSourceSupport: "STRONG",
       aiNeedsVerification: ["確認 Android 選單名稱"],
     });
+  });
+
+  it("allows the same slug in different locales and isolates public reads", async () => {
+    const { author } = await fixture();
+    const en = await createCategory(prisma, { locale: "en", name: "AI", slug: "ai", description: "AI guides" });
+    const ja = await createCategory(prisma, { locale: "ja", name: "AI", slug: "ai", description: "AI ガイド" });
+
+    await savePost(prisma, author.id, postInput(en.id, { locale: "en", slug: "shared", status: "PUBLISHED" }));
+    await savePost(prisma, author.id, postInput(ja.id, { locale: "ja", slug: "shared", status: "PUBLISHED" }));
+
+    await expect(getPublishedPostBySlug(prisma, "en", "shared")).resolves.toMatchObject({ locale: "en" });
+    await expect(getPublishedPostBySlug(prisma, "zh-tw", "shared")).resolves.toBeNull();
+  });
+
+  it("rejects a category from another locale", async () => {
+    const { author, category } = await fixture();
+    await expect(savePost(prisma, author.id, postInput(category.id, { locale: "en" })))
+      .rejects.toThrow("文章語系必須與分類一致");
+  });
+
+  it("reports whether a locale has published content", async () => {
+    const { author, category } = await fixture();
+    await expect(hasPublishedPosts(prisma, "en")).resolves.toBe(false);
+    await savePost(prisma, author.id, postInput(category.id, { status: "PUBLISHED" }));
+    await expect(hasPublishedPosts(prisma, "zh-tw")).resolves.toBe(true);
+  });
+
+  it("does not expose a category without published posts", async () => {
+    const { category } = await fixture();
+    await expect(getPublishedCategory(prisma, "zh-tw", category.slug)).resolves.toBeNull();
   });
 });

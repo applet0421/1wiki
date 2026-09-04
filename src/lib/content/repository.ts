@@ -2,6 +2,7 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 import { load } from "cheerio";
 import { categoryInputSchema, postInputSchema, type CategoryInput, type PostInput } from "./schema";
 import { sanitizeArticleHtml } from "./sanitize";
+import type { Locale } from "@/lib/i18n/config";
 
 const protectedCategorySlugs = new Set(["ai", "software", "social"]);
 
@@ -36,7 +37,12 @@ export async function savePost(
     if (!visibleText(contentHtml)) throw new Error("發布文章前必須填寫正文");
   }
 
+  const category = await client.category.findUnique({ where: { id: input.categoryId }, select: { locale: true } });
+  if (!category) throw new Error("找不到指定分類");
+  if (category.locale !== input.locale) throw new Error("文章語系必須與分類一致");
+
   const data = {
+    locale: input.locale,
     title: input.title,
     slug: input.slug,
     excerpt: input.excerpt,
@@ -81,11 +87,11 @@ export async function savePost(
   }
 }
 
-export async function findAvailablePostSlug(client: PrismaClient, requestedSlug: string): Promise<string> {
+export async function findAvailablePostSlug(client: PrismaClient, locale: Locale, requestedSlug: string): Promise<string> {
   const base = requestedSlug.trim();
   let candidate = base;
   let suffix = 2;
-  while (await client.post.findUnique({ where: { slug: candidate }, select: { id: true } })) {
+  while (await client.post.findUnique({ where: { locale_slug: { locale, slug: candidate } }, select: { id: true } })) {
     const ending = `-${suffix}`;
     candidate = `${base.slice(0, 160 - ending.length).replace(/-+$/u, "")}${ending}`;
     suffix += 1;
@@ -139,45 +145,59 @@ export async function deleteCategory(client: PrismaClient, categoryId: string) {
   return client.category.delete({ where: { id: categoryId } });
 }
 
-export function listAdminPosts(client: PrismaClient) {
+export function listAdminPosts(client: PrismaClient, locale?: Locale) {
   return client.post.findMany({
+    where: locale ? { locale } : undefined,
     include: { category: true, author: { select: { displayName: true } } },
     orderBy: { updatedAt: "desc" },
   });
 }
 
-export function listCategories(client: PrismaClient) {
+export function listCategories(client: PrismaClient, locale?: Locale) {
   return client.category.findMany({
+    where: locale ? { locale } : undefined,
     include: { _count: { select: { posts: true } } },
     orderBy: { name: "asc" },
   });
 }
 
-export function listPublishedPosts(client: PrismaClient, limit = 12) {
+export function listPublishedPosts(client: PrismaClient, locale: Locale, limit = 12) {
   return client.post.findMany({
-    where: { status: "PUBLISHED" },
+    where: { locale, status: "PUBLISHED" },
     include: { category: true, author: { select: { displayName: true } } },
     orderBy: { publishedAt: "desc" },
     take: limit,
   });
 }
 
-export function getPublishedPostBySlug(client: PrismaClient, slug: string) {
+export function getPublishedPostBySlug(client: PrismaClient, locale: Locale, slug: string) {
   return client.post.findFirst({
-    where: { slug, status: "PUBLISHED" },
+    where: { locale, slug, status: "PUBLISHED" },
     include: { category: true, author: { select: { displayName: true } } },
   });
 }
 
-export function getPublishedCategory(client: PrismaClient, slug: string) {
-  return client.category.findUnique({
-    where: { slug },
+export function getPublishedCategory(client: PrismaClient, locale: Locale, slug: string) {
+  return client.category.findFirst({
+    where: { locale, slug, posts: { some: { locale, status: "PUBLISHED" } } },
     include: {
       posts: {
-        where: { status: "PUBLISHED" },
+        where: { locale, status: "PUBLISHED" },
         include: { category: true, author: { select: { displayName: true } } },
         orderBy: { publishedAt: "desc" },
       },
     },
+  });
+}
+
+export async function hasPublishedPosts(client: PrismaClient, locale: Locale): Promise<boolean> {
+  return (await client.post.count({ where: { locale, status: "PUBLISHED" } })) > 0;
+}
+
+export function listPublishedCategories(client: PrismaClient, locale: Locale) {
+  return client.category.findMany({
+    where: { locale, posts: { some: { locale, status: "PUBLISHED" } } },
+    include: { _count: { select: { posts: { where: { locale, status: "PUBLISHED" } } } } },
+    orderBy: { name: "asc" },
   });
 }

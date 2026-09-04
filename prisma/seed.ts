@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { pathToFileURL } from "node:url";
 import { prisma } from "../src/lib/db/prisma";
+import { defaultLocale } from "../src/lib/i18n/config";
 
 const initialCategories = [
   { name: "AI 教學", slug: "ai", description: "AI 工具使用、設定與疑難排解。" },
@@ -11,12 +12,12 @@ const initialCategories = [
 export async function seedCategories(client: PrismaClient): Promise<void> {
   for (const category of initialCategories) {
     await client.category.upsert({
-      where: { slug: category.slug },
+      where: { locale_slug: { locale: defaultLocale, slug: category.slug } },
       update: {
         name: category.name,
         description: category.description,
       },
-      create: category,
+      create: { ...category, locale: defaultLocale },
     });
   }
 }
