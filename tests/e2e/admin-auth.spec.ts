@@ -18,6 +18,16 @@ test("未登入時會導向登入頁，OWNER 可管理帳號", async ({ page }) 
   await expect(page.getByRole("heading", { level: 1, name: "後台帳號", exact: true })).toBeVisible();
 });
 
+test("OWNER 可以修改帳號顯示名稱", async ({ page }) => {
+  await login(page, "owner", "Owner-password-2026");
+  await page.goto("/admin/users");
+  await page.getByLabel("顯示名稱（owner）").fill("新站長");
+  await page.getByRole("button", { name: "更新" }).click();
+
+  await expect(page.getByText("帳號設定已更新。")).toBeVisible();
+  await expect(page.getByLabel("顯示名稱（owner）")).toHaveValue("新站長");
+});
+
 test("EDITOR 可進入後台但不能開啟帳號管理", async ({ page }) => {
   await login(page, "editor", "Editor-password-2026");
   await expect(page).toHaveURL(/\/admin$/);

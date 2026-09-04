@@ -85,6 +85,11 @@ export async function updateManagedUser(
   userId: string,
   changes: { role?: UserRole; isActive?: boolean; displayName?: string },
 ) {
+  const displayName = changes.displayName?.trim();
+  if (changes.displayName !== undefined && !displayName) {
+    throw new Error("顯示名稱不能空白");
+  }
+
   return client.$transaction(
     async (transaction) => {
       const current = await transaction.user.findUnique({ where: { id: userId } });
@@ -106,7 +111,7 @@ export async function updateManagedUser(
         data: {
           ...(changes.role ? { role: changes.role } : {}),
           ...(typeof changes.isActive === "boolean" ? { isActive: changes.isActive } : {}),
-          ...(changes.displayName ? { displayName: changes.displayName.trim() } : {}),
+          ...(displayName ? { displayName } : {}),
         },
       });
       if (changes.isActive === false) {

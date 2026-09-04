@@ -30,9 +30,12 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
           <tbody>{users.map((account) => (
             <tr key={account.id}>
               <td>{account.username}{account.mustChangePassword ? <small>需變更密碼</small> : null}</td>
-              <td>{account.displayName}</td>
               <td>
-                <form action={updateUserAction} className="inline-form">
+                <label className="sr-only" htmlFor={`display-name-${account.id}`}>顯示名稱（{account.username}）</label>
+                <input id={`display-name-${account.id}`} name="displayName" defaultValue={account.displayName} required maxLength={80} form={`update-user-${account.id}`} />
+              </td>
+              <td>
+                <form id={`update-user-${account.id}`} action={updateUserAction} className="inline-form">
                   <input type="hidden" name="id" value={account.id} />
                   <select name="role" defaultValue={account.role}><option value="EDITOR">EDITOR</option><option value="OWNER">OWNER</option></select>
                   <select name="isActive" defaultValue={String(account.isActive)}><option value="true">啟用</option><option value="false">停用</option></select>

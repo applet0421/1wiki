@@ -35,6 +35,7 @@ export async function updateUserAction(formData: FormData) {
   const id = String(formData.get("id") || "");
   try {
     await updateManagedUser(prisma, id, {
+      displayName: String(formData.get("displayName") || ""),
       role: formData.get("role") === "OWNER" ? "OWNER" : "EDITOR",
       isActive: formData.get("isActive") === "true",
     });

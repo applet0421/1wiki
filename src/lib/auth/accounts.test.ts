@@ -63,6 +63,17 @@ describe("managed admin accounts", () => {
     expect(updated.role).toBe("EDITOR");
   });
 
+  it("updates a managed user's display name and rejects blank names", async () => {
+    const owner = await createOwner();
+
+    const updated = await updateManagedUser(prisma, owner.id, { displayName: "  新站長  " });
+    expect(updated.displayName).toBe("新站長");
+
+    await expect(
+      updateManagedUser(prisma, owner.id, { displayName: "   " }),
+    ).rejects.toThrow("顯示名稱不能空白");
+  });
+
   it("changes the current password, clears the temporary flag, and revokes sessions", async () => {
     const user = await createManagedUser(prisma, {
       username: "editor",
