@@ -19,6 +19,11 @@ export type ExecuteLLMInput<T> = {
   parse: (value: unknown) => T;
 };
 
+export type LLMExecutor = (
+  input: ExecuteLLMInput<unknown>,
+  options?: ExecuteLLMOptions<unknown>,
+) => Promise<unknown>;
+
 type ProviderCallInput<T> = StructuredProviderRequest<T> & { provider: AIProvider };
 
 export type ExecuteLLMOptions<T> = {

@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/db/prisma";
 
 export async function resetDatabase() {
-  await prisma.llmUsage.deleteMany();
-  await prisma.llmModelPrice.deleteMany();
+  await prisma.lLMUsage.deleteMany();
+  await prisma.lLMModelPrice.deleteMany();
   await prisma.promptVersion.deleteMany({ where: { versionNumber: { gt: 1 } } });
   await prisma.session.deleteMany();
   await prisma.post.deleteMany();

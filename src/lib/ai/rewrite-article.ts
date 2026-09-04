@@ -1,12 +1,12 @@
 import sanitizeHtml from "sanitize-html";
 import { sanitizeArticleHtml } from "@/lib/content/sanitize";
-import { executeLLMCall } from "./execute-llm";
+import { executeLLMCall, type LLMExecutor } from "./execute-llm";
 import { parseArticleJson } from "./errors";
 import { rewritePromptVariables } from "./prompt";
 import { articleJsonSchema } from "./schema";
 import type { GeneratedArticle, RewriteArticleInput } from "./types";
 
-type Options = { env?: Record<string, string | undefined>; fetcher?: typeof fetch; execute?: typeof executeLLMCall };
+type Options = { env?: Record<string, string | undefined>; fetcher?: typeof fetch; execute?: LLMExecutor };
 
 function normalizeSource(input: RewriteArticleInput): RewriteArticleInput {
   const sourceTitle = input.sourceTitle.trim();
@@ -31,7 +31,7 @@ export async function rewriteArticle(input: RewriteArticleInput, options: Option
     jsonSchema: articleJsonSchema,
     schemaName: "article",
     parse: parseArticleJson,
-  }, { env: options.env, fetcher: options.fetcher });
+  }, { env: options.env, fetcher: options.fetcher }) as GeneratedArticle;
 
   return { ...rewritten, contentHtml: sanitizeArticleHtml(rewritten.contentHtml) };
 }

@@ -1,11 +1,11 @@
 import { sanitizeArticleHtml } from "@/lib/content/sanitize";
-import { executeLLMCall } from "./execute-llm";
+import { executeLLMCall, type LLMExecutor } from "./execute-llm";
 import { parseStructuredJson } from "./errors";
 import { analyzeSourcePromptVariables, generateFromIdeaPromptVariables } from "./prompt";
 import { contentIdeasJsonSchema, contentIdeasResponseSchema, generatedContentDraftJsonSchema, generatedContentDraftSchema } from "./schema";
 import type { AnalyzeSourceInput, AnalyzeSourceResult, ContentIdea, GenerateFromIdeaInput, GeneratedContentDraft } from "./types";
 
-type Options = { env?: Record<string, string | undefined>; fetcher?: typeof fetch; execute?: typeof executeLLMCall };
+type Options = { env?: Record<string, string | undefined>; fetcher?: typeof fetch; execute?: LLMExecutor };
 
 function normalizeSource(sourceContent: string): string {
   const normalized = sourceContent.trim();
@@ -30,7 +30,7 @@ export async function analyzeSource(input: AnalyzeSourceInput, options: Options 
     variables: analyzeSourcePromptVariables({ locale: input.locale, sourceContent }),
     jsonSchema: contentIdeasJsonSchema, schemaName: "content_ideas", maxTokens: 1800,
     parse: (value) => parseStructuredJson(value, (parsed) => contentIdeasResponseSchema.parse(parsed)),
-  }, { env: options.env, fetcher: options.fetcher });
+  }, { env: options.env, fetcher: options.fetcher }) as { ideas: Array<ContentIdea | (Omit<ContentIdea, "support"> & { support: "WEAK" })> };
   const seen = new Set<string>();
   const ideas = response.ideas.filter(isSupportedIdea).filter((idea) => {
     const key = intentKey(idea.searchIntent);
@@ -50,7 +50,7 @@ export async function generateFromIdea(input: GenerateFromIdeaInput, options: Op
     variables: generateFromIdeaPromptVariables({ ...input, sourceContent }),
     jsonSchema: generatedContentDraftJsonSchema, schemaName: "generated_content_draft", maxTokens: 4200,
     parse: (value) => parseStructuredJson(value, (parsed) => generatedContentDraftSchema.parse(parsed)),
-  }, { env: options.env, fetcher: options.fetcher });
+  }, { env: options.env, fetcher: options.fetcher }) as GeneratedContentDraft;
   if (!input.categories.some((category) => category.id === generated.categoryId)) {
     throw new Error("AI 回傳的分類不存在。");
   }

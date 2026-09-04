@@ -22,11 +22,11 @@ describe("AI content generator", () => {
   });
 
   it("rejects empty and oversized source content before calling a provider", async () => {
-    const fetcher = vi.fn<typeof fetch>();
+    const execute = vi.fn(async () => undefined);
 
-    await expect(analyzeSource({ locale: "zh-tw", sourceContent: "  " }, { execute: fetcher })).rejects.toThrow("請貼上參考內容");
-    await expect(analyzeSource({ locale: "zh-tw", sourceContent: "字".repeat(50_001) }, { execute: fetcher })).rejects.toThrow("50,000");
-    expect(fetcher).not.toHaveBeenCalled();
+    await expect(analyzeSource({ locale: "zh-tw", sourceContent: "  " }, { execute })).rejects.toThrow("請貼上參考內容");
+    await expect(analyzeSource({ locale: "zh-tw", sourceContent: "字".repeat(50_001) }, { execute })).rejects.toThrow("50,000");
+    expect(execute).not.toHaveBeenCalled();
   });
 
   it("generates a categorized article and sanitizes its HTML", async () => {
