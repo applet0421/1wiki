@@ -14,7 +14,7 @@ import { getCategoryHref } from "@/lib/content/category-tree";
 import { decodeRouteSlug } from "@/lib/content/slug";
 import { prisma } from "@/lib/db/prisma";
 import { buildPostMetadata } from "@/lib/seo/metadata";
-import { buildArticleJsonLd } from "@/lib/seo/structured-data";
+import { buildArticleJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo/structured-data";
 import { getLocaleConfig, isLocale, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 type Props = { params: Promise<{ locale: string; slug: string }> };
@@ -51,5 +51,14 @@ export default async function ArticlePage({ params }: Props) {
     ...(post.category.parent ? [post.category.parent] : []),
   ];
   const categoryHref = getCategoryHref(locale, [...ancestors.map(({ slug }) => slug), post.category.slug]);
-  return <><AdsenseScript clientId={clientId} /><main className="public-main article-layout"><article className="article-page"><JsonLd value={buildArticleJsonLd(post, getSiteUrl(), locale)} /><CategoryBreadcrumbs ancestors={ancestors} current={post.category} articleTitle={post.title} locale={locale} /><header className="article-header"><p className="eyebrow">{post.category.name}</p><h1>{post.title}</h1><p className="article-excerpt">{post.excerpt}</p><div className="article-meta"><span>{post.author.displayName}</span><time dateTime={post.publishedAt?.toISOString()}>{post.publishedAt ? new Intl.DateTimeFormat(dateLocale, { dateStyle: "long" }).format(post.publishedAt) : ""}</time>{post.updatedAt > (post.publishedAt || post.createdAt) ? <span>{dictionary.article.updated} {new Intl.DateTimeFormat(dateLocale, { dateStyle: "medium" }).format(post.updatedAt)}</span> : null}</div></header><ArticleBody html={post.contentHtml} pathname={pathname} adEnvironment={adEnvironment} /><aside className="related-box"><strong>{dictionary.article.explore} {post.category.name}</strong><p>{post.category.description}</p><Link href={categoryHref}>{dictionary.article.categoryLink}</Link></aside></article><aside className="article-sidebar"><div className="desktop-ad-only"><AdSlot placement="sidebar_desktop" config={getAdSlotConfig("sidebar_desktop", adEnvironment, context)} /></div></aside></main></>;
+  const breadcrumbCategories = [...ancestors, post.category];
+  const breadcrumbItems = [
+    { name: dictionary.article.home, href: `/${locale}` },
+    ...breadcrumbCategories.map((category, index) => ({
+      name: category.name,
+      href: getCategoryHref(locale, breadcrumbCategories.slice(0, index + 1).map(({ slug }) => slug)),
+    })),
+    { name: post.title, href: pathname },
+  ];
+  return <><AdsenseScript clientId={clientId} /><main className="public-main article-layout"><article className="article-page"><JsonLd value={buildArticleJsonLd(post, getSiteUrl(), locale)} /><JsonLd value={buildBreadcrumbJsonLd(breadcrumbItems, getSiteUrl())} /><CategoryBreadcrumbs ancestors={ancestors} current={post.category} articleTitle={post.title} locale={locale} /><header className="article-header"><p className="eyebrow">{post.category.name}</p><h1>{post.title}</h1><p className="article-excerpt">{post.excerpt}</p><div className="article-meta"><span>{post.author.displayName}</span><time dateTime={post.publishedAt?.toISOString()}>{post.publishedAt ? new Intl.DateTimeFormat(dateLocale, { dateStyle: "long" }).format(post.publishedAt) : ""}</time>{post.updatedAt > (post.publishedAt || post.createdAt) ? <span>{dictionary.article.updated} {new Intl.DateTimeFormat(dateLocale, { dateStyle: "medium" }).format(post.updatedAt)}</span> : null}</div></header><ArticleBody html={post.contentHtml} pathname={pathname} adEnvironment={adEnvironment} /><aside className="related-box"><strong>{dictionary.article.explore} {post.category.name}</strong><p>{post.category.description}</p><Link href={categoryHref}>{dictionary.article.categoryLink}</Link></aside></article><aside className="article-sidebar"><div className="desktop-ad-only"><AdSlot placement="sidebar_desktop" config={getAdSlotConfig("sidebar_desktop", adEnvironment, context)} /></div></aside></main></>;
 }

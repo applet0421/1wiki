@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { getCategoryHref } from "@/lib/content/category-tree";
+import { getSiteUrl } from "@/lib/config/site";
 import type { Locale } from "@/lib/i18n/config";
 import type { SiteDictionary } from "@/lib/i18n/dictionaries";
+import { buildBreadcrumbJsonLd } from "@/lib/seo/structured-data";
 import { ArticleCard } from "./article-card";
 import { CategoryBreadcrumbs } from "./category-breadcrumbs";
+import { JsonLd } from "./json-ld";
 
 type PublicCategory = {
   id: string;
@@ -48,9 +51,18 @@ export function CategoryPageContent({
   dictionary: SiteDictionary;
 }) {
   const segments = [...data.ancestors.map(({ slug }) => slug), data.category.slug];
+  const categories = [...data.ancestors, data.category];
+  const breadcrumbItems = [
+    { name: dictionary.article.home, href: `/${locale}` },
+    ...categories.map((category, index) => ({
+      name: category.name,
+      href: getCategoryHref(locale, categories.slice(0, index + 1).map(({ slug }) => slug)),
+    })),
+  ];
 
   return (
     <main className="public-main">
+      <JsonLd value={buildBreadcrumbJsonLd(breadcrumbItems, getSiteUrl())} />
       <CategoryBreadcrumbs locale={locale} ancestors={data.ancestors} current={data.category} />
       <header className="page-hero">
         <p className="eyebrow">{dictionary.category.eyebrow}</p>

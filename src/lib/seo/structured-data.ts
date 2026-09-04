@@ -12,6 +12,20 @@ export function buildOrganizationJsonLd(siteUrl: string) {
   return { "@context": "https://schema.org", "@type": "Organization", name: siteConfig.shortName, url: siteUrl, logo: `${siteUrl}/icon.svg` };
 }
 
+export function buildBreadcrumbJsonLd(items: { name: string; href: string }[], siteUrl: string) {
+  const baseUrl = siteUrl.replace(/\/$/u, "");
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      item: `${baseUrl}${item.href.startsWith("/") ? item.href : `/${item.href}`}`,
+    })),
+  };
+}
+
 export function buildArticleJsonLd(post: ArticlePost, siteUrl: string, locale: Locale) {
   const articleUrl = `${siteUrl}/${locale}/articles/${post.slug}`;
   return {

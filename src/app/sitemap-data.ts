@@ -1,23 +1,50 @@
 import type { MetadataRoute } from "next";
 import type { PrismaClient } from "@prisma/client";
+import { buildCategoryTree, getCategoryHref, type CategoryTreeItem } from "@/lib/content/category-tree";
 import { getLocaleConfig, isLocale, type Locale } from "@/lib/i18n/config";
+
+function flattenPublishedCategories(categories: CategoryTreeItem[]): CategoryTreeItem[] {
+  return categories.flatMap((category) => [
+    ...(category.aggregatePostCount > 0 ? [category] : []),
+    ...flattenPublishedCategories(category.children),
+  ]);
+}
 
 export async function getSitemapContent(client: PrismaClient, siteUrl: string): Promise<MetadataRoute.Sitemap> {
   const [posts, categories] = await Promise.all([
     client.post.findMany({ where: { status: "PUBLISHED" }, select: { locale: true, slug: true, updatedAt: true }, orderBy: { publishedAt: "desc" } }),
-    client.category.findMany({ where: { posts: { some: { status: "PUBLISHED" } } }, select: { locale: true, slug: true, updatedAt: true } }),
+    client.category.findMany({
+      select: {
+        id: true, locale: true, name: true, slug: true, description: true, parentId: true,
+        sortOrder: true, showInNavigation: true, updatedAt: true,
+        _count: { select: { posts: { where: { status: "PUBLISHED" } } } },
+      },
+    }),
   ]);
-  const fixed = new Set(["ai", "software", "social"]);
   const activeLocales = [...new Set(posts.map(({ locale }) => locale))].filter(isLocale);
+  const updatedAtById = new Map(categories.map(({ id, updatedAt }) => [id, updatedAt]));
   const entries: MetadataRoute.Sitemap = [];
 
   for (const locale of activeLocales) {
-    const localeCategories = categories.filter((category) => category.locale === locale);
+    const tree = buildCategoryTree(categories
+      .filter((category) => category.locale === locale)
+      .map((category) => ({
+        id: category.id,
+        locale,
+        name: category.name,
+        slug: category.slug,
+        description: category.description,
+        parentId: category.parentId,
+        sortOrder: category.sortOrder,
+        showInNavigation: category.showInNavigation,
+        directPostCount: category._count.posts,
+      })));
+    const publishedCategories = flattenPublishedCategories(tree);
     entries.push({ url: `${siteUrl}/${locale}`, changeFrequency: "daily", priority: 1 });
     entries.push(...getInfoPageEntries(siteUrl, locale));
-    entries.push(...localeCategories.map(({ slug, updatedAt }) => ({
-      url: fixed.has(slug) ? `${siteUrl}/${locale}/${slug}` : `${siteUrl}/${locale}/category/${slug}`,
-      lastModified: updatedAt,
+    entries.push(...publishedCategories.map((category) => ({
+      url: `${siteUrl}${getCategoryHref(locale, category.segments)}`,
+      lastModified: updatedAtById.get(category.id),
       changeFrequency: "weekly" as const,
       priority: 0.7,
     })));
