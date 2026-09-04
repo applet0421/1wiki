@@ -11,6 +11,47 @@ export function getLanguageInstruction(locale: Locale): string {
   return languageInstructions[locale];
 }
 
+export function articlePromptVariables(input: GenerateArticleInput): Record<string, string> {
+  return {
+    languageInstruction: getLanguageInstruction(input.locale),
+    topic: input.topic.trim(),
+    keyword: input.keyword.trim(),
+    instructions: input.instructions?.trim() || "以清楚、可驗證、可操作的步驟回答",
+  };
+}
+
+export function rewritePromptVariables(input: RewriteArticleInput): Record<string, string> {
+  return {
+    languageInstruction: getLanguageInstruction(input.locale),
+    sourceTitle: input.sourceTitle.trim(),
+    sourceContentHtml: input.sourceContentHtml.trim(),
+  };
+}
+
+export function analyzeSourcePromptVariables(input: AnalyzeSourceInput): Record<string, string> {
+  return {
+    languageInstruction: getLanguageInstruction(input.locale),
+    sourceContent: input.sourceContent,
+  };
+}
+
+export function generateFromIdeaPromptVariables(input: GenerateFromIdeaInput): Record<string, string> {
+  const structure = input.idea.type === "TROUBLESHOOTING"
+    ? "Answer First：快速解決、常見原因、依序解決方法、如何確認已解決；平台差異與 FAQ 只在來源支援時加入。"
+    : "Steps First：快速步驟、必要準備、依序操作、如何確認完成、注意事項；平台差異與 FAQ 只在來源支援時加入。";
+  return {
+    languageInstruction: getLanguageInstruction(input.locale),
+    contentType: input.idea.type,
+    title: input.idea.title,
+    primaryKeyword: input.idea.primaryKeyword,
+    searchIntent: input.idea.searchIntent,
+    support: input.idea.support,
+    structure,
+    categories: input.categories.map((category) => `- ${category.id}: ${category.name}`).join("\n"),
+    sourceContent: input.sourceContent,
+  };
+}
+
 export function buildArticlePrompt(input: GenerateArticleInput): string {
   return `請撰寫一篇科技問題解答文章。${getLanguageInstruction(input.locale)}。
 主題：${input.topic.trim()}
