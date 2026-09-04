@@ -1,7 +1,9 @@
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db/prisma";
+import { resetDatabase } from "../helpers/database";
 
 describe("Prompt and LLM usage schema", () => {
+  beforeEach(resetDatabase);
   afterAll(() => prisma.$disconnect());
 
   it("installs four active v1 Prompt definitions", async () => {
