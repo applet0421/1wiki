@@ -324,7 +324,7 @@ describe("content repository", () => {
     await savePost(prisma, author.id, postInput(leaf.id, { status: "PUBLISHED", slug: "leaf-guide" }));
 
     await expect(listNavigationCategories(prisma, "zh-tw")).resolves.toMatchObject([
-      { name: "AI", parentId: null, showInNavigation: true },
+      { name: "AI", parentId: null, showInNavigation: true, children: [{ name: "ChatGPT", children: [{ name: "Prompt" }] }] },
       { name: "軟體", parentId: null, showInNavigation: true },
     ]);
     await expect(listPublishedRootCategories(prisma, "zh-tw")).resolves.toMatchObject([

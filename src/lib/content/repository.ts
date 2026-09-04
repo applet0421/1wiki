@@ -392,6 +392,14 @@ export function listPublishedCategories(client: PrismaClient, locale: Locale) {
 export function listNavigationCategories(client: PrismaClient, locale: Locale) {
   return client.category.findMany({
     where: { locale, parentId: null, showInNavigation: true },
+    include: {
+      children: {
+        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+        include: {
+          children: { orderBy: [{ sortOrder: "asc" }, { name: "asc" }] },
+        },
+      },
+    },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
   });
 }

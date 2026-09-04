@@ -18,5 +18,20 @@ export default async function SiteLayout({ children, params }: { children: React
   const siteUrl = getSiteUrl();
   const dictionary = getDictionary(locale);
   const categories = await listNavigationCategories(prisma, locale);
-  return <><JsonLd value={buildWebsiteJsonLd(siteUrl, locale)} /><JsonLd value={buildOrganizationJsonLd(siteUrl)} /><SiteHeader locale={locale} dictionary={dictionary} categories={categories.map((category) => ({ id: category.id, name: category.name, segments: [category.slug] }))} />{children}<SiteFooter locale={locale} dictionary={dictionary} /></>;
+  return <><JsonLd value={buildWebsiteJsonLd(siteUrl, locale)} /><JsonLd value={buildOrganizationJsonLd(siteUrl)} /><SiteHeader locale={locale} dictionary={dictionary} categories={categories.map((category) => ({
+    id: category.id,
+    name: category.name,
+    segments: [category.slug],
+    children: category.children.map((child) => ({
+      id: child.id,
+      name: child.name,
+      segments: [category.slug, child.slug],
+      children: child.children.map((leaf) => ({
+        id: leaf.id,
+        name: leaf.name,
+        segments: [category.slug, child.slug, leaf.slug],
+        children: [],
+      })),
+    })),
+  }))} />{children}<SiteFooter locale={locale} dictionary={dictionary} /></>;
 }

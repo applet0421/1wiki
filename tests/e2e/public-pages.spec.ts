@@ -46,6 +46,20 @@ test("語言選擇器進入英文與日文空白首頁", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "コンテンツを準備中です" })).toBeVisible();
 });
 
+test("頂部分類可展開下層分類並前往階層網址", async ({ page }) => {
+  await page.goto("/zh-tw");
+  const trigger = page.getByRole("button", { name: "AI 教學" });
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+  await trigger.click();
+
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  const navigation = page.getByRole("navigation", { name: "主要導覽" });
+  await expect(navigation.getByRole("link", { name: "全部 AI 教學" })).toHaveAttribute("href", "/zh-tw/category/ai");
+  await navigation.getByRole("link", { name: "Prompt 撰寫" }).click();
+  await expect(page).toHaveURL(/\/zh-tw\/category\/ai\/chatgpt\/prompt$/);
+});
+
 test("階層分類會彙整後代文章並顯示完整麵包屑", async ({ page }) => {
   await page.goto("/zh-tw/category/ai/chatgpt/prompt");
   await expect(page.getByRole("heading", { level: 1, name: "Prompt 撰寫" })).toBeVisible();
