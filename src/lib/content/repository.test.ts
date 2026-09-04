@@ -2,7 +2,20 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db/prisma";
 import { resetDatabase } from "../../../tests/helpers/database";
 import { hashPassword } from "@/lib/auth/password";
-import { createCategory, deleteCategory, findAvailablePostSlug, getPublishedCategory, getPublishedPostBySlug, hasPublishedPosts, listAdminPosts, savePost } from "./repository";
+import {
+  createCategory,
+  deleteCategory,
+  findAvailablePostSlug,
+  getCategoryAncestors,
+  getCategoryDescendantIds,
+  getPublishedCategory,
+  getPublishedPostBySlug,
+  hasPublishedPosts,
+  listAdminPosts,
+  resolveCategoryPath,
+  savePost,
+  updateCategory,
+} from "./repository";
 
 describe("content repository", () => {
   beforeEach(resetDatabase);
@@ -36,6 +49,19 @@ describe("content repository", () => {
       seoDescription: "",
       seoKeywords: "",
       canonicalUrl: "",
+      ...overrides,
+    };
+  }
+
+  function categoryInput(overrides: Record<string, unknown> = {}) {
+    return {
+      locale: "zh-tw" as const,
+      name: "分類",
+      slug: "category",
+      description: "",
+      parentId: null,
+      showInNavigation: false,
+      sortOrder: 0,
       ...overrides,
     };
   }
@@ -83,9 +109,9 @@ describe("content repository", () => {
     expect(draftAgain.publishedAt?.toISOString()).toBe(publishedAt.toISOString());
   });
 
-  it("protects initial categories and categories that contain posts", async () => {
+  it("allows empty former default categories to be deleted but protects categories with posts", async () => {
     const { author, category } = await fixture();
-    await expect(deleteCategory(prisma, category.id)).rejects.toThrow("預設分類");
+    await expect(deleteCategory(prisma, category.id)).resolves.toMatchObject({ id: category.id });
 
     const extra = await createCategory(prisma, {
       locale: "zh-tw",
@@ -95,6 +121,68 @@ describe("content repository", () => {
     });
     await savePost(prisma, author.id, postInput(extra.id));
     await expect(deleteCategory(prisma, extra.id)).rejects.toThrow("仍有文章");
+  });
+
+  it("creates three levels and resolves their ancestors, descendants, and path", async () => {
+    const root = await createCategory(prisma, categoryInput({ name: "AI", slug: "ai", showInNavigation: true }));
+    const child = await createCategory(prisma, categoryInput({ name: "ChatGPT", slug: "chatgpt", parentId: root.id, showInNavigation: true }));
+    const leaf = await createCategory(prisma, categoryInput({ name: "Prompt", slug: "prompt", parentId: child.id }));
+
+    await expect(getCategoryAncestors(prisma, leaf.id)).resolves.toMatchObject([{ id: root.id }, { id: child.id }]);
+    await expect(getCategoryDescendantIds(prisma, root.id)).resolves.toEqual([root.id, child.id, leaf.id]);
+    await expect(resolveCategoryPath(prisma, "zh-tw", ["ai", "chatgpt", "prompt"])).resolves.toMatchObject({ id: leaf.id });
+    await expect(resolveCategoryPath(prisma, "zh-tw", ["chatgpt", "ai"])).resolves.toBeNull();
+    await expect(prisma.category.findUniqueOrThrow({ where: { id: child.id } })).resolves.toMatchObject({ showInNavigation: false });
+  });
+
+  it("rejects a parent from another locale", async () => {
+    const zhRoot = await createCategory(prisma, categoryInput({ name: "AI", slug: "ai" }));
+
+    await expect(createCategory(prisma, categoryInput({
+      locale: "en",
+      name: "Wrong locale",
+      slug: "wrong-locale",
+      parentId: zhRoot.id,
+    }))).rejects.toThrow("上層分類必須與目前分類使用相同語系");
+  });
+
+  it("rejects a fourth category level", async () => {
+    const root = await createCategory(prisma, categoryInput({ name: "AI", slug: "ai" }));
+    const child = await createCategory(prisma, categoryInput({ name: "ChatGPT", slug: "chatgpt", parentId: root.id }));
+    const leaf = await createCategory(prisma, categoryInput({ name: "Prompt", slug: "prompt", parentId: child.id }));
+
+    await expect(createCategory(prisma, categoryInput({
+      name: "Examples",
+      slug: "examples",
+      parentId: leaf.id,
+    }))).rejects.toThrow("分類最多只能有三級");
+  });
+
+  it("rejects cycles and moves that make descendants exceed three levels", async () => {
+    const root = await createCategory(prisma, categoryInput({ name: "AI", slug: "ai" }));
+    const child = await createCategory(prisma, categoryInput({ name: "ChatGPT", slug: "chatgpt", parentId: root.id }));
+    const leaf = await createCategory(prisma, categoryInput({ name: "Prompt", slug: "prompt", parentId: child.id }));
+    const otherRoot = await createCategory(prisma, categoryInput({ name: "Software", slug: "software" }));
+    const otherChild = await createCategory(prisma, categoryInput({ name: "macOS", slug: "macos", parentId: otherRoot.id }));
+
+    await expect(updateCategory(prisma, root.id, categoryInput({
+      name: "AI",
+      slug: "ai",
+      parentId: leaf.id,
+    }))).rejects.toThrow("分類不能移到自己或自己的子分類下");
+
+    await expect(updateCategory(prisma, child.id, categoryInput({
+      name: "ChatGPT",
+      slug: "chatgpt",
+      parentId: otherChild.id,
+    }))).rejects.toThrow("移動後的分類層級會超過三級");
+  });
+
+  it("prevents deleting a category that still has children", async () => {
+    const root = await createCategory(prisma, categoryInput({ name: "AI", slug: "ai" }));
+    await createCategory(prisma, categoryInput({ name: "ChatGPT", slug: "chatgpt", parentId: root.id }));
+
+    await expect(deleteCategory(prisma, root.id)).rejects.toThrow("分類仍有子分類，無法刪除");
   });
 
   it("finds the next numbered slug without overwriting an existing post", async () => {

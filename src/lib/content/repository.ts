@@ -1,10 +1,10 @@
-import { Prisma, type PrismaClient } from "@prisma/client";
+import { Prisma, type Category, type PrismaClient } from "@prisma/client";
 import { load } from "cheerio";
 import { categoryInputSchema, postInputSchema, type CategoryInput, type PostInput } from "./schema";
 import { sanitizeArticleHtml } from "./sanitize";
 import type { Locale } from "@/lib/i18n/config";
 
-const protectedCategorySlugs = new Set(["ai", "software", "social"]);
+type DatabaseClient = PrismaClient | Prisma.TransactionClient;
 
 function nullable(value: string): string | null {
   const trimmed = value.trim();
@@ -109,11 +109,16 @@ export async function deletePost(client: PrismaClient, postId: string) {
 
 export async function createCategory(client: PrismaClient, rawInput: CategoryInput) {
   const input = categoryInputSchema.parse(rawInput);
-  try {
-    return await client.category.create({ data: input });
-  } catch (error) {
-    mapPrismaError(error);
-  }
+  return client.$transaction(async (transaction) => {
+    await validateCategoryPlacement(transaction, input);
+    try {
+      return await transaction.category.create({
+        data: { ...input, showInNavigation: input.parentId ? false : input.showInNavigation },
+      });
+    } catch (error) {
+      mapPrismaError(error);
+    }
+  });
 }
 
 export async function updateCategory(
@@ -122,27 +127,125 @@ export async function updateCategory(
   rawInput: CategoryInput,
 ) {
   const input = categoryInputSchema.parse(rawInput);
-  const current = await client.category.findUnique({ where: { id: categoryId } });
-  if (!current) throw new Error("找不到指定分類");
-  if (protectedCategorySlugs.has(current.slug) && input.slug !== current.slug) {
-    throw new Error("預設分類的網址代稱不可變更");
-  }
-  try {
-    return await client.category.update({ where: { id: categoryId }, data: input });
-  } catch (error) {
-    mapPrismaError(error);
-  }
+  return client.$transaction(async (transaction) => {
+    const current = await transaction.category.findUnique({ where: { id: categoryId } });
+    if (!current) throw new Error("找不到指定分類");
+    if (current.locale !== input.locale) throw new Error("分類語系不可變更");
+    await validateCategoryPlacement(transaction, input, categoryId);
+    try {
+      return await transaction.category.update({
+        where: { id: categoryId },
+        data: { ...input, showInNavigation: input.parentId ? false : input.showInNavigation },
+      });
+    } catch (error) {
+      mapPrismaError(error);
+    }
+  });
 }
 
 export async function deleteCategory(client: PrismaClient, categoryId: string) {
   const category = await client.category.findUnique({
     where: { id: categoryId },
-    include: { _count: { select: { posts: true } } },
+    include: { _count: { select: { posts: true, children: true } } },
   });
   if (!category) throw new Error("找不到指定分類");
-  if (protectedCategorySlugs.has(category.slug)) throw new Error("預設分類不可刪除");
   if (category._count.posts > 0) throw new Error("分類仍有文章，無法刪除");
+  if (category._count.children > 0) throw new Error("分類仍有子分類，無法刪除");
   return client.category.delete({ where: { id: categoryId } });
+}
+
+export async function getCategoryAncestors(client: DatabaseClient, categoryId: string): Promise<Category[]> {
+  const ancestors: Category[] = [];
+  const visited = new Set<string>([categoryId]);
+  const initial = await client.category.findUnique({ where: { id: categoryId } });
+  if (!initial) throw new Error("找不到指定分類");
+  let current: Category = initial;
+
+  while (current.parentId) {
+    if (visited.has(current.parentId)) throw new Error("分類資料包含無效的父子關係");
+    visited.add(current.parentId);
+    const parent: Category | null = await client.category.findUnique({ where: { id: current.parentId } });
+    if (!parent || parent.locale !== current.locale) throw new Error("分類資料包含無效的父子關係");
+    ancestors.unshift(parent);
+    current = parent;
+    if (ancestors.length > 2) throw new Error("分類資料包含無效的父子關係");
+  }
+
+  return ancestors;
+}
+
+export async function getCategoryDescendantIds(client: DatabaseClient, categoryId: string): Promise<string[]> {
+  const category = await client.category.findUnique({ where: { id: categoryId }, select: { id: true } });
+  if (!category) throw new Error("找不到指定分類");
+
+  const ids = [categoryId];
+  let frontier = [categoryId];
+  for (let level = 0; level < 2 && frontier.length > 0; level += 1) {
+    const children = await client.category.findMany({
+      where: { parentId: { in: frontier } },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      select: { id: true },
+    });
+    frontier = children.map(({ id }) => id);
+    ids.push(...frontier);
+  }
+
+  const deeperChild = frontier.length > 0
+    ? await client.category.findFirst({ where: { parentId: { in: frontier } }, select: { id: true } })
+    : null;
+  if (deeperChild) throw new Error("分類資料包含無效的父子關係");
+  return ids;
+}
+
+export async function resolveCategoryPath(
+  client: DatabaseClient,
+  locale: Locale,
+  slugs: string[],
+): Promise<Category | null> {
+  if (slugs.length < 1 || slugs.length > 3) return null;
+  let parentId: string | null = null;
+  let category: Category | null = null;
+
+  for (const slug of slugs) {
+    category = await client.category.findFirst({ where: { locale, slug, parentId } });
+    if (!category) return null;
+    parentId = category.id;
+  }
+
+  return category;
+}
+
+async function validateCategoryPlacement(
+  client: Prisma.TransactionClient,
+  input: ReturnType<typeof categoryInputSchema.parse>,
+  categoryId?: string,
+): Promise<void> {
+  if (!input.parentId) return;
+  if (input.parentId === categoryId) throw new Error("分類不能移到自己或自己的子分類下");
+
+  const parent = await client.category.findUnique({ where: { id: input.parentId } });
+  if (!parent) throw new Error("找不到指定的上層分類");
+  if (parent.locale !== input.locale) throw new Error("上層分類必須與目前分類使用相同語系");
+
+  const parentAncestors = await getCategoryAncestors(client, parent.id);
+  if (categoryId && (parent.id === categoryId || parentAncestors.some(({ id }) => id === categoryId))) {
+    throw new Error("分類不能移到自己或自己的子分類下");
+  }
+
+  const targetDepth = parentAncestors.length + 2;
+  if (targetDepth > 3) throw new Error(categoryId ? "移動後的分類層級會超過三級" : "分類最多只能有三級");
+
+  if (categoryId) {
+    const descendantIds = await getCategoryDescendantIds(client, categoryId);
+    const descendants = await client.category.findMany({
+      where: { id: { in: descendantIds.slice(1) } },
+      select: { id: true, parentId: true },
+    });
+    const childIds = new Set(descendants.filter(({ parentId }) => parentId === categoryId).map(({ id }) => id));
+    const hasGrandchild = descendants.some(({ parentId }) => parentId && childIds.has(parentId));
+    const subtreeHeight = hasGrandchild ? 3 : childIds.size > 0 ? 2 : 1;
+    if (targetDepth + subtreeHeight - 1 > 3) throw new Error("移動後的分類層級會超過三級");
+  }
 }
 
 export function listAdminPosts(client: PrismaClient, locale?: Locale, categoryId?: string) {

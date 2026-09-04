@@ -42,4 +42,4 @@ export const postInputSchema = z.object({
 });
 
 export type PostInput = z.infer<typeof postInputSchema>;
-export type CategoryInput = z.infer<typeof categoryInputSchema>;
+export type CategoryInput = z.input<typeof categoryInputSchema>;
