@@ -1,0 +1,43 @@
+{
+  "generated_at": "2026-09-05T17:41:03.382856+00:00",
+  "last_updated": "2026-09-06",
+  "baseline_commit": "5339e2e",
+  "includes_uncommitted_code": true,
+  "scope": "local-unit-and-lint",
+  "end_to_end_verified": false,
+  "external_submission_verified": false,
+  "summary": {
+    "commands": 2,
+    "test_files": 6,
+    "tests": 18,
+    "lint_errors": 0,
+    "lint_warnings": 1
+  },
+  "success": [
+    {
+      "command": "npm test -- src/lib/search-engine/notifications.test.ts src/components/admin/admin-nav.test.tsx src/components/site/article-card.test.tsx src/components/admin/youtube.test.ts src/lib/seo/image.test.ts src/lib/ai/image-config.test.ts",
+      "exit_code": 0,
+      "passed": 18
+    },
+    {
+      "command": "npm run lint",
+      "exit_code": 0,
+      "warnings": 1
+    }
+  ],
+  "failure": [],
+  "not_run": [
+    "database integration tests",
+    "migration validation",
+    "IndexNow HTTP and end-to-end smoke tests",
+    "external services",
+    "typecheck",
+    "production build",
+    "browser E2E"
+  ],
+  "warnings": [
+    "src/components/site/article-card.tsx:19 @next/next/no-img-element"
+  ],
+  "subsequent_commit": "d5f0074",
+  "code_changed_after_test": false
+}

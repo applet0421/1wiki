@@ -1,6 +1,6 @@
 # 同分類文章連續閱讀
 
-最後更新：2026-09-05
+最後更新：2026-09-06
 
 文章頁距離載入區約 600px 時，自動在原文下方接上一篇完整文章。各篇之間顯示點狀分隔帶，沿用文章標題、麵包屑、作者、正文、分類入口與廣告版位。窄螢幕沿用單欄版面。
 
@@ -35,3 +35,11 @@ npx tsc --noEmit
 全部正式廣告在各自容器距視窗下緣 300px 內時才插入 AdSense 元素並初始化一次；預覽框維持顯示，保留版面高度。連續閱讀帶入新文章時，不會一次初始化整篇的所有廣告。缺少 IntersectionObserver 的瀏覽器退回一般初始化，但仍遵守桌面側欄限制。
 
 第二個版位使用獨立環境變數 `NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR_DESKTOP_STICKY`。正式環境必須填入有效 slot ID 並啟用 AdSense 才會投放；未設定時不顯示，本機開發環境顯示預覽框。既有側欄 slot 設定沿用原值。
+
+## 分類列表載入與卡片（2026-09-06 盤點）
+
+分類頁另使用 `CategoryArticleList`，接近底部 500px 時呼叫 `/api/categories/posts`，以 locale、分類 path、offset 分批載入，每批 10 筆；結束時顯示「已載入全部文章」。這個列表並非上述文章正文連續閱讀元件，尚沒有相同的手動重試／無 IntersectionObserver 按鈕備援。
+
+分類廣告提供 `category_after_intro`、`category_inline`、`category_end`、`category_sidebar_desktop`，對應 `.env.example` 的 `NEXT_PUBLIC_ADSENSE_SLOT_CATEGORY_*`。`NEXT_PUBLIC_CATEGORY_INLINE_AD_INTERVAL` 預設 10，控制列表間廣告間隔。
+
+共用文章卡片已支援封面，封面上傳及補值規則見 [文章編輯與媒體](article-editing.md)。本次只重跑卡片等聚焦測試，歷史瀏覽器紀錄保留原有適用範圍，詳見 [測試紀錄](test-log.md)。

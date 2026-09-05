@@ -8,6 +8,7 @@ export function AdminNav({ user }: { user: SessionUser }) {
       <Link href="/admin" className="brand-mark">1Wiki 管理</Link>
       <nav aria-label="後台導覽">
         <Link href="/admin">文章</Link>
+        <Link href="/admin/posts/create">文章生成</Link>
         <Link href="/admin/categories">分類</Link>
         <Link href="/admin/authors">作者庫</Link>
         {user.role === "OWNER" ? (

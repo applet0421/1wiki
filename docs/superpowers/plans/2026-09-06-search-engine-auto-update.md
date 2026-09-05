@@ -1,5 +1,23 @@
 # Search Engine Auto Update Implementation Plan
 
+最後更新：2026-09-06
+
+## 2026-09-06 執行狀態
+
+此文件保留原定驗收條件；未勾選不一律代表尚未寫程式，以下盤點區分部分實作與完整驗收。最新實際行為見 [操作與限制](../../search-engine-submission.md)。
+
+| Task | 實際狀態 |
+| --- | --- |
+| 1 | 部分完成：事件分類與 payload 位於 `notifications.ts`，URL 位於 `repository.ts`；尚無計畫中的 indexable-url helper、發布時間與嚴格 canonical 驗證。 |
+| 2 | 部分完成：schema、migration、upsert 與摘要存在；沒有原子 claim、指數退避、永久失敗與過期清理，migration 未於本次驗證。 |
+| 3 | 部分完成：保存與切換狀態接上 enqueue；尚未與文章保存放入同一交易，刪除與舊 slug URL 尚未處理。 |
+| 4 | 部分完成：IndexNow batch、bearer POST route、固定五分鐘重試與 Cron 設定；GET、key location、錯誤分流與 HTTP 測試待補。 |
+| 5 | 文件已建立：README 與操作手冊已同步；Google／Bing 帳戶、key 檔案及正式站驗證未執行。 |
+| 6 | 僅完成局部單元測試與 lint，尚無端到端 smoke test；JSON 紀錄明確標記為 local-unit-and-lint。 |
+
+已驗證 `notifications.test.ts` 的 2 項測試，連同其他聚焦測試共 6 檔／18 項通過；lint 0 errors／1 warning。命令與範圍見 [測試紀錄](../../test-log.md)。以下架構、檔案清單與未勾選項仍為目標，不應解讀為已實作能力。
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 讓 1Wiki 在文章發布、更新與下架時，自動讓 Google Search Console 與 Bing Webmaster 取得最新可索引網址。

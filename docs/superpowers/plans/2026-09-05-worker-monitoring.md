@@ -1,5 +1,14 @@
 # Worker Monitoring Implementation Plan
 
+最後更新：2026-09-06
+
+## 2026-09-06 執行狀態
+
+已實作 `WorkerHeartbeat`、OWNER `/admin/worker`、啟停指令 action、失敗圖片重試上傳及 `scripts/image-worker.ts` 心跳。實際介面為 Server Component 與手動表單重新整理，並沒有計畫中的 `worker-monitor.tsx`／對應元件測試；心跳也寫在 script 而非此計畫列出的 library。
+
+已存在的實作不等於下方 checklist 全部驗收；本次未啟停 worker 或重跑其整合測試。操作與心跳判讀見 [AI 配圖](../../ai-article-images.md)，本次驗證見 [測試紀錄](../../test-log.md)。
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Add an owner-only Worker monitoring page that reports image worker health and queued image-generation jobs, with safe refresh and retry actions.

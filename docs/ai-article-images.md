@@ -1,8 +1,10 @@
 # AI 配圖
 
-最後更新：2026-09-05
+最後更新：2026-09-06
 
 文章編輯器「上傳圖片」旁的 AI 配圖按鈕，使用最新未儲存標題及正文。先分析出可修改的 Prompt、alt 草稿與插入段落，再生成單張圖片、上傳 R2、校對 alt，最後由編輯者預覽並插入正文。不自動儲存或發布文章。
+
+本次盤點與驗證範圍見 [工作狀態](project-status.md)；下方 2026-09-05 結果為歷史紀錄，不代表目前整體測試或外部服務狀態。
 
 ## 設定與啟用
 
@@ -16,6 +18,8 @@ GEMINI_IMAGE_ASPECT_RATIO=9:16
 ```
 
 圖片規劃沿用 `LLM_PROVIDER` 與既有文字模型。`IMAGE_PLAN` 會在規劃配圖時同時產生符合文章情境的 prompt 與 alt；圖片生成階段只呼叫 `IMAGE_GENERATE`，不再另外呼叫模型校對 alt，以避免重複成本與改寫已確認的 SEO 文字。
+
+上述為 `.env.example` 的範例值；若未設定，程式預設為 `gemini-3.1-flash-image`／`512`／`9:16`。目前生成流程不再使用 `GEMINI_IMAGE_ALT_MODEL` 另做 alt 校對，但設定解析仍保留該欄位。
 
 尺寸支援 `512`、`1K`、`2K`、`4K`，大小寫必須符合。比例支援 `1:1`、`1:4`、`1:8`、`2:3`、`3:2`、`3:4`、`4:1`、`4:3`、`4:5`、`5:4`、`8:1`、`9:16`、`16:9`、`21:9`。以上是 Nano Banana 2 參數；更換其他模型時，管理員須選擇該模型支援的組合。
 
@@ -48,7 +52,7 @@ PLANNED → QUEUED → GENERATING → GENERATED → UPLOADING → READY。
 
 ## 用量
 
-規劃、生成、alt 校對分別記錄 Prompt 版本與用量。圖片 Token 按圖片費率、其他輸出 Token（含 thinking）按文字輸出費率計算；缺少 Token 分類或圖片費率時顯示無法估算。初始化 Nano Banana 2 每百萬 input/text-output/image-output tokens 費率0.50/3/60 USD；可在 LLM 用量管理修改。費率是2026-09-05查詢快照，實際帳單以供應商為準。
+目前規劃與生成記錄各自的 Prompt 版本與用量；既有 alt 校對定義與歷史紀錄仍保留，但生成流程不再新增獨立 alt 校對呼叫。圖片 Token 按圖片費率、其他輸出 Token（含 thinking）按文字輸出費率計算；缺少 Token 分類或圖片費率時顯示無法估算。初始化 Nano Banana 2 每百萬 input/text-output/image-output tokens 費率0.50/3/60 USD；可在 LLM 用量管理修改。費率是2026-09-05查詢快照，實際帳單以供應商為準。
 
 ## 驗證
 
@@ -76,3 +80,11 @@ npm run lint
 - `npm run worker:images -- --once` 空佇列啟動與結束通過。
 - 尚未執行真實 Gemini 付費生圖／R2 整合測試：目前缺 GEMINI_API_KEY，遠端 migration 尚待確認。
 - 瀏覽器視覺驗收未完成：Mac 鎖定；前端互動已由 DOM 測試驗證。
+
+## Worker 監控
+
+OWNER 可在 `/admin/worker` 查看最近 20 個任務、佇列數量與最近心跳，並手動重新整理。心跳未滿 15 秒顯示執行中、未滿 120 秒顯示心跳逾時，其後為離線；無紀錄顯示尚未啟動。長時間生圖期間心跳可能變舊，須同時查看任務狀態。
+
+啟動／重啟／停止按鈕分別使用 `WORKER_START_COMMAND`、`WORKER_RESTART_COMMAND`、`WORKER_STOP_COMMAND`；未設定時顯示設定錯誤。指令在網站所在主機執行，不會自動控制另一台 worker 主機。操作送出後須重新查看心跳確認結果。
+
+只有 FAILED 且仍有 imageBytes 的任務顯示「重試上傳」，會改為 GENERATED 交給 worker，沿用已生成圖片。心跳 migration 為 `20260905110000_worker_heartbeat`。

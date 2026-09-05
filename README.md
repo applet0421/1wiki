@@ -1,6 +1,6 @@
 # 1Wiki
 
-最後更新：2026-09-05
+最後更新：2026-09-06
 
 1Wiki 是提供 AI、軟體、社群與 3C 使用教學及疑難解答的多語系內容網站。繁體中文為預設語系，英文與日文已提供獨立入口；MVP 另包含文章後台、帳密權限、AI 初稿、SEO 與手動 AdSense 版位。
 
@@ -11,12 +11,16 @@
 - 在專案負責人明確確認前，不部署至 Vercel，不更新遠端環境變數或遠端資料庫。
 - 部署前需先整理變更內容、測試結果、已知限制與必要的資料庫 migration，再另行執行發布。
 
+目前功能、待驗收工作與驗證範圍見 [工作狀態](docs/project-status.md)，本次執行結果見 [測試紀錄](docs/test-log.md)。
+
 ## MVP 功能
 
 - 具語系前綴的公開首頁、AI／軟體／社群分類、文章頁與政策頁
 - 繁體中文、英文、日文語言選擇器；內容、分類與 SEO 各自獨立
 - OWNER／EDITOR 後台帳號，無公開註冊與第三方登入
-- 文章、分類、Rich Text Editor 與 SEO 欄位管理
+- 文章、三級分類、Rich Text Editor、YouTube／Shorts 嵌入與 SEO 欄位管理
+- 作者庫、語系化作者頁與署名；文章卡片封面、同分類連續閱讀及分類頁載入更多
+- OWNER 專用 GA4 流量監測與 AI 配圖 Worker 監控
 - DeepSeek（預設）、OpenAI、Gemini 三選一的 AI 文章初稿、來源分析與選題生成
 - OWNER 專用 Prompt 版本管理、歷史回復、LLM Token／失敗／耗時追蹤與美元成本估算
 - canonical、Open Graph、Article structured data、sitemap 與 robots
@@ -107,15 +111,22 @@ API key 只在伺服器端使用。一般「新增文章」仍可用主題與關
 4. 配置 Google 認證 CMP 或 Google Privacy & Messaging。
 5. 最後將 `NEXT_PUBLIC_ADSENSE_ENABLED` 改為 `true` 並重新部署。
 
-文章正文最多顯示 `article_after_intro`、`article_mid`、`article_end` 三個版位；`article_mid` 只在至少 1,200 個可見字元的長文中，插入接近全文 45% 的 H2 段落邊界。桌面右欄另有 `sidebar_desktop`，只在 1024px 以上顯示。`feed_inline` 目前只有中央設定，MVP 不啟用。
+文章正文最多顯示 `article_after_intro`、`article_mid`、`article_end` 三個版位；`article_mid` 只在至少 1,200 個可見字元的長文中，插入接近全文 45% 的 H2 段落邊界。桌面右欄另有 `sidebar_desktop` 與 `sidebar_desktop_sticky`，只在 1024px 以上顯示；廣告採接近視窗才初始化。分類頁另有開頭、列表間、末尾及側欄版位，完整行為見 [連續閱讀與廣告](docs/article-auto-loading.md)。`feed_inline` 目前只有中央設定，MVP 不啟用。
 
 ## AI 配圖
 
-文章編輯器支援 AI 分析段落、Nano Banana 2 生圖、R2 上傳及預覽插入。尺寸／比例由 `.env` 設定，預設 `512`／`9:16`，保留原生尺寸。需執行新增 migration 並啟動 `npm run worker:images`；完整設定、復原行為與驗證方式見 [AI 配圖文件](docs/ai-article-images.md)。
+文章編輯器支援 AI 分析段落、Gemini 生圖、R2 上傳及預覽插入。`.env.example` 使用 `gemini-3.1-flash-lite-image`、`1K`／`9:16`；未設定時程式 fallback 為 `gemini-3.1-flash-image`、`512`／`9:16`，保留原生尺寸。需執行新增 migration 並啟動 `npm run worker:images`；完整設定、復原行為與驗證方式見 [AI 配圖文件](docs/ai-article-images.md)。
+
+## 編輯、流量與搜尋引擎
+
+- [文章編輯與媒體](docs/article-editing.md)：封面卡片、R2 封面上傳、發布補圖、SEO 圖片優先順序與影片。
+- [作者庫](docs/author-library.md)：作者指派、封存及公開作者頁。
+- [流量監測](docs/traffic-monitoring.md)：GA4 設定、同步入口與指標限制。
+- [搜尋引擎通知](docs/search-engine-submission.md)：IndexNow 目前為部分實作；Cron、金鑰驗證及可靠性仍待完成，不可視為已啟用。
 
 ## 測試與驗收
 
-單元與整合測試使用獨立測試資料庫。預設連線是 `postgresql://postgres:postgres@127.0.0.1:55432/onewiki_test`，也可用 `TEST_DATABASE_URL` 覆寫。
+單元與整合測試使用獨立測試資料庫。預設連線是 `postgresql://postgres:postgres@127.0.0.1:55432/onewiki_test`，Vitest 的 `src/test/setup.ts` 使用 `DATABASE_URL`／`DIRECT_URL`；請明確設定為隔離測試庫。E2E 的測試庫設定另見 Playwright 設定。
 
 ```bash
 npm test
@@ -135,6 +146,8 @@ npm run test:e2e
 3. 備份正式資料庫後執行 `npm run db:migrate`。`20260904130000_add_content_locales` 會將既有文章與分類回填為 `zh-tw`，並建立語系複合唯一鍵及外鍵；首次部署才另執行 `npm run db:seed` 與一次性的 `npm run bootstrap:owner`。
 4. 使用預設的 `npm run build` 建置並部署。
 5. 登入後台發布第一篇文章，檢查 `/sitemap.xml`、`/robots.txt` 與文章原始碼中的 SEO metadata。
+
+後續 migration 另包含 AI 配圖、Worker 心跳、作者庫及 GA4；`d5f0074` 新增 `20260906120000_search_engine_notifications`，須先完成搜尋引擎待辦與驗證再安排上線。所有 migration 是否已套用需逐環境確認，本次未操作資料庫。
 
 一般正式環境更新順序固定為：
 

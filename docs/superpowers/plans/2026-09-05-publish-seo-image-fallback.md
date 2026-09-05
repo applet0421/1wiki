@@ -1,5 +1,14 @@
 # Publish SEO and Image Fallback Implementation Plan
 
+最後更新：2026-09-06
+
+## 2026-09-06 執行狀態
+
+SEO 圖片 resolver、發布時空白 SEO 欄位及 alt 補值、metadata／JSON-LD 共用 resolver 已有程式實作。工作區另增加「發布時將正文第一張圖片存為封面」，其規則與 SEO resolver 不完全相同，見 [文章編輯與媒體](../../article-editing.md)。
+
+本次 resolver 的 4 項測試通過；完整發布 action、資料庫回歸與 build 未重跑。原 checklist 保留原驗收要求，不能用本次局部測試宣告全部完成；詳見 [測試紀錄](../../test-log.md)。
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Complete missing publication SEO fields and resolve the canonical social/article image as cover image, first valid body image, or default image.
