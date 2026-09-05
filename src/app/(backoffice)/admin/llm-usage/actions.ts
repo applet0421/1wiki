@@ -13,6 +13,7 @@ const modelPriceSchema = z.object({
   model: z.string().trim().min(1).max(120),
   inputRate: z.coerce.number().positive().finite(),
   outputRate: z.coerce.number().positive().finite(),
+  imageOutputRate: z.coerce.number().positive().finite().nullable(),
   effectiveAt: z.coerce.date(),
 });
 const modelPriceIdSchema = z.string().trim().min(1).max(191);
@@ -27,11 +28,13 @@ function message(error: unknown): string {
 function parseModelPrice(formData: FormData) {
   const inputRate = String(formData.get("inputRate") || "").trim();
   const outputRate = String(formData.get("outputRate") || "").trim();
+  const imageOutputRate = String(formData.get("imageOutputRate") || "").trim();
   const parsed = modelPriceSchema.parse({
     provider: String(formData.get("provider") || "").trim().toLowerCase(),
     model: String(formData.get("model") || ""),
     inputRate,
     outputRate,
+    imageOutputRate: imageOutputRate || null,
     effectiveAt: String(formData.get("effectiveAt") || ""),
   });
   return {
@@ -41,6 +44,7 @@ function parseModelPrice(formData: FormData) {
       model: parsed.model,
       inputUsdPerMillionTokens: new Prisma.Decimal(inputRate),
       outputUsdPerMillionTokens: new Prisma.Decimal(outputRate),
+      imageOutputUsdPerMillionTokens: imageOutputRate ? new Prisma.Decimal(imageOutputRate) : null,
       effectiveAt: parsed.effectiveAt,
     },
   };

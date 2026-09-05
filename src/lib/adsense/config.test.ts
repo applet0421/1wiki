@@ -8,6 +8,11 @@ const complete = {
 };
 
 describe("AdSense configuration", () => {
+  it("uses a separate slot for the second sidebar and disables it when missing in production", () => {
+    const context = { pathname: "/zh-tw/articles/guide", published: true };
+    expect(getAdSlotConfig("sidebar_desktop_sticky", complete, context)).toBeNull();
+    expect(getAdSlotConfig("sidebar_desktop_sticky", { ...complete, NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR_DESKTOP_STICKY: "106" }, context)).toMatchObject({ mode: "live", slotId: "106", shape: "rectangle" });
+  });
   it("requires enabled, client, slot and a published article route", () => {
     expect(getAdSlotConfig("article_mid", complete, { pathname: "/zh-tw/articles/guide", published: true })).toMatchObject({ mode: "live", clientId: "ca-pub-1234567890", slotId: "102" });
     expect(getAdSlotConfig("article_mid", { ...complete, NEXT_PUBLIC_ADSENSE_ENABLED: "false" }, { pathname: "/zh-tw/articles/guide", published: true })).toBeNull();

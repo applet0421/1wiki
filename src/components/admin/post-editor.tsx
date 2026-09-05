@@ -52,7 +52,7 @@ export function PostEditor({ categories, post, error, provider = "deepseek", ini
       <label>分類<CategorySelect key={selectedLocale} name="categoryId" locale={selectedLocale} categories={categories} value={source?.locale === selectedLocale ? source.categoryId : ""} required /></label>
       <label className="span-2">摘要<textarea name="excerpt" defaultValue={source?.excerpt || ""} rows={3} maxLength={320} /></label>
       <label className="span-2">封面圖片網址<input name="coverImage" type="url" defaultValue={source?.coverImage || ""} /></label>
-      <div className="span-2"><span className="field-label">正文</span><RichTextEditor initialHtml={source?.contentHtml} /></div>
+      <div className="span-2"><span className="field-label">正文</span><RichTextEditor initialHtml={source?.contentHtml} aiImageContext={{ postId: post?.id, locale: selectedLocale }} /></div>
     </fieldset>
     <SeoFields key={`seo-${generated?.title || "stored"}`} post={source} />
     <div className="editor-actions"><button type="submit" name="intent" value="draft" className="button button-quiet">儲存草稿</button><button type="submit" name="intent" value="publish" className="button button-primary">發布文章</button></div>

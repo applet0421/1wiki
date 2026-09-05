@@ -34,6 +34,14 @@ describe("ModelPriceForm", () => {
     expect(screen.getByRole("button", { name: "儲存修改" })).toBeInTheDocument();
   });
 
+  it("edits the optional image rate independently from text rates", () => {
+    render(<ModelPriceForm prices={[{ ...price, imageOutputRate: "60" }]} />);
+    expect(screen.getByText("$60")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "編輯 deepseek-v4-flash" }));
+    expect(screen.getByLabelText("編輯圖片輸出費率（USD / 1M Token，可留空）")).toHaveValue(60);
+    expect(screen.getByLabelText("圖片輸出費率（USD / 1M Token，可留空）")).not.toBeRequired();
+  });
+
   it("asks for confirmation before deleting a rate", () => {
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<ModelPriceForm prices={[price]} />);

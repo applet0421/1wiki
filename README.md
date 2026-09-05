@@ -1,6 +1,6 @@
 # 1Wiki
 
-最後更新：2026-09-04
+最後更新：2026-09-05
 
 1Wiki 是提供 AI、軟體、社群與 3C 使用教學及疑難解答的多語系內容網站。繁體中文為預設語系，英文與日文已提供獨立入口；MVP 另包含文章後台、帳密權限、AI 初稿、SEO 與手動 AdSense 版位。
 
@@ -58,8 +58,28 @@ npm run dev
 | `DIRECT_URL` | migration 使用的直接 PostgreSQL 連線字串 |
 | `AUTH_SESSION_SECRET` | 至少 32 字元的隨機密鑰 |
 | `INITIAL_OWNER_*` | 僅首次建立 OWNER 時暫時設定 |
+| `CLOUDFLARE_R2_*` | R2 圖片上傳所需的帳號、bucket 與 S3 API 金鑰 |
+| `R2_PUBLIC_BASE_URL` | R2 bucket 連接的公開自訂網域，例如 `https://media.example.com` |
 
 可以用 `openssl rand -base64 48` 產生 session secret。後台密碼至少 12 字元，且需同時包含字母與數字；連續登入失敗五次會鎖定 15 分鐘。
+
+## 文章圖片上傳（Cloudflare R2）
+
+後台正文工具列可上傳 JPEG、PNG、WebP、GIF 圖片，檔案上限為 10MB。瀏覽器會先向本站取得僅限單一物件、五分鐘有效的上傳網址，再直接將檔案傳至 R2；R2 API 金鑰不會交給瀏覽器。
+
+請建立 R2 bucket 與僅有該 bucket 物件讀寫權限的 R2 API Token，並設定上述環境變數。正式環境請將 bucket 連接到 Cloudflare 管理的公開自訂網域，填入 `R2_PUBLIC_BASE_URL`；`r2.dev` 僅適合開發測試。Bucket 的 CORS 請限制為實際網站來源：
+
+```json
+[
+  {
+    "AllowedOrigins": ["https://your-site.example"],
+    "AllowedMethods": ["PUT"],
+    "AllowedHeaders": ["Content-Type"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3600
+  }
+]
+```
 
 ## AI 供應商
 
@@ -88,6 +108,10 @@ API key 只在伺服器端使用。一般「新增文章」仍可用主題與關
 5. 最後將 `NEXT_PUBLIC_ADSENSE_ENABLED` 改為 `true` 並重新部署。
 
 文章正文最多顯示 `article_after_intro`、`article_mid`、`article_end` 三個版位；`article_mid` 只在至少 1,200 個可見字元的長文中，插入接近全文 45% 的 H2 段落邊界。桌面右欄另有 `sidebar_desktop`，只在 1024px 以上顯示。`feed_inline` 目前只有中央設定，MVP 不啟用。
+
+## AI 配圖
+
+文章編輯器支援 AI 分析段落、Nano Banana 2 生圖、R2 上傳及預覽插入。尺寸／比例由 `.env` 設定，預設 `512`／`9:16`，保留原生尺寸。需執行新增 migration 並啟動 `npm run worker:images`；完整設定、復原行為與驗證方式見 [AI 配圖文件](docs/ai-article-images.md)。
 
 ## 測試與驗收
 

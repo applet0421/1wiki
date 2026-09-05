@@ -14,9 +14,13 @@
     "prisma:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
-    "bootstrap:owner": "tsx scripts/bootstrap-owner.ts"
+    "bootstrap:owner": "tsx scripts/bootstrap-owner.ts",
+    "worker:images": "tsx scripts/image-worker.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1127.0",
+    "@aws-sdk/s3-request-presigner": "^3.1127.0",
+    "@next/env": "^16.3.4",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
     "argon2": "0.45.1",
@@ -27,6 +31,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "sanitize-html": "2.17.7",
+    "sharp": "^0.35.4",
     "zod": "4.5.4"
   },
   "devDependencies": {

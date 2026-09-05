@@ -82,7 +82,7 @@ export default async function UsagePage({ searchParams }: { searchParams: Promis
             <td><strong>{row.promptName}</strong><small>{row.promptKey} · v{row.promptVersion}</small></td>
             <td><strong>{row.provider}</strong><small>{row.model}</small></td>
             <td><span className={`status ${row.status === "SUCCESS" ? "status-published" : "status-failure"}`}>{row.status === "SUCCESS" ? "成功" : "失敗"}</span></td>
-            <td><span>輸入 {row.inputTokens === null ? "—" : number.format(row.inputTokens)}</span><small>輸出 {row.outputTokens === null ? "—" : number.format(row.outputTokens)}</small></td>
+            <td><span>輸入 {row.inputTokens === null ? "—" : number.format(row.inputTokens)}</span><small>輸出 {row.outputTokens === null ? "—" : number.format(row.outputTokens)}</small>{row.imageOutputTokens != null ? <small>其中圖片 {number.format(row.imageOutputTokens)}</small> : null}</td>
             <td>{number.format(row.durationMs)} ms</td>
             <td>{row.estimatedCostUsd === null ? "無法估算" : `$${Number(row.estimatedCostUsd).toFixed(6)}`}</td>
             <td>{row.errorSummary || "—"}</td>
@@ -100,6 +100,7 @@ export default async function UsagePage({ searchParams }: { searchParams: Promis
         model: price.model,
         inputRate: price.inputUsdPerMillionTokens.toString(),
         outputRate: price.outputUsdPerMillionTokens.toString(),
+        imageOutputRate: price.imageOutputUsdPerMillionTokens?.toString() ?? null,
         effectiveAt: price.effectiveAt.toISOString(),
       }))} />
     </section>

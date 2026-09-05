@@ -32,22 +32,23 @@ enum LLMUsageStatus {
 }
 
 model User {
-  id                    String          @id @default(cuid())
-  username              String          @unique
+  id                    String            @id @default(cuid())
+  username              String            @unique
   displayName           String
-  passwordHash          String          @db.Text
-  role                  UserRole        @default(EDITOR)
-  isActive              Boolean         @default(true)
-  mustChangePassword    Boolean         @default(true)
-  failedLoginAttempts   Int             @default(0)
+  passwordHash          String            @db.Text
+  role                  UserRole          @default(EDITOR)
+  isActive              Boolean           @default(true)
+  mustChangePassword    Boolean           @default(true)
+  failedLoginAttempts   Int               @default(0)
   lockedUntil           DateTime?
   passwordChangedAt     DateTime?
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
   sessions              Session[]
   posts                 Post[]
   promptVersionsCreated PromptVersion[]
   modelPricesCreated    LLMModelPrice[]
+  imageGenerations      ImageGeneration[]
 }
 
 model Session {
@@ -108,6 +109,8 @@ model Post {
   author              User             @relation(fields: [authorId], references: [id], onDelete: Restrict)
   category            Category         @relation(fields: [categoryId, locale], references: [id, locale], onDelete: Restrict)
 
+  imageGenerations ImageGeneration[]
+
   @@unique([locale, slug])
   @@index([status, publishedAt])
   @@index([locale, status, publishedAt])
@@ -146,41 +149,89 @@ model PromptVersion {
 }
 
 model LLMModelPrice {
-  id                        String   @id @default(cuid())
-  provider                  String
-  model                     String
-  inputUsdPerMillionTokens  Decimal  @db.Decimal(18, 8)
-  outputUsdPerMillionTokens Decimal  @db.Decimal(18, 8)
-  effectiveAt               DateTime
-  createdById               String?
-  createdAt                 DateTime @default(now())
-  createdBy                 User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  id                             String   @id @default(cuid())
+  provider                       String
+  model                          String
+  inputUsdPerMillionTokens       Decimal  @db.Decimal(18, 8)
+  outputUsdPerMillionTokens      Decimal  @db.Decimal(18, 8)
+  imageOutputUsdPerMillionTokens Decimal? @db.Decimal(18, 8)
+  effectiveAt                    DateTime
+  createdById                    String?
+  createdAt                      DateTime @default(now())
+  createdBy                      User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
   @@unique([provider, model, effectiveAt])
   @@index([provider, model, effectiveAt])
 }
 
 model LLMUsage {
-  id                                String           @id @default(cuid())
-  promptDefinitionId                String
-  promptVersionId                   String
-  provider                          String
-  model                             String
-  status                            LLMUsageStatus
-  inputTokens                       Int?
-  outputTokens                      Int?
-  totalTokens                       Int?
-  durationMs                        Int
-  errorSummary                      String?          @db.VarChar(500)
-  inputUsdPerMillionTokensSnapshot  Decimal?         @db.Decimal(18, 8)
-  outputUsdPerMillionTokensSnapshot Decimal?         @db.Decimal(18, 8)
-  estimatedCostUsd                  Decimal?         @db.Decimal(18, 10)
-  createdAt                         DateTime         @default(now())
-  promptDefinition                  PromptDefinition @relation(fields: [promptDefinitionId], references: [id], onDelete: Restrict)
-  promptVersion                     PromptVersion    @relation(fields: [promptVersionId], references: [id], onDelete: Restrict)
+  id                                     String           @id @default(cuid())
+  promptDefinitionId                     String
+  promptVersionId                        String
+  provider                               String
+  model                                  String
+  status                                 LLMUsageStatus
+  inputTokens                            Int?
+  outputTokens                           Int?
+  imageOutputTokens                      Int?
+  totalTokens                            Int?
+  durationMs                             Int
+  errorSummary                           String?          @db.VarChar(500)
+  inputUsdPerMillionTokensSnapshot       Decimal?         @db.Decimal(18, 8)
+  outputUsdPerMillionTokensSnapshot      Decimal?         @db.Decimal(18, 8)
+  imageOutputUsdPerMillionTokensSnapshot Decimal?         @db.Decimal(18, 8)
+  estimatedCostUsd                       Decimal?         @db.Decimal(18, 10)
+  createdAt                              DateTime         @default(now())
+  promptDefinition                       PromptDefinition @relation(fields: [promptDefinitionId], references: [id], onDelete: Restrict)
+  promptVersion                          PromptVersion    @relation(fields: [promptVersionId], references: [id], onDelete: Restrict)
 
   @@index([createdAt])
   @@index([promptDefinitionId, createdAt])
   @@index([provider, model, createdAt])
   @@index([status, createdAt])
+}
+
+model ImageGeneration {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId         String?
+  post           Post?     @relation(fields: [postId], references: [id], onDelete: SetNull)
+  locale         String
+  title          String
+  paragraphs     Json
+  targetId       String
+  prompt         String    @db.Text
+  alt            String    @db.Text
+  reason         String    @db.Text
+  model          String
+  imageSize      String
+  aspectRatio    String
+  altModel       String
+  status         String    @default("PLANNED")
+  imageBytes     Bytes?
+  mimeType       String?
+  publicUrl      String?
+  objectKey      String?
+  width          Int?
+  height         Int?
+  error          String?   @db.VarChar(500)
+  altWarning     String?   @db.VarChar(500)
+  leaseExpiresAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+  @@index([postId])
+}
+
+model WorkerHeartbeat {
+  id            String   @id
+  name          String
+  startedAt     DateTime
+  lastHeartbeat DateTime
+  processed     Int      @default(0)
+  lastError     String?  @db.VarChar(500)
+  updatedAt     DateTime @updatedAt
 }

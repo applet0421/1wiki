@@ -24,6 +24,7 @@ export type UsageRow = {
   status: LLMUsageStatus;
   inputTokens: number | null;
   outputTokens: number | null;
+  imageOutputTokens?: number | null;
   totalTokens: number | null;
   durationMs: number;
   estimatedCostUsd: string | null;
@@ -112,6 +113,7 @@ export async function getUsageDashboard(client: PrismaClient, filters: UsageFilt
       status: row.status,
       inputTokens: row.inputTokens,
       outputTokens: row.outputTokens,
+      imageOutputTokens: row.imageOutputTokens,
       totalTokens: row.totalTokens,
       durationMs: row.durationMs,
       estimatedCostUsd: row.estimatedCostUsd?.toString() ?? null,

@@ -13,6 +13,7 @@ type PriceRow = {
   model: string;
   inputRate: string;
   outputRate: string;
+  imageOutputRate?: string | null;
   effectiveAt: string;
 };
 
@@ -20,6 +21,13 @@ function localDateTimeValue(value?: string) {
   const date = value ? new Date(value) : new Date();
   const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
   return localDate.toISOString().slice(0, 16);
+}
+
+function formatTaipeiDate(value: string): string {
+  const date = new Date(value);
+  const taipei = new Date(date.getTime() + 8 * 60 * 60 * 1000);
+  const pad = (part: number) => String(part).padStart(2, "0");
+  return `${taipei.getUTCFullYear()}/${pad(taipei.getUTCMonth() + 1)}/${pad(taipei.getUTCDate())} ${pad(taipei.getUTCHours())}:${pad(taipei.getUTCMinutes())}:${pad(taipei.getUTCSeconds())}`;
 }
 
 function ProviderOptions() {
@@ -33,24 +41,26 @@ export function ModelPriceForm({ prices }: { prices: PriceRow[] }) {
     <section className="panel admin-grid">
       <div>
         <h2>模型費率</h2>
-        <p className="muted">單位為每百萬 Token 的美元。新增、修改或刪除費率只影響後續呼叫，歷史成本不重算。</p>
+        <p className="muted">單位為每百萬 Token 的美元。新增、修改或刪除費率只影響後續呼叫，歷史成本不重算。圖片輸出另外計價；圖片費率留空時無法估算生圖成本。</p>
       </div>
       <form action={createModelPriceAction} className="form-grid">
         <label>供應商<select name="provider" defaultValue="openai"><ProviderOptions /></select></label>
         <label>模型名稱<input name="model" required maxLength={120} placeholder="gpt-5" /></label>
         <label>輸入費率（USD / 1M Token）<input name="inputRate" type="number" required min="0.00000001" step="0.00000001" /></label>
         <label>輸出費率（USD / 1M Token）<input name="outputRate" type="number" required min="0.00000001" step="0.00000001" /></label>
+        <label>圖片輸出費率（USD / 1M Token，可留空）<input name="imageOutputRate" type="number" min="0.00000001" step="0.00000001" /></label>
         <label>生效時間<input name="effectiveAt" type="datetime-local" required defaultValue={localDateTimeValue()} /></label>
         <div className="editor-actions"><button className="button button-primary" type="submit">新增費率</button></div>
       </form>
       {prices.length ? <div className="table-wrap"><table>
-        <thead><tr><th>供應商 / 模型</th><th>輸入費率</th><th>輸出費率</th><th>生效時間</th><th>操作</th></tr></thead>
+        <thead><tr><th>供應商 / 模型</th><th>輸入費率</th><th>輸出費率</th><th>圖片輸出費率</th><th>生效時間</th><th>操作</th></tr></thead>
         <tbody>{prices.map((price) => <Fragment key={price.id}>
           <tr>
             <td><strong>{price.provider}</strong><small>{price.model}</small></td>
             <td>${price.inputRate}</td>
             <td>${price.outputRate}</td>
-            <td>{new Date(price.effectiveAt).toLocaleString("zh-TW", { timeZone: "Asia/Taipei" })}</td>
+            <td>{price.imageOutputRate ? `$${price.imageOutputRate}` : "未設定"}</td>
+            <td>{formatTaipeiDate(price.effectiveAt)}</td>
             <td><div className="row-actions">
               <button className="button button-quiet" type="button" aria-label={`編輯 ${price.model}`} onClick={() => setEditingId(editingId === price.id ? null : price.id)}>編輯</button>
               <form
@@ -64,13 +74,14 @@ export function ModelPriceForm({ prices }: { prices: PriceRow[] }) {
               </form>
             </div></td>
           </tr>
-          {editingId === price.id ? <tr><td colSpan={5}>
+          {editingId === price.id ? <tr><td colSpan={6}>
             <form action={updateModelPriceAction} className="form-grid">
               <input type="hidden" name="id" value={price.id} />
               <label>編輯供應商<select name="provider" defaultValue={price.provider}><ProviderOptions /></select></label>
               <label>編輯模型名稱<input name="model" required maxLength={120} defaultValue={price.model} /></label>
               <label>編輯輸入費率（USD / 1M Token）<input name="inputRate" type="number" required min="0.00000001" step="0.00000001" defaultValue={price.inputRate} /></label>
               <label>編輯輸出費率（USD / 1M Token）<input name="outputRate" type="number" required min="0.00000001" step="0.00000001" defaultValue={price.outputRate} /></label>
+              <label>編輯圖片輸出費率（USD / 1M Token，可留空）<input name="imageOutputRate" type="number" min="0.00000001" step="0.00000001" defaultValue={price.imageOutputRate ?? ""} /></label>
               <label>編輯生效時間<input name="effectiveAt" type="datetime-local" required defaultValue={localDateTimeValue(price.effectiveAt)} /></label>
               <div className="editor-actions">
                 <button className="button button-primary" type="submit">儲存修改</button>

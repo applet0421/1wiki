@@ -41,6 +41,32 @@ describe("createModelPriceAction", () => {
     expect(data).toMatchObject({ provider: "openai", model: "gpt-5", createdById: "owner" });
     expect(data.inputUsdPerMillionTokens.toString()).toBe("0.15");
     expect(data.outputUsdPerMillionTokens.toString()).toBe("0.6");
+    expect(data.imageOutputUsdPerMillionTokens).toBeNull();
+  });
+
+  it("stores optional image output rates with decimal precision", async () => {
+    getCurrentUser.mockResolvedValueOnce({ id: "owner", role: "OWNER", isActive: true });
+    const form = validForm();
+    form.set("imageOutputRate", "60.00000001");
+    await expect(priceActions.createModelPriceAction(form)).rejects.toThrow("success=price-created");
+    expect(create.mock.calls[0][0].data.imageOutputUsdPerMillionTokens.toString()).toBe("60.00000001");
+  });
+
+  it.each(["0", "-1", "bad", "Infinity"])("rejects invalid image output rate %s", async (rate) => {
+    getCurrentUser.mockResolvedValueOnce({ id: "owner", role: "OWNER", isActive: true });
+    const form = validForm();
+    form.set("imageOutputRate", rate);
+    await expect(priceActions.createModelPriceAction(form)).rejects.toThrow(/error=/);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it("clears an existing image rate when the optional field is empty", async () => {
+    getCurrentUser.mockResolvedValueOnce({ id: "owner", role: "OWNER", isActive: true });
+    const form = validForm();
+    form.set("id", "price-1");
+    form.set("imageOutputRate", "");
+    await expect(priceActions.updateModelPriceAction(form)).rejects.toThrow("success=price-updated");
+    expect(update.mock.calls[0][0].data.imageOutputUsdPerMillionTokens).toBeNull();
   });
 
   it("rejects invalid non-positive rates", async () => {

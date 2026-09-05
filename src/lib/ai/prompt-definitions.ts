@@ -3,6 +3,9 @@ export const promptKeys = [
   "ARTICLE_REWRITE",
   "SOURCE_ANALYZE",
   "IDEA_GENERATE",
+  "IMAGE_PLAN",
+  "IMAGE_GENERATE",
+  "IMAGE_ALT",
 ] as const;
 
 export type PromptKey = (typeof promptKeys)[number];
@@ -14,6 +17,9 @@ export type PromptMetadata = {
 };
 
 export const promptMetadata: Record<PromptKey, PromptMetadata> = {
+  IMAGE_PLAN: { name: "文章配圖規劃", allowedVariables: ["languageInstruction", "title", "paragraphs"], requiredVariables: ["languageInstruction", "title", "paragraphs"] },
+  IMAGE_GENERATE: { name: "文章圖片生成", allowedVariables: ["prompt"], requiredVariables: ["prompt"] },
+  IMAGE_ALT: { name: "圖片替代文字校對", allowedVariables: ["languageInstruction", "title", "paragraph", "alt"], requiredVariables: ["languageInstruction", "title", "paragraph", "alt"] },
   ARTICLE_GENERATE: {
     name: "一般文章生成",
     allowedVariables: ["languageInstruction", "topic", "keyword", "instructions"],

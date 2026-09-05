@@ -6,7 +6,7 @@ describe("Prompt and LLM usage schema", () => {
   beforeEach(resetDatabase);
   afterAll(() => prisma.$disconnect());
 
-  it("installs four active v1 Prompt definitions", async () => {
+  it("installs article and image active v1 Prompt definitions", async () => {
     const definitions = await prisma.promptDefinition.findMany({
       include: { versions: true },
       orderBy: { key: "asc" },
@@ -16,6 +16,9 @@ describe("Prompt and LLM usage schema", () => {
       "ARTICLE_GENERATE",
       "ARTICLE_REWRITE",
       "IDEA_GENERATE",
+      "IMAGE_ALT",
+      "IMAGE_GENERATE",
+      "IMAGE_PLAN",
       "SOURCE_ANALYZE",
     ]);
     expect(definitions.every((item) => item.activeVersionNumber === 1)).toBe(true);

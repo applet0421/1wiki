@@ -1,4 +1,4 @@
-export type AdPlacement = "article_after_intro" | "article_mid" | "article_end" | "sidebar_desktop" | "feed_inline";
+export type AdPlacement = "article_after_intro" | "article_mid" | "article_end" | "sidebar_desktop" | "sidebar_desktop_sticky" | "feed_inline";
 export type AdEnvironment = Record<string, string | undefined>;
 export type AdContext = { pathname: string; published: boolean };
 export type AdSlotConfig = { mode: "live"; placement: AdPlacement; shape: "banner" | "rectangle"; clientId: string; slotId: string } | { mode: "preview"; placement: AdPlacement; shape: "banner" | "rectangle" };
@@ -6,9 +6,10 @@ export type AdSlotConfig = { mode: "live"; placement: AdPlacement; shape: "banne
 const slotKeys: Record<AdPlacement, string> = {
   article_after_intro: "NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_AFTER_INTRO", article_mid: "NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_MID",
   article_end: "NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_END", sidebar_desktop: "NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR_DESKTOP",
+  sidebar_desktop_sticky: "NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR_DESKTOP_STICKY",
   feed_inline: "NEXT_PUBLIC_ADSENSE_SLOT_FEED_INLINE",
 };
-const shapes: Record<AdPlacement, "banner" | "rectangle"> = { article_after_intro: "banner", article_mid: "rectangle", article_end: "banner", sidebar_desktop: "rectangle", feed_inline: "banner" };
+const shapes: Record<AdPlacement, "banner" | "rectangle"> = { article_after_intro: "banner", article_mid: "rectangle", article_end: "banner", sidebar_desktop: "rectangle", sidebar_desktop_sticky: "rectangle", feed_inline: "banner" };
 const articlePathPattern = new RegExp(`^/(?:${supportedLocales.join("|")})/articles/[^/]+$`);
 
 export function getPublicAdEnvironment(): AdEnvironment {
@@ -20,6 +21,7 @@ export function getPublicAdEnvironment(): AdEnvironment {
     NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_MID: process.env.NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_MID,
     NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_END: process.env.NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_END,
     NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR_DESKTOP: process.env.NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR_DESKTOP,
+    NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR_DESKTOP_STICKY: process.env.NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR_DESKTOP_STICKY,
     NEXT_PUBLIC_ADSENSE_SLOT_FEED_INLINE: process.env.NEXT_PUBLIC_ADSENSE_SLOT_FEED_INLINE,
   };
 }

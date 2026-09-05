@@ -13,7 +13,7 @@ describe("SiteHeader", () => {
     expect(screen.queryByRole("link", { name: "軟體" })).not.toBeInTheDocument();
   });
 
-  it("expands a navigation category to reveal all lower-level category links", () => {
+  it("expands a navigation category to reveal one level at a time", () => {
     render(<SiteHeader locale="zh-tw" dictionary={getDictionary("zh-tw")} categories={[
       {
         id: "ai",
@@ -37,6 +37,20 @@ describe("SiteHeader", () => {
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("link", { name: "全部 AI" })).toHaveAttribute("href", "/zh-tw/category/ai");
     expect(screen.getByRole("link", { name: "ChatGPT" })).toHaveAttribute("href", "/zh-tw/category/ai/chatgpt");
+    expect(screen.queryByRole("link", { name: "Prompt" })).not.toBeInTheDocument();
+    const childTrigger = screen.getByRole("button", { name: "ChatGPT" });
+    fireEvent.click(childTrigger);
+    expect(childTrigger).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("link", { name: "Prompt" })).toHaveAttribute("href", "/zh-tw/category/ai/chatgpt/prompt");
+    fireEvent.keyDown(childTrigger, { key: "Escape" });
+    expect(screen.queryByRole("link", { name: "Prompt" })).not.toBeInTheDocument();
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(childTrigger).toHaveFocus();
+    const handledEscape = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    handledEscape.preventDefault();
+    fireEvent(document, handledEscape);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    fireEvent.keyDown(trigger, { key: "Escape" });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
 });

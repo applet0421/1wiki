@@ -30,6 +30,7 @@ export async function rewriteArticle(input: RewriteArticleInput, options: Option
     variables: rewritePromptVariables(source),
     jsonSchema: articleJsonSchema,
     schemaName: "article",
+    maxTokens: 4200,
     parse: parseArticleJson,
   }, { env: options.env, fetcher: options.fetcher }) as GeneratedArticle;
 

@@ -26,7 +26,7 @@ describe("rewriteArticle", () => {
     });
 
     expect(result.contentHtml).toBe("<h2>重點</h2><p>改寫內容</p>");
-    expect(execute).toHaveBeenCalledWith(expect.objectContaining({ key: "ARTICLE_REWRITE" }), expect.anything());
+    expect(execute).toHaveBeenCalledWith(expect.objectContaining({ key: "ARTICLE_REWRITE", maxTokens: 4200 }), expect.anything());
   });
 
   it("rejects source articles without a title or meaningful content", async () => {
