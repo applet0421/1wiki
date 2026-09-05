@@ -44,3 +44,22 @@ describe("PostEditor AI review metadata", () => {
     expect(screen.queryByRole("option", { name: "English AI" })).not.toBeInTheDocument();
   });
 });
+
+it("defaults new articles to the first active author in each language", async () => {
+  const { fireEvent } = await import("@testing-library/react");
+  render(<PostEditor categories={[]} showAIGenerator={false} authors={[
+    { id: "zh-author", locale: "zh-tw", name: "中文作者", archivedAt: null },
+    { id: "en-author", locale: "en", name: "English author", archivedAt: null },
+    { id: "archived", locale: "zh-tw", name: "已封存作者", archivedAt: new Date() },
+  ]} />);
+  expect(screen.getByLabelText("作者")).toHaveValue("zh-author");
+  expect(screen.getByRole("option", { name: "中文作者" })).toBeInTheDocument();
+  expect(screen.queryByRole("option", { name: "已封存作者" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("option", { name: /未指定/ })).not.toBeInTheDocument();
+  expect(screen.queryByText(/管理作者庫/)).not.toBeInTheDocument();
+
+  fireEvent.change(screen.getByLabelText("內容語系"), { target: { value: "en" } });
+  expect(screen.getByLabelText("作者")).toHaveValue("en-author");
+  expect(screen.getByRole("option", { name: "English author" })).toBeInTheDocument();
+  expect(screen.queryByRole("option", { name: "中文作者" })).not.toBeInTheDocument();
+});

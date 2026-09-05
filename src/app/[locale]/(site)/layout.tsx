@@ -9,6 +9,8 @@ import { SiteHeader } from "@/components/site/header";
 import { SiteFooter } from "@/components/site/footer";
 import { listNavigationCategories } from "@/lib/content/repository";
 import { prisma } from "@/lib/db/prisma";
+import { AnalyticsTracker } from "@/components/site/analytics-tracker";
+import { getAnalyticsConfig } from "@/lib/analytics/config";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +20,8 @@ export default async function SiteLayout({ children, params }: { children: React
   const siteUrl = getSiteUrl();
   const dictionary = getDictionary(locale);
   const categories = await listNavigationCategories(prisma, locale);
-  return <><JsonLd value={buildWebsiteJsonLd(siteUrl, locale)} /><JsonLd value={buildOrganizationJsonLd(siteUrl)} /><SiteHeader locale={locale} dictionary={dictionary} categories={categories.map((category) => ({
+  const analytics = getAnalyticsConfig();
+  return <>{analytics.enabled ? <AnalyticsTracker measurementId={analytics.measurementId} /> : null}<JsonLd value={buildWebsiteJsonLd(siteUrl, locale)} /><JsonLd value={buildOrganizationJsonLd(siteUrl)} /><SiteHeader locale={locale} dictionary={dictionary} categories={categories.map((category) => ({
     id: category.id,
     name: category.name,
     segments: [category.slug],

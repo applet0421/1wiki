@@ -16,6 +16,7 @@ const allowedTags = [
   "pre",
   "br",
   "img",
+  "iframe",
 ];
 
 export function sanitizeArticleHtml(html: string): string {
@@ -24,9 +25,11 @@ export function sanitizeArticleHtml(html: string): string {
     allowedAttributes: {
       a: ["href", "title", "target", "rel"],
       img: ["src", "alt", "width", "height"],
+      iframe: ["src", "title", "loading", "allow", "allowfullscreen", "class"],
     },
     allowedSchemes: ["http", "https", "mailto"],
     allowedSchemesAppliedToAttributes: ["href", "src"],
+    allowedIframeHostnames: ["www.youtube-nocookie.com"],
     nonTextTags: ["style", "script", "textarea", "option", "noscript", "ins"],
     transformTags: {
       a: (tagName, attribs) => ({

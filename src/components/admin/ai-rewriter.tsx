@@ -1,5 +1,6 @@
 "use client";
 
+import type { AuthorOption } from "@/lib/content/authors";
 import { useState } from "react";
 import { rewriteArticleAction } from "@/app/(backoffice)/admin/posts/rewrite-actions";
 import type { GeneratedArticle } from "@/lib/ai/types";
@@ -8,7 +9,7 @@ import { PostEditor } from "./post-editor";
 import { RichTextEditor } from "./rich-text-editor";
 import { defaultLocale, getLocaleConfig, supportedLocales, type Locale } from "@/lib/i18n/config";
 
-export function AIRewriter({ categories, provider }: { categories: CategoryOption[]; provider: string }) {
+export function AIRewriter({ categories, provider, authors = [] }: { categories: CategoryOption[]; provider: string; authors?: AuthorOption[] }) {
   const [sourceTitle, setSourceTitle] = useState("");
   const [locale, setLocale] = useState<Locale>(defaultLocale);
   const [sourceContentHtml, setSourceContentHtml] = useState("");
@@ -50,7 +51,7 @@ export function AIRewriter({ categories, provider }: { categories: CategoryOptio
 
     {rewritten ? <section className="rewrite-result" aria-label="AI 改寫結果">
       <div className="result-heading"><p className="eyebrow">改寫結果</p><h2>確認並完成文章</h2><p className="muted">內容尚未儲存。請選擇分類並檢查全文後，再儲存草稿或發布。</p></div>
-      <PostEditor key={`${rewritten.title}-${rewritten.seoDescription}`} locale={locale} categories={categories} initialGenerated={rewritten} provider={provider} showAIGenerator={false} />
+      <PostEditor authors={authors} key={`${rewritten.title}-${rewritten.seoDescription}`} locale={locale} categories={categories} initialGenerated={rewritten} provider={provider} showAIGenerator={false} />
     </section> : <div className="panel rewrite-empty"><strong>改寫結果會顯示在這裡</strong><p className="muted">貼上原文並執行 AI 改寫，不會自動儲存或發布。</p></div>}
   </div>;
 }

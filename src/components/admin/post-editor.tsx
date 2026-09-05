@@ -1,5 +1,6 @@
 "use client";
 
+import type { AuthorOption } from "@/lib/content/authors";
 import { useState } from "react";
 import { savePostAction } from "@/app/(backoffice)/admin/posts/actions";
 import type { GeneratedArticle } from "@/lib/ai/types";
@@ -11,15 +12,23 @@ import { SeoFields } from "./seo-fields";
 import { TitleSlugFields } from "./title-slug-fields";
 import { defaultLocale, getLocaleConfig, supportedLocales, type Locale } from "@/lib/i18n/config";
 
-type EditablePost = { id: string; locale: string; status: "DRAFT" | "PUBLISHED"; title: string; slug: string; excerpt: string; contentHtml: string; coverImage: string | null; categoryId: string; seoTitle: string | null; seoDescription: string | null; seoKeywords: string | null; canonicalUrl: string | null; aiContentType?: "TROUBLESHOOTING" | "HOW_TO" | null; primaryKeyword?: string | null; searchIntent?: string | null; aiSourceSupport?: "STRONG" | "MEDIUM" | null; aiNeedsVerification?: unknown };
+type EditablePost = { id: string; locale: string; status: "DRAFT" | "PUBLISHED"; title: string; slug: string; excerpt: string; contentHtml: string; coverImage: string | null; categoryId: string; bylineId?: string | null; seoTitle: string | null; seoDescription: string | null; seoKeywords: string | null; canonicalUrl: string | null; aiContentType?: "TROUBLESHOOTING" | "HOW_TO" | null; primaryKeyword?: string | null; searchIntent?: string | null; aiSourceSupport?: "STRONG" | "MEDIUM" | null; aiNeedsVerification?: unknown };
 
 function verificationNotes(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
 
-export function PostEditor({ categories, post, error, provider = "deepseek", initialGenerated, showAIGenerator = true, locale = defaultLocale }: { categories: CategoryOption[]; post?: EditablePost; error?: string; provider?: string; initialGenerated?: GeneratedArticle; showAIGenerator?: boolean; locale?: Locale }) {
+function firstActiveAuthorId(authors: AuthorOption[], locale: Locale): string {
+  return authors.find((author) => author.locale === locale && !author.archivedAt)?.id ?? "";
+}
+
+export function PostEditor({ categories, authors = [], post, error, provider = "deepseek", initialGenerated, showAIGenerator = true, locale = defaultLocale }: { categories: CategoryOption[]; authors?: AuthorOption[]; post?: EditablePost; error?: string; provider?: string; initialGenerated?: GeneratedArticle; showAIGenerator?: boolean; locale?: Locale }) {
+  const initialLocale = (post?.locale as Locale | undefined) ?? locale;
+  const [selectedLocale, setSelectedLocale] = useState<Locale>(initialLocale);
+  const [selectedAuthor, setSelectedAuthor] = useState(
+    post ? post.bylineId ?? "" : firstActiveAuthorId(authors, initialLocale),
+  );
   const [generated, setGenerated] = useState<GeneratedArticle | null>(initialGenerated || null);
-  const [selectedLocale, setSelectedLocale] = useState<Locale>((post?.locale as Locale | undefined) ?? locale);
   const source: EditablePost | undefined = generated ? {
     id: post?.id || "",
     locale: post?.locale || selectedLocale,
@@ -47,9 +56,14 @@ export function PostEditor({ categories, post, error, provider = "deepseek", ini
     {showAIGenerator ? <AIGenerator provider={provider} locale={selectedLocale} onGenerated={setGenerated} /> : null}
     <fieldset key={generated?.title || "stored"} className="panel form-grid"><legend>文章內容</legend>
       <TitleSlugFields initialTitle={source?.title} initialSlug={source?.slug} />
-      <label>內容語系<select name="locale" value={selectedLocale} disabled={localeLocked} onChange={(event) => setSelectedLocale(event.target.value as Locale)}>{supportedLocales.map((value) => <option key={value} value={value}>{getLocaleConfig(value).label}</option>)}</select></label>
+      <label>內容語系<select name="locale" value={selectedLocale} disabled={localeLocked} onChange={(event) => { const nextLocale = event.target.value as Locale; setSelectedLocale(nextLocale); setSelectedAuthor(firstActiveAuthorId(authors, nextLocale)); }}>{supportedLocales.map((value) => <option key={value} value={value}>{getLocaleConfig(value).label}</option>)}</select></label>
       {localeLocked ? <input type="hidden" name="locale" value={selectedLocale} /> : null}
       <label>分類<CategorySelect key={selectedLocale} name="categoryId" locale={selectedLocale} categories={categories} value={source?.locale === selectedLocale ? source.categoryId : ""} required /></label>
+      <label>作者<select name="bylineId" value={selectedAuthor} onChange={(event) => setSelectedAuthor(event.target.value)} required>
+        {post && !post.bylineId ? <option value="">原帳號署名（既有文章）</option> : null}
+        {authors.filter((author) => author.locale === selectedLocale && (!author.archivedAt || author.id === post?.bylineId)).map((author) => <option key={author.id} value={author.id}>{author.name}{author.archivedAt ? "（已封存，保留署名）" : ""}</option>)}
+        {!authors.some((author) => author.locale === selectedLocale && (!author.archivedAt || author.id === post?.bylineId)) ? <option value="" disabled>此語系尚無可用作者</option> : null}
+      </select></label>
       <label className="span-2">摘要<textarea name="excerpt" defaultValue={source?.excerpt || ""} rows={3} maxLength={320} /></label>
       <label className="span-2">封面圖片網址<input name="coverImage" type="url" defaultValue={source?.coverImage || ""} /></label>
       <div className="span-2"><span className="field-label">正文</span><RichTextEditor initialHtml={source?.contentHtml} aiImageContext={{ postId: post?.id, locale: selectedLocale }} /></div>

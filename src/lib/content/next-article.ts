@@ -22,6 +22,6 @@ export async function getNextCategoryArticle(client: PrismaClient | Prisma.Trans
       ] } : {}),
     },
     orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
-    include: { category: { include: { parent: { include: { parent: true } } } }, author: { select: { displayName: true } } },
+    include: { category: { include: { parent: { include: { parent: true } } } }, author: { select: { displayName: true } }, byline: { select: { name: true, slug: true, id: true } } },
   });
 }

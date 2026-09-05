@@ -31,6 +31,12 @@ enum LLMUsageStatus {
   FAILURE
 }
 
+enum TrafficSyncStatus {
+  RUNNING
+  SUCCESS
+  FAILURE
+}
+
 model User {
   id                    String            @id @default(cuid())
   username              String            @unique
@@ -77,10 +83,27 @@ model Category {
   parent           Category?  @relation("CategoryTree", fields: [parentId, locale], references: [id, locale], onDelete: Restrict)
   children         Category[] @relation("CategoryTree")
   posts            Post[]
+  trafficDaily     TrafficDailyPage[]
 
   @@unique([id, locale])
   @@unique([locale, slug])
   @@index([locale, parentId, sortOrder])
+}
+
+model Author {
+  id          String   @id @default(cuid())
+  locale      String
+  name        String
+  slug        String
+  contentHtml String   @default("") @db.Text
+  archivedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  posts       Post[]
+
+  @@unique([id, locale])
+  @@unique([locale, slug])
+  @@index([locale, archivedAt, name])
 }
 
 model Post {
@@ -94,6 +117,7 @@ model Post {
   status              PostStatus       @default(DRAFT)
   authorId            String
   categoryId          String
+  bylineId            String?
   seoTitle            String?          @db.Text
   seoDescription      String?          @db.Text
   seoKeywords         String?          @db.Text
@@ -109,13 +133,70 @@ model Post {
   author              User             @relation(fields: [authorId], references: [id], onDelete: Restrict)
   category            Category         @relation(fields: [categoryId, locale], references: [id, locale], onDelete: Restrict)
 
+  byline Author? @relation(fields: [bylineId, locale], references: [id, locale], onDelete: Restrict)
+
   imageGenerations ImageGeneration[]
+  trafficDaily     TrafficDailyPage[]
 
   @@unique([locale, slug])
   @@index([status, publishedAt])
   @@index([locale, status, publishedAt])
   @@index([categoryId, status])
   @@index([authorId])
+  @@index([bylineId, locale])
+}
+
+model TrafficDailyPage {
+  id                String   @id @default(cuid())
+  date              DateTime @db.Date
+  pagePath          String
+  pageTitle         String   @default("")
+  pageType          String
+  locale            String?
+  postId            String?
+  categoryId        String?
+  views             Int      @default(0)
+  activeUsers       Int      @default(0)
+  sessions          Int      @default(0)
+  engagedSessions   Int      @default(0)
+  engagementSeconds Int      @default(0)
+  entrances         Int      @default(0)
+  syncedAt          DateTime @default(now())
+  post              Post?    @relation(fields: [postId], references: [id], onDelete: SetNull)
+  category          Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@unique([date, pagePath])
+  @@index([date])
+  @@index([locale, date])
+  @@index([categoryId, date])
+  @@index([postId, date])
+}
+
+model TrafficDailySite {
+  id                String   @id @default(cuid())
+  date              DateTime @unique @db.Date
+  views             Int      @default(0)
+  activeUsers       Int      @default(0)
+  sessions          Int      @default(0)
+  engagedSessions   Int      @default(0)
+  engagementSeconds Int      @default(0)
+  syncedAt          DateTime @default(now())
+
+  @@index([date])
+}
+
+model TrafficSyncRun {
+  id          String            @id @default(cuid())
+  status      TrafficSyncStatus @default(RUNNING)
+  fromDate    DateTime          @db.Date
+  toDate      DateTime          @db.Date
+  rowCount    Int               @default(0)
+  error       String?           @db.VarChar(500)
+  startedAt   DateTime          @default(now())
+  completedAt DateTime?
+
+  @@index([startedAt])
+  @@index([status, startedAt])
 }
 
 model PromptDefinition {

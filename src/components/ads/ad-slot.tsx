@@ -9,7 +9,7 @@ export function AdSlot({ placement, config }: { placement: AdPlacement; config: 
   const initialized = useRef(false);
   const container = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
-  const desktopOnly = placement === "sidebar_desktop" || placement === "sidebar_desktop_sticky";
+  const desktopOnly = placement === "sidebar_desktop" || placement === "sidebar_desktop_sticky" || placement === "category_sidebar_desktop";
 
   useEffect(() => {
     if (config?.mode !== "live" || initialized.current) return;
@@ -48,6 +48,6 @@ export function AdSlot({ placement, config }: { placement: AdPlacement; config: 
   }, [config, ready]);
 
   if (!config) return null;
-  if (config.mode === "preview") return <div className={`ad-preview ad-${config.shape}`} data-ad-placement={placement}>AdSense · {placement}</div>;
+  if (config.mode === "preview") return <div className={`ad-preview ad-${config.shape}`} data-testid={`ad-preview-${placement}`} data-ad-placement={placement}>AdSense · {placement}</div>;
   return <div ref={container} className={`ad-container ad-${config.shape}`} data-ad-placement={placement}>{ready ? <ins className="adsbygoogle" data-testid={`adsense-${placement}`} data-ad-placement={placement} data-ad-client={config.clientId} data-ad-slot={config.slotId} data-ad-format="auto" data-full-width-responsive="true" /> : null}</div>;
 }

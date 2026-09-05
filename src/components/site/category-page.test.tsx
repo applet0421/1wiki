@@ -1,5 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { CategoryPageContent } from "./category-page";
 
@@ -20,5 +20,24 @@ describe("CategoryPageContent", () => {
     expect(screen.getByText("Leaf article")).toBeInTheDocument();
     expect(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByText("AI"))
       .toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("list", { name: "文章列表" })).toBeInTheDocument();
+    expect(screen.getByRole("listitem")).toHaveClass("category-article-item");
+  });
+
+  it("places category ads around a sufficiently long article list", () => {
+    vi.stubEnv("NODE_ENV", "development");
+    const posts = Array.from({ length: 11 }, (_, index) => ({
+      id: `post-${index}`, slug: `article-${index}`, title: `Article ${index}`, excerpt: "摘要",
+      publishedAt: new Date("2026-09-03T00:00:00Z"),
+      category: { name: "ChatGPT", slug: "chatgpt", parent: { name: "AI", slug: "ai", parent: null } },
+    }));
+    render(<CategoryPageContent locale="zh-tw" dictionary={getDictionary("zh-tw")} data={{
+      category: { id: "root", name: "AI", slug: "ai", description: "AI 教學" }, ancestors: [], children: [], posts,
+    }} />);
+    expect(screen.getByTestId("ad-preview-category_after_intro")).toBeInTheDocument();
+    expect(screen.getByTestId("ad-preview-category_inline")).toBeInTheDocument();
+    expect(screen.getByTestId("ad-preview-category_end")).toBeInTheDocument();
+    expect(screen.getByTestId("ad-preview-category_sidebar_desktop")).toBeInTheDocument();
+    vi.unstubAllEnvs();
   });
 });

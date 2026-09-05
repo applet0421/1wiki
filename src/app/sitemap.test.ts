@@ -47,3 +47,15 @@ describe("sitemap content", () => {
     expect(content.find(({ url }) => url.endsWith("/category/ai"))?.lastModified).toEqual(articleUpdatedAt);
   });
 });
+
+it("includes archived authors with published work while excluding unassigned profiles", async () => {
+  await resetDatabase();
+  const author = await prisma.author.create({ data: { locale: "en", name: "Writer", slug: "writer", archivedAt: new Date() } });
+  await prisma.author.create({ data: { locale: "en", name: "Unused", slug: "unused" } });
+  const user = await prisma.user.create({ data: { username: "writer", displayName: "Editor", passwordHash: "test" } });
+  const category = await prisma.category.create({ data: { locale: "en", name: "AI", slug: "ai" } });
+  await prisma.post.create({ data: { locale: "en", title: "Article", slug: "article", status: "PUBLISHED", publishedAt: new Date(), authorId: user.id, bylineId: author.id, categoryId: category.id } });
+  const urls = (await getSitemapContent(prisma, "https://1wiki.example")).map(({ url }) => url);
+  expect(urls).toContain("https://1wiki.example/en/authors/writer");
+  expect(urls).not.toContain("https://1wiki.example/en/authors/unused");
+});

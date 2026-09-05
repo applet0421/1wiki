@@ -10,8 +10,8 @@
 
 ```dotenv
 GEMINI_API_KEY=填入有付費圖片模型權限的金鑰
-GEMINI_IMAGE_MODEL=gemini-3.1-flash-image
-GEMINI_IMAGE_SIZE=512
+GEMINI_IMAGE_MODEL=gemini-3.1-flash-lite-image
+GEMINI_IMAGE_SIZE=1K
 GEMINI_IMAGE_ASPECT_RATIO=9:16
 ```
 
@@ -19,7 +19,7 @@ GEMINI_IMAGE_ASPECT_RATIO=9:16
 
 尺寸支援 `512`、`1K`、`2K`、`4K`，大小寫必須符合。比例支援 `1:1`、`1:4`、`1:8`、`2:3`、`3:2`、`3:4`、`4:1`、`4:3`、`4:5`、`5:4`、`8:1`、`9:16`、`16:9`、`21:9`。以上是 Nano Banana 2 參數；更換其他模型時，管理員須選擇該模型支援的組合。
 
-`512` 是原生解析度等級，不是固定長邊；官方表格 512 + 9:16 對應 384 × 688。圖片轉 WebP（品質85），不縮放、不裁切，保存實際 width/height。回應選擇 final image，忽略 thought 圖片。
+Lite Image 目前只支援 1K；圖片轉 WebP（品質85），不縮放、不裁切，保存實際 width/height。回應選擇 final image，忽略 thought 圖片。
 
 沿用既有 R2 設定：`CLOUDFLARE_R2_ACCOUNT_ID`、`CLOUDFLARE_R2_BUCKET`、`CLOUDFLARE_R2_ACCESS_KEY_ID`、`CLOUDFLARE_R2_SECRET_ACCESS_KEY`、`R2_PUBLIC_BASE_URL`。由後端上傳，瀏覽器不經過 base64 圖片傳輸；URL 路徑為 `ai-images/<job-id>.webp`。
 

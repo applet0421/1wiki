@@ -12,6 +12,16 @@ describe("RichTextEditor media controls", () => {
     expect(screen.getByRole("button", { name: "插入連結" })).toBeInTheDocument();
   });
 
+  it("inserts a URL image into the editor and keeps it in view", () => {
+    const { container } = render(<RichTextEditor />);
+    const editor = container.querySelector('[contenteditable="true"]') as HTMLElement;
+    editor.focus();
+    fireEvent.click(screen.getByRole("button", { name: "圖片網址" }));
+    fireEvent.change(screen.getByLabelText("圖片網址"), { target: { value: "https://media.example.com/image.png" } });
+    fireEvent.click(screen.getByRole("button", { name: "插入圖片" }));
+    expect(container.querySelector('[contenteditable="true"] img')).toHaveAttribute("src", "https://media.example.com/image.png");
+  });
+
   it("does not nest the inline URL controls inside the article form", () => {
     const { container } = render(<form><RichTextEditor /></form>);
 

@@ -20,6 +20,15 @@ export const categoryInputSchema = z.object({
   sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
 });
 
+export const authorInputSchema = z.object({
+  id: z.string().cuid().optional(),
+  locale: localeSchema,
+  name: z.string().trim().min(1, "作者名稱不能空白").max(100),
+  slug: slugSchema,
+  contentHtml: z.string().max(200000, "作者介紹過長").default(""),
+});
+export type AuthorInput = z.input<typeof authorInputSchema>;
+
 export const postInputSchema = z.object({
   id: z.string().cuid().optional(),
   locale: localeSchema,
@@ -30,6 +39,7 @@ export const postInputSchema = z.object({
   coverImage: z.union([z.literal(""), z.url()]).default(""),
   status: z.enum(["DRAFT", "PUBLISHED"]),
   categoryId: z.string().cuid("請選擇有效分類"),
+  bylineId: z.string().cuid("請選擇有效作者").nullable().optional(),
   seoTitle: z.string().trim().max(70).default(""),
   seoDescription: z.string().trim().max(170).default(""),
   seoKeywords: z.string().trim().max(500).default(""),

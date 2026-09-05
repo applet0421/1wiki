@@ -47,8 +47,12 @@ async function runCategoryTransaction<T>(
   throw new Error("分類更新失敗");
 }
 
-export async function savePost(
-  client: PrismaClient,
+export async function savePost(client: PrismaClient, authorId: string, rawInput: PostInput, now = new Date()) {
+  return client.$transaction((transaction) => savePostInTransaction(transaction, authorId, rawInput, now));
+}
+
+async function savePostInTransaction(
+  client: Prisma.TransactionClient,
   authorId: string,
   rawInput: PostInput,
   now = new Date(),
@@ -65,7 +69,20 @@ export async function savePost(
   if (!category) throw new Error("找不到指定分類");
   if (category.locale !== input.locale) throw new Error("文章語系必須與分類一致");
 
+  const current = input.id ? await client.post.findUnique({ where: { id: input.id } }) : null;
+  if (input.id && !current) throw new Error("找不到指定文章");
+  const bylineId = input.bylineId === undefined ? current?.bylineId ?? null : input.bylineId;
+  if (bylineId) {
+    // Keep archive/update operations from racing a new article assignment.
+    await client.$queryRaw`SELECT "id" FROM "Author" WHERE "id" = ${bylineId} FOR SHARE`;
+    const byline = await client.author.findUnique({ where: { id: bylineId } });
+    if (!byline) throw new Error("找不到指定作者");
+    if (byline.locale !== input.locale) throw new Error("文章語系必須與作者一致");
+    if (byline.archivedAt && current?.bylineId !== bylineId) throw new Error("作者已封存，請選擇其他作者");
+  }
+
   const data = {
+    bylineId,
     locale: input.locale,
     title: input.title,
     slug: input.slug,
@@ -87,7 +104,6 @@ export async function savePost(
 
   try {
     if (input.id) {
-      const current = await client.post.findUnique({ where: { id: input.id } });
       if (!current) throw new Error("找不到指定文章");
       return await client.post.update({
         where: { id: input.id },
@@ -278,7 +294,7 @@ export function listAdminPosts(client: PrismaClient, locale?: Locale, categoryId
       ...(locale ? { locale } : {}),
       ...(categoryId ? { categoryId } : {}),
     },
-    include: { category: true, author: { select: { displayName: true } } },
+    include: { category: true, author: { select: { displayName: true } }, byline: { select: { name: true, slug: true, id: true } } },
     orderBy: { updatedAt: "desc" },
   });
 }
@@ -296,7 +312,7 @@ export function listPublishedPosts(client: PrismaClient, locale: Locale, limit =
     where: { locale, status: "PUBLISHED" },
     include: {
       category: { include: { parent: { include: { parent: true } } } },
-      author: { select: { displayName: true } },
+      author: { select: { displayName: true } }, byline: { select: { name: true, slug: true, id: true } },
     },
     orderBy: { publishedAt: "desc" },
     take: limit,
@@ -308,7 +324,7 @@ export function getPublishedPostBySlug(client: PrismaClient, locale: Locale, slu
     where: { locale, slug, status: "PUBLISHED" },
     include: {
       category: { include: { parent: { include: { parent: true } } } },
-      author: { select: { displayName: true } },
+      author: { select: { displayName: true } }, byline: { select: { name: true, slug: true, id: true } },
     },
   });
 }
@@ -336,9 +352,10 @@ export async function getPublishedCategoryTreePage(
       where: { locale, status: "PUBLISHED", categoryId: { in: descendantIds } },
       include: {
         category: { include: { parent: { include: { parent: true } } } },
-        author: { select: { displayName: true } },
+        author: { select: { displayName: true } }, byline: { select: { name: true, slug: true, id: true } },
       },
       orderBy: { publishedAt: "desc" },
+      take: 10,
     }),
   ]);
 
@@ -364,13 +381,31 @@ export async function getPublishedCategoryTreePage(
   };
 }
 
+export async function getPublishedCategoryPosts(
+  client: DatabaseClient,
+  locale: Locale,
+  slugs: string[],
+  offset: number,
+  limit: number,
+) {
+  const category = await resolveCategoryPath(client, locale, slugs);
+  if (!category) return null;
+  const descendantIds = await getCategoryDescendantIds(client, category.id);
+  const where = { locale, status: "PUBLISHED" as const, categoryId: { in: descendantIds } };
+  const [posts, total] = await Promise.all([
+    client.post.findMany({ where, include: { category: { include: { parent: { include: { parent: true } } } }, author: { select: { displayName: true } }, byline: { select: { name: true, slug: true, id: true } } }, orderBy: { publishedAt: "desc" }, skip: offset, take: limit }),
+    client.post.count({ where }),
+  ]);
+  return { posts, total };
+}
+
 export function getPublishedCategory(client: PrismaClient, locale: Locale, slug: string) {
   return client.category.findFirst({
     where: { locale, slug, posts: { some: { locale, status: "PUBLISHED" } } },
     include: {
       posts: {
         where: { locale, status: "PUBLISHED" },
-        include: { category: true, author: { select: { displayName: true } } },
+        include: { category: true, author: { select: { displayName: true } }, byline: { select: { name: true, slug: true, id: true } } },
         orderBy: { publishedAt: "desc" },
       },
     },

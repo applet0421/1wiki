@@ -1,10 +1,13 @@
 import Link from "next/link";
+import { AdSlot } from "@/components/ads/ad-slot";
+import { AdsenseScript } from "@/components/ads/adsense-script";
+import { getAdSlotConfig, getLiveAdsenseClientId, getPublicAdEnvironment } from "@/lib/adsense/config";
 import { getCategoryHref } from "@/lib/content/category-tree";
 import { getSiteUrl } from "@/lib/config/site";
 import type { Locale } from "@/lib/i18n/config";
 import type { SiteDictionary } from "@/lib/i18n/dictionaries";
 import { buildBreadcrumbJsonLd } from "@/lib/seo/structured-data";
-import { ArticleCard } from "./article-card";
+import { CategoryArticleList } from "./category-article-list";
 import { CategoryBreadcrumbs } from "./category-breadcrumbs";
 import { JsonLd } from "./json-ld";
 
@@ -59,9 +62,18 @@ export function CategoryPageContent({
       href: getCategoryHref(locale, categories.slice(0, index + 1).map(({ slug }) => slug)),
     })),
   ];
+  const pathname = getCategoryHref(locale, segments);
+  const adEnvironment = getPublicAdEnvironment();
+  const adContext = { pathname, published: true };
+  const showAds = data.posts.length >= 4;
+  const adInterval = Math.max(1, Number.parseInt(adEnvironment.NEXT_PUBLIC_CATEGORY_INLINE_AD_INTERVAL || "10", 10) || 10);
+  const categoryPlacements = ["category_after_intro", "category_inline", "category_end", "category_sidebar_desktop"] as const;
+  const hasLiveSlot = showAds && categoryPlacements.some((placement) => getAdSlotConfig(placement, adEnvironment, adContext)?.mode === "live");
+  const clientId = hasLiveSlot ? getLiveAdsenseClientId(adEnvironment, pathname) : null;
 
   return (
     <main className="public-main">
+      <AdsenseScript clientId={clientId} />
       <JsonLd value={buildBreadcrumbJsonLd(breadcrumbItems, getSiteUrl())} />
       <CategoryBreadcrumbs locale={locale} ancestors={data.ancestors} current={data.category} />
       <header className="page-hero">
@@ -69,6 +81,7 @@ export function CategoryPageContent({
         <h1>{data.category.name}</h1>
         <p>{data.category.description}</p>
       </header>
+      {showAds ? <AdSlot placement="category_after_intro" config={getAdSlotConfig("category_after_intro", adEnvironment, adContext)} /> : null}
       {data.children.length > 0 ? (
         <section className="category-grid" aria-label="子分類">
           {data.children.map((child) => (
@@ -80,8 +93,12 @@ export function CategoryPageContent({
           ))}
         </section>
       ) : null}
-      <div className="article-grid">
-        {data.posts.map((post) => <ArticleCard key={post.id} post={post} locale={locale} dictionary={dictionary} />)}
+      <div className="category-content-layout">
+        <section aria-label="文章列表">
+          <CategoryArticleList initialPosts={data.posts} locale={locale} dictionary={dictionary} path={segments.join("/")} adInterval={adInterval} inlineAdConfig={getAdSlotConfig("category_inline", adEnvironment, adContext)} />
+          {showAds ? <AdSlot placement="category_end" config={getAdSlotConfig("category_end", adEnvironment, adContext)} /> : null}
+        </section>
+        {showAds ? <aside className="category-sidebar" aria-label="分類側欄廣告"><AdSlot placement="category_sidebar_desktop" config={getAdSlotConfig("category_sidebar_desktop", adEnvironment, adContext)} /></aside> : null}
       </div>
     </main>
   );

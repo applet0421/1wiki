@@ -28,7 +28,7 @@ function indexCategoryLastModified(
 }
 
 export async function getSitemapContent(client: PrismaClient, siteUrl: string): Promise<MetadataRoute.Sitemap> {
-  const [posts, categories] = await Promise.all([
+  const [posts, categories, authors] = await Promise.all([
     client.post.findMany({ where: { status: "PUBLISHED" }, select: { locale: true, slug: true, categoryId: true, updatedAt: true }, orderBy: { publishedAt: "desc" } }),
     client.category.findMany({
       select: {
@@ -36,6 +36,10 @@ export async function getSitemapContent(client: PrismaClient, siteUrl: string): 
         sortOrder: true, showInNavigation: true, updatedAt: true,
         _count: { select: { posts: { where: { status: "PUBLISHED" } } } },
       },
+    }),
+    client.author.findMany({
+      where: { posts: { some: { status: "PUBLISHED", publishedAt: { lte: new Date() } } } },
+      select: { locale: true, slug: true, updatedAt: true },
     }),
   ]);
   const activeLocales = [...new Set(posts.map(({ locale }) => locale))].filter(isLocale);
@@ -46,7 +50,12 @@ export async function getSitemapContent(client: PrismaClient, siteUrl: string): 
     dates.push(post.updatedAt);
     postUpdatedAtByCategory.set(post.categoryId, dates);
   }
-  const entries: MetadataRoute.Sitemap = [];
+  const entries: MetadataRoute.Sitemap = authors.filter((author) => isLocale(author.locale)).map((author) => ({
+    url: `${siteUrl}/${author.locale}/authors/${author.slug}`,
+    lastModified: author.updatedAt,
+    changeFrequency: "monthly" as const,
+    priority: 0.5,
+  }));
 
   for (const locale of activeLocales) {
     const tree = buildCategoryTree(categories
