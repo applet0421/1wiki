@@ -112,6 +112,16 @@ describe("content repository", () => {
     expect(draftAgain.publishedAt?.toISOString()).toBe(publishedAt.toISOString());
   });
 
+  it("uses the first content image as the cover when publishing without one", async () => {
+    const { author, category } = await fixture();
+    const post = await savePost(prisma, author.id, postInput(category.id, {
+      status: "PUBLISHED",
+      contentHtml: '<p>說明</p><img src="https://cdn.example.com/first.jpg"><img src="https://cdn.example.com/second.jpg">',
+    }));
+
+    expect(post.coverImage).toBe("https://cdn.example.com/first.jpg");
+  });
+
   it("allows empty former default categories to be deleted but protects categories with posts", async () => {
     const { author, category } = await fixture();
     await expect(deleteCategory(prisma, category.id)).resolves.toMatchObject({ id: category.id });

@@ -37,6 +37,12 @@ enum TrafficSyncStatus {
   FAILURE
 }
 
+enum SearchNotificationStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
 model User {
   id                    String            @id @default(cuid())
   username              String            @unique
@@ -315,4 +321,20 @@ model WorkerHeartbeat {
   processed     Int      @default(0)
   lastError     String?  @db.VarChar(500)
   updatedAt     DateTime @updatedAt
+}
+
+model SearchEngineNotification {
+  id          String                   @id @default(cuid())
+  engine      String
+  url         String                   @db.Text
+  eventType   String
+  status      SearchNotificationStatus @default(PENDING)
+  attempts    Int                      @default(0)
+  lastError   String?                  @db.VarChar(500)
+  nextAttemptAt DateTime               @default(now())
+  createdAt   DateTime                 @default(now())
+  sentAt      DateTime?
+
+  @@unique([engine, url, eventType])
+  @@index([status, nextAttemptAt])
 }

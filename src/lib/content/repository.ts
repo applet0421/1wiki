@@ -17,6 +17,17 @@ function visibleText(html: string): string {
   return load(html, null, false).root().text().replace(/\s/gu, "");
 }
 
+function firstImageUrl(html: string): string | null {
+  const source = load(html, null, false)("img").first().attr("src")?.trim();
+  if (!source) return null;
+  try {
+    const url = new URL(source);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 function mapPrismaError(error: unknown): never {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     if (error.code === "P2002") throw new Error("網址代稱已被使用");
@@ -59,6 +70,7 @@ async function savePostInTransaction(
 ) {
   const input = postInputSchema.parse(rawInput);
   const contentHtml = sanitizeArticleHtml(input.contentHtml);
+  const coverImage = nullable(input.coverImage) ?? (input.status === "PUBLISHED" ? firstImageUrl(contentHtml) : null);
 
   if (input.status === "PUBLISHED") {
     if (!input.excerpt) throw new Error("發布文章前必須填寫摘要");
@@ -88,7 +100,7 @@ async function savePostInTransaction(
     slug: input.slug,
     excerpt: input.excerpt,
     contentHtml,
-    coverImage: nullable(input.coverImage),
+    coverImage,
     status: input.status,
     categoryId: input.categoryId,
     seoTitle: nullable(input.seoTitle),

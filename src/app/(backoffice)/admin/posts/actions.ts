@@ -6,6 +6,9 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { deletePost, savePost } from "@/lib/content/repository";
 import { prisma } from "@/lib/db/prisma";
 import { localeSchema } from "@/lib/content/schema";
+import { articleUrl, enqueueSearchNotification } from "@/lib/search-engine/repository";
+import { classifySearchEvent } from "@/lib/search-engine/notifications";
+import { getSiteUrl } from "@/lib/config/site";
 
 function field(formData: FormData, name: string): string { return String(formData.get(name) || ""); }
 function completeSeo(input: { title: string; excerpt: string; contentHtml: string; seoTitle: string; seoDescription: string; seoKeywords: string }) {
@@ -33,15 +36,18 @@ export async function savePostAction(formData: FormData) {
   const excerpt = field(formData, "excerpt");
   const rawContentHtml = field(formData, "contentHtml");
   const isPublishing = field(formData, "intent") === "publish";
+  const previous = id ? await prisma.post.findUnique({ where: { id }, select: { status: true, locale: true, slug: true } }) : null;
   const contentHtml = isPublishing ? completeImageAlt(rawContentHtml, title) : rawContentHtml;
   const seo = isPublishing ? completeSeo({ title, excerpt, contentHtml, seoTitle: field(formData, "seoTitle"), seoDescription: field(formData, "seoDescription"), seoKeywords: field(formData, "seoKeywords") }) : { seoTitle: field(formData, "seoTitle"), seoDescription: field(formData, "seoDescription"), seoKeywords: field(formData, "seoKeywords") };
   try {
-    await savePost(prisma, user.id, {
+    const saved = await savePost(prisma, user.id, {
       id, locale: localeSchema.parse(field(formData, "locale")), title, slug: field(formData, "slug"), excerpt,
       contentHtml, coverImage: field(formData, "coverImage"),
       status: field(formData, "intent") === "publish" ? "PUBLISHED" : "DRAFT",
       bylineId: field(formData, "bylineId") || null, categoryId: field(formData, "categoryId"), ...seo, canonicalUrl: field(formData, "canonicalUrl"),
     });
+    const event = classifySearchEvent(previous?.status || "DRAFT", isPublishing ? "PUBLISHED" : "DRAFT");
+    if (event && saved && (!saved.canonicalUrl || saved.canonicalUrl.startsWith(getSiteUrl()))) await enqueueSearchNotification(prisma, articleUrl(saved.locale, saved.slug), event);
   } catch (error) {
     const message = error instanceof Error ? error.message : "文章儲存失敗";
     redirect(`${id ? `/admin/posts/${id}` : "/admin/posts/new"}?error=${encodeURIComponent(message)}`);
@@ -64,6 +70,8 @@ export async function togglePostStatusAction(formData: FormData) {
       coverImage: current.coverImage || "", status: field(formData, "status") === "PUBLISHED" ? "PUBLISHED" : "DRAFT",
       categoryId: current.categoryId, ...seo, canonicalUrl: current.canonicalUrl || "",
     });
+    const event = classifySearchEvent(current.status, isPublishing ? "PUBLISHED" : "DRAFT");
+    if (event && (!current.canonicalUrl || current.canonicalUrl.startsWith(getSiteUrl()))) await enqueueSearchNotification(prisma, articleUrl(current.locale, current.slug), event);
   } catch (error) {
     const message = error instanceof Error ? error.message : "狀態更新失敗";
     redirect(`/admin?error=${encodeURIComponent(message)}`);

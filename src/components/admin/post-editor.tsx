@@ -1,7 +1,7 @@
 "use client";
 
 import type { AuthorOption } from "@/lib/content/authors";
-import { useState } from "react";
+import { type ChangeEvent, useRef, useState } from "react";
 import { savePostAction } from "@/app/(backoffice)/admin/posts/actions";
 import type { GeneratedArticle } from "@/lib/ai/types";
 import type { CategoryOption } from "@/lib/content/category-tree";
@@ -20,6 +20,40 @@ function verificationNotes(value: unknown): string[] {
 
 function firstActiveAuthorId(authors: AuthorOption[], locale: Locale): string {
   return authors.find((author) => author.locale === locale && !author.archivedAt)?.id ?? "";
+}
+
+function CoverImageField({ initialValue }: { initialValue: string }) {
+  const [coverImage, setCoverImage] = useState(initialValue);
+  const [status, setStatus] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function uploadCover(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setStatus("正在上傳封面…");
+    try {
+      const signature = await fetch("/api/admin/uploads/images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: file.name, type: file.type, size: file.size }),
+      });
+      const payload = await signature.json() as { uploadUrl?: string; publicUrl?: string; error?: string };
+      if (!signature.ok || !payload.uploadUrl || !payload.publicUrl) throw new Error(payload.error || "無法建立圖片上傳網址");
+      const upload = await fetch(payload.uploadUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
+      if (!upload.ok) throw new Error("封面上傳失敗，請再試一次");
+      setCoverImage(payload.publicUrl);
+      setStatus("封面已上傳");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "封面上傳失敗，請再試一次");
+    }
+  }
+
+  return <>
+    <div className="cover-image-input"><input name="coverImage" type="url" value={coverImage} onChange={(event) => setCoverImage(event.target.value)} /><button type="button" className="button button-quiet" onClick={() => fileInputRef.current?.click()}>上傳到 R2</button></div>
+    <input ref={fileInputRef} className="sr-only" aria-label="選擇封面圖片" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={uploadCover} />
+    {status ? <span className="upload-field-status" role="status">{status}</span> : null}
+  </>;
 }
 
 export function PostEditor({ categories, authors = [], post, error, provider = "deepseek", initialGenerated, showAIGenerator = true, locale = defaultLocale }: { categories: CategoryOption[]; authors?: AuthorOption[]; post?: EditablePost; error?: string; provider?: string; initialGenerated?: GeneratedArticle; showAIGenerator?: boolean; locale?: Locale }) {
@@ -65,7 +99,7 @@ export function PostEditor({ categories, authors = [], post, error, provider = "
         {!authors.some((author) => author.locale === selectedLocale && (!author.archivedAt || author.id === post?.bylineId)) ? <option value="" disabled>此語系尚無可用作者</option> : null}
       </select></label>
       <label className="span-2">摘要<textarea name="excerpt" defaultValue={source?.excerpt || ""} rows={3} maxLength={320} /></label>
-      <label className="span-2">封面圖片網址<input name="coverImage" type="url" defaultValue={source?.coverImage || ""} /></label>
+      <label className="span-2">封面圖片網址<CoverImageField initialValue={source?.coverImage || ""} /></label>
       <div className="span-2"><span className="field-label">正文</span><RichTextEditor initialHtml={source?.contentHtml} aiImageContext={{ postId: post?.id, locale: selectedLocale }} /></div>
     </fieldset>
     <SeoFields key={`seo-${generated?.title || "stored"}`} post={source} />
