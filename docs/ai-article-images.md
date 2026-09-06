@@ -36,7 +36,7 @@ npm run prisma:generate
 npm run worker:images
 ```
 
-另行執行網站 dev/start。正式環境使用 GCP VM Docker Compose：`worker` 執行 `npm run worker:images`，`cache-invalidator` 執行 `npm run worker:cache`。兩者都是常駐 Node worker，透過 Compose `restart: unless-stopped` 管理重啟；請勿將持續 polling worker 當成短生命週期的 serverless route。沒有 image worker 時任務維持等待中；資料庫任務本身不會執行。變更 `.env` 後需重啟相關 container；既有方案保留建立時的模型／尺寸／比例，需重新分析以採用新設定。
+另行執行網站 dev/start。正式環境使用 GCP VM Docker Compose：原生 VM 模式採 `docker-compose.vm.yml` + Caddy；Coolify 模式採 `docker-compose.coolify.yml` + Coolify Proxy，兩者不可同時啟動。兩種模式中的 `worker` 都執行 `npm run worker:images`，`cache-invalidator` 都執行 `npm run worker:cache`；兩者都是常駐 Node worker，透過 Compose `restart: unless-stopped` 管理重啟。請勿將持續 polling worker 當成短生命週期的 serverless route。沒有 image worker 時任務維持等待中；資料庫任務本身不會執行。變更 `.env` 後需重啟相關 container；既有方案保留建立時的模型／尺寸／比例，需重新分析以採用新設定。
 
 ## 狀態與復原
 

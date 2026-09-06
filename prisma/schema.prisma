@@ -16,6 +16,11 @@ enum PostStatus {
   PUBLISHED
 }
 
+enum PageStatus {
+  DRAFT
+  PUBLISHED
+}
+
 enum AIContentType {
   TROUBLESHOOTING
   HOW_TO
@@ -156,6 +161,26 @@ model Post {
   @@index([categoryId, status])
   @@index([authorId])
   @@index([bylineId, locale])
+}
+
+model SitePage {
+  id              String     @id @default(cuid())
+  locale          String
+  title           String
+  slug            String
+  excerpt         String     @default("") @db.Text
+  contentHtml     String     @default("") @db.Text
+  status          PageStatus @default(DRAFT)
+  seoTitle        String?    @db.Text
+  seoDescription  String?    @db.Text
+  seoKeywords     String?    @db.Text
+  canonicalUrl    String?    @db.Text
+  publishedAt     DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@unique([locale, slug])
+  @@index([locale, status, publishedAt])
 }
 
 model TrafficDailyPage {

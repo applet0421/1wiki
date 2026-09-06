@@ -1,18 +1,20 @@
 import type { Metadata } from "next";
 import { InfoPage } from "@/components/site/info-page";
 import { LocalizedInfoPage } from "@/components/site/localized-info-page";
+import { ManagedInfoPage } from "@/components/site/managed-info-page";
+import { getManagedInfoPageMetadata } from "@/components/site/managed-info-page";
 import { notFound } from "next/navigation";
-import { getLocaleConfig, isLocale } from "@/lib/i18n/config";
+import { isLocale } from "@/lib/i18n/config";
 
 type Props = { params: Promise<{ locale: string }> };
-export async function generateMetadata({ params }: Props): Promise<Metadata> { const { locale } = await params; const published = isLocale(locale) && getLocaleConfig(locale).publishedInfoPages.includes("contact"); return { title: "Contact", alternates: { canonical: `/${locale}/contact` }, robots: published ? undefined : { index: false, follow: true } }; }
+export async function generateMetadata({ params }: Props): Promise<Metadata> { const { locale } = await params; return getManagedInfoPageMetadata(locale, "contact", "Contact"); }
 
 export default async function ContactPage({ params }: Props) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const email = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim();
   return (
-    <LocalizedInfoPage locale={locale} page="contact">
+    <ManagedInfoPage locale={locale} page="contact"><LocalizedInfoPage locale={locale} page="contact">
     <InfoPage
       eyebrow="Contact"
       title="聯絡我們"
@@ -31,6 +33,6 @@ export default async function ContactPage({ params }: Props) {
         <p>為了讓我們更快確認，請附上文章網址、需要更正的段落、你使用的裝置或軟體版本，以及實際看到的錯誤訊息。請勿寄送密碼、驗證碼或其他敏感資料。</p>
       </section>
     </InfoPage>
-    </LocalizedInfoPage>
+    </LocalizedInfoPage></ManagedInfoPage>
   );
 }

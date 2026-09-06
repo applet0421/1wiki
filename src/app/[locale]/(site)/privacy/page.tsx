@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
 import { InfoPage } from "@/components/site/info-page";
 import { LocalizedInfoPage } from "@/components/site/localized-info-page";
+import { ManagedInfoPage } from "@/components/site/managed-info-page";
+import { getManagedInfoPageMetadata } from "@/components/site/managed-info-page";
 import { notFound } from "next/navigation";
-import { getLocaleConfig, isLocale } from "@/lib/i18n/config";
+import { isLocale } from "@/lib/i18n/config";
 
 type Props = { params: Promise<{ locale: string }> };
-export async function generateMetadata({ params }: Props): Promise<Metadata> { const { locale } = await params; const published = isLocale(locale) && getLocaleConfig(locale).publishedInfoPages.includes("privacy"); return { title: "Privacy", alternates: { canonical: `/${locale}/privacy` }, robots: published ? undefined : { index: false, follow: true } }; }
+export async function generateMetadata({ params }: Props): Promise<Metadata> { const { locale } = await params; return getManagedInfoPageMetadata(locale, "privacy", "Privacy"); }
 
 export default async function PrivacyPage({ params }: Props) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   return (
-    <LocalizedInfoPage locale={locale} page="privacy">
+    <ManagedInfoPage locale={locale} page="privacy"><LocalizedInfoPage locale={locale} page="privacy">
     <InfoPage
       eyebrow="Privacy"
       title="隱私權政策"
@@ -43,6 +45,6 @@ export default async function PrivacyPage({ params }: Props) {
         <p>若資料處理方式或使用的服務改變，我們會更新本頁與上方日期。重大變更會以適當方式另行提示。</p>
       </section>
     </InfoPage>
-    </LocalizedInfoPage>
+    </LocalizedInfoPage></ManagedInfoPage>
   );
 }

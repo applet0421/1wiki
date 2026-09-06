@@ -179,6 +179,17 @@ SITE_URL=https://www.example.com PREWARM_LIMIT=100 scripts/prewarm-public-pages.
 
 `build` service 會在 PostgreSQL 健康且 migration 完成後執行 production build，網站與 Worker 共用 build volume；公開頁面使用 ISR，快取存於 `next_build` volume。`cache-invalidator` 會處理發布後的公開 URL 失效事件，呼叫受保護的 Next endpoint 並在設定 Cloudflare 憑證時清除 HTML edge cache。Caddy 負責 HTTPS，需讓 VM 的 80／443 port 通過 GCP Firewall。
 
+### Coolify Proxy 部署替代方案
+
+若使用 Coolify 管理這台 VM，請改用 `docker-compose.coolify.yml`，不要再啟動 `docker-compose.vm.yml` 的 Caddy service。Coolify Proxy 會負責 HTTPS、80／443 與網域轉發；在 Coolify 的 Compose service 設定中，將網域綁定到 `web` 的 container port `3000`。Coolify Compose 部署會自動將 Proxy 接入服務網路，因此 `web` 只需保留 `expose: 3000`，PostgreSQL、Worker 與 `cache-invalidator` 維持內部網路。
+
+```bash
+# 在 Coolify 建立 Git-based Docker Compose resource，檔案選此檔
+docker compose -f docker-compose.coolify.yml config
+```
+
+Coolify 方案不會讓 Next.js 本身更快；速度仍主要來自 Cloudflare HTML cache、Next.js ISR、資料庫查詢與圖片 CDN。它的優點是網域／TLS、部署、健康檢查與回滾管理較方便，代價是 Coolify Proxy 與平台服務會占用額外 VM 資源。Coolify 的 persistent storage、health check 與 Compose 設定應以 repository 中的 Compose 檔為準；正式上線前需在 Coolify 內設定 `postgres_data` 與 `next_build` 的持久儲存及備份策略。
+
 快取失效、`/admin/cache` 監控與 Cloudflare token 設定見 [公開快取與 Cloudflare 監控](docs/cache-monitoring.md)。
 
 若網站前方使用 Cloudflare，建議只對不含登入 Cookie 的公開 GET 頁面啟用 HTML cache：`/zh-tw`、`/en`、`/ja`、`/articles/*`、`/category/*`、`/authors/*`。`/admin/*`、`/login`、`/api/*`、帶 session Cookie 的請求必須 bypass。文章發布或編輯後，除呼叫 Next.js 的 `revalidatePath` 外，也要透過 Cloudflare API 清除對應 URL；在尚未接上 purge API 前，HTML edge cache TTL 應保持短期，避免發布後持續顯示舊內容。

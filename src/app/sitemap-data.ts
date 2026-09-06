@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import type { PrismaClient } from "@prisma/client";
 import { buildCategoryTree, getCategoryHref, type CategoryTreeItem } from "@/lib/content/category-tree";
-import { getLocaleConfig, isLocale, type Locale } from "@/lib/i18n/config";
+import { isLocale } from "@/lib/i18n/config";
 
 function flattenPublishedCategories(categories: CategoryTreeItem[]): CategoryTreeItem[] {
   return categories.flatMap((category) => [
@@ -28,7 +28,7 @@ function indexCategoryLastModified(
 }
 
 export async function getSitemapContent(client: PrismaClient, siteUrl: string): Promise<MetadataRoute.Sitemap> {
-  const [posts, categories, authors] = await Promise.all([
+  const [posts, categories, authors, pages] = await Promise.all([
     client.post.findMany({ where: { status: "PUBLISHED" }, select: { locale: true, slug: true, categoryId: true, updatedAt: true }, orderBy: { publishedAt: "desc" } }),
     client.category.findMany({
       select: {
@@ -41,8 +41,9 @@ export async function getSitemapContent(client: PrismaClient, siteUrl: string): 
       where: { posts: { some: { status: "PUBLISHED", publishedAt: { lte: new Date() } } } },
       select: { locale: true, slug: true, updatedAt: true },
     }),
+    client.sitePage.findMany({ where: { status: "PUBLISHED", publishedAt: { lte: new Date() } }, select: { locale: true, slug: true, updatedAt: true } }),
   ]);
-  const activeLocales = [...new Set(posts.map(({ locale }) => locale))].filter(isLocale);
+  const activeLocales = [...new Set([...posts.map(({ locale }) => locale), ...pages.map(({ locale }) => locale)])].filter(isLocale);
   const updatedAtById = new Map(categories.map(({ id, updatedAt }) => [id, updatedAt]));
   const postUpdatedAtByCategory = new Map<string, Date[]>();
   for (const post of posts) {
@@ -77,7 +78,12 @@ export async function getSitemapContent(client: PrismaClient, siteUrl: string): 
       indexCategoryLastModified(root, updatedAtById, postUpdatedAtByCategory, categoryLastModified);
     }
     entries.push({ url: `${siteUrl}/${locale}`, changeFrequency: "daily", priority: 1 });
-    entries.push(...getInfoPageEntries(siteUrl, locale));
+    entries.push(...pages.filter((page) => page.locale === locale).map(({ slug, updatedAt }) => ({
+      url: `${siteUrl}/${locale}/${slug}`,
+      lastModified: updatedAt,
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    })));
     entries.push(...publishedCategories.map((category) => ({
       url: `${siteUrl}${getCategoryHref(locale, category.segments)}`,
       lastModified: categoryLastModified.get(category.id),
@@ -93,12 +99,4 @@ export async function getSitemapContent(client: PrismaClient, siteUrl: string): 
   }
 
   return entries;
-}
-
-function getInfoPageEntries(siteUrl: string, locale: Locale): MetadataRoute.Sitemap {
-  return getLocaleConfig(locale).publishedInfoPages.map((slug) => ({
-    url: `${siteUrl}/${locale}/${slug}`,
-    changeFrequency: "monthly" as const,
-    priority: 0.6,
-  }));
 }

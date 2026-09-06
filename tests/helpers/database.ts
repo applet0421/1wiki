@@ -8,6 +8,7 @@ export async function resetDatabase() {
   await prisma.promptVersion.deleteMany({ where: { versionNumber: { gt: 1 } } });
   await prisma.session.deleteMany();
   await prisma.post.deleteMany();
+  await prisma.sitePage.deleteMany();
   await prisma.author.deleteMany();
   await prisma.user.deleteMany();
   await prisma.category.deleteMany();

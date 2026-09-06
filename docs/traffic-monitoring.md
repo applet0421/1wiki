@@ -22,6 +22,12 @@ GA4_SYNC_SECRET=
 
 正式環境才會載入 GA4。後台、登入頁與本機開發環境不會送出瀏覽事件。
 
+## 目前 GA4 資源
+
+目前 Google Analytics Web 資料串流提供的 Measurement ID 為 `G-VEWVF1LT1S`，Property ID 為 `552953702`。Measurement ID 已寫入本機未追蹤的 `.env`；正式部署至 Coolify 時，請在該 resource 的 Environment Variables 設定相同的 `NEXT_PUBLIC_GA4_MEASUREMENT_ID`。Property ID 可設定為 `552953702`。
+
+GA4 Data API 的 OWNER 流量同步仍需要另外建立 Service Account，並填入 `GA4_SERVICE_ACCOUNT_EMAIL`、`GA4_SERVICE_ACCOUNT_PRIVATE_KEY` 與 `GA4_SYNC_SECRET`；這些值不寫入 Git，也不放入瀏覽器端。僅設定 Measurement ID 只會啟用前台收集，不會自動讓 `/admin/traffic` 取得報表。
+
 ## 同步
 
 Owner 可在流量監測頁按「立即同步 GA4」，系統會重算最近三天資料。排程服務可對 `/api/admin/traffic/sync` 發送 `POST`，並帶上 `Authorization: Bearer <GA4_SYNC_SECRET>`。

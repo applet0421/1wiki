@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
 import { InfoPage } from "@/components/site/info-page";
 import { LocalizedInfoPage } from "@/components/site/localized-info-page";
+import { ManagedInfoPage } from "@/components/site/managed-info-page";
+import { getManagedInfoPageMetadata } from "@/components/site/managed-info-page";
 import { notFound } from "next/navigation";
-import { getLocaleConfig, isLocale } from "@/lib/i18n/config";
+import { isLocale } from "@/lib/i18n/config";
 
 type Props = { params: Promise<{ locale: string }> };
-export async function generateMetadata({ params }: Props): Promise<Metadata> { const { locale } = await params; const published = isLocale(locale) && getLocaleConfig(locale).publishedInfoPages.includes("about"); return { title: "About", alternates: { canonical: `/${locale}/about` }, robots: published ? undefined : { index: false, follow: true } }; }
+export async function generateMetadata({ params }: Props): Promise<Metadata> { const { locale } = await params; return getManagedInfoPageMetadata(locale, "about", "About"); }
 
 export default async function AboutPage({ params }: Props) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   return (
-    <LocalizedInfoPage locale={locale} page="about">
+    <ManagedInfoPage locale={locale} page="about"><LocalizedInfoPage locale={locale} page="about">
     <InfoPage
       eyebrow="About"
       title="關於 1Wiki"
@@ -35,6 +37,6 @@ export default async function AboutPage({ params }: Props) {
         <p>編輯可以使用 AI 協助建立初稿，但內容在公開前仍需由後台使用者檢查、修改並主動發布。AI 不會直接把產生的文字自動發布到網站。</p>
       </section>
     </InfoPage>
-    </LocalizedInfoPage>
+    </LocalizedInfoPage></ManagedInfoPage>
   );
 }

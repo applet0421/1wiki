@@ -2,7 +2,7 @@
 
 最後更新：2026-09-06
 
-基準：測試當時 HEAD `5339e2e` 加本機未提交程式（現已提交為 `d5f0074`，相關程式內容未變）；本次工作為文件同步。只執行下列聚焦測試與 lint，沒有連線外部服務、執行資料庫 migration、完整測試、型別檢查、build 或瀏覽器驗收。這份紀錄不取代歷史測試，也不證明整個版本可發布。
+基準：目前 `main` 工作樹；本次文件同步與 Coolify Compose 部署檔驗證未連線外部服務，也未執行正式 VM／Coolify 部署或瀏覽器驗收。這份紀錄不取代歷史測試，也不證明正式環境可發布。
 
 ## 2026-09-06 最新全量驗證
 
@@ -23,6 +23,8 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000 npm run build
 - TypeScript：通過。
 - ESLint：通過。
 - Next.js production build：通過；公開首頁為 ISR／SSG，後台、API、Worker 控制維持 Dynamic。
+- `POSTGRES_PASSWORD=local-validation docker compose -f docker-compose.coolify.yml config --quiet`：通過；Coolify 版本沒有 Caddy、80／443 host port 或 PostgreSQL host port，`web` 僅 expose container port `3000`。
+- `git diff --check`：通過。
 - Cloudflare 真實 zone purge、正式 VM 部署與實機 Lighthouse 尚未執行。
 
 ## 歷史驗證結果

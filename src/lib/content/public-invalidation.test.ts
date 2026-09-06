@@ -11,6 +11,7 @@ describe("buildPublicInvalidationPaths", () => {
       articleSlugs: ["old-slug", "new-slug"],
       categoryPaths: ["ai", "software/chatgpt"],
       authorSlugs: ["alice"],
+      pageSlugs: ["about"],
     })).toEqual(expect.arrayContaining([
       "/zh-tw",
       "/zh-tw/articles/old-slug",
@@ -18,6 +19,7 @@ describe("buildPublicInvalidationPaths", () => {
       "/zh-tw/category/ai",
       "/zh-tw/category/software/chatgpt",
       "/zh-tw/authors/alice",
+      "/zh-tw/about",
       "/sitemap.xml",
     ]));
   });
@@ -28,11 +30,13 @@ describe("buildPublicInvalidationPaths", () => {
       articleSlugs: ["same", "same"],
       categoryPaths: ["ai", "ai"],
       authorSlugs: ["writer", "writer"],
+      pageSlugs: ["about", "about"],
     })).toEqual([
       "/en",
       "/en/articles/same",
       "/en/category/ai",
       "/en/authors/writer",
+      "/en/about",
       "/sitemap.xml",
     ]);
   });
@@ -41,10 +45,11 @@ describe("buildPublicInvalidationPaths", () => {
     const { revalidatePublicContent } = await import("./public-invalidation");
     const { revalidatePath } = await import("next/cache");
 
-    revalidatePublicContent({ locale: "ja", articleSlugs: ["guide"] });
+    revalidatePublicContent({ locale: "ja", articleSlugs: ["guide"], pageSlugs: ["about"] });
 
     expect(revalidatePath).toHaveBeenCalledWith("/ja");
     expect(revalidatePath).toHaveBeenCalledWith("/ja/articles/guide");
+    expect(revalidatePath).toHaveBeenCalledWith("/ja/about");
     expect(revalidatePath).toHaveBeenCalledWith("/sitemap.xml");
   });
 });

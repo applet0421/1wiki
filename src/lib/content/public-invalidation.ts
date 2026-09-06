@@ -6,6 +6,7 @@ export type PublicInvalidationInput = {
   articleSlugs?: string[];
   categoryPaths?: string[];
   authorSlugs?: string[];
+  pageSlugs?: string[];
 };
 
 function unique(values: string[]): string[] {
@@ -19,6 +20,7 @@ export function buildPublicInvalidationPaths(input: PublicInvalidationInput): st
   paths.push(...unique(input.articleSlugs ?? []).map((slug) => `${locale}/articles/${slug}`));
   paths.push(...unique(input.categoryPaths ?? []).map((path) => `${locale}/category/${path}`));
   paths.push(...unique(input.authorSlugs ?? []).map((slug) => `${locale}/authors/${slug}`));
+  paths.push(...unique(input.pageSlugs ?? []).map((slug) => `${locale}/${slug}`));
   paths.push("/sitemap.xml");
 
   return unique(paths);

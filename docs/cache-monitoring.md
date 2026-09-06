@@ -42,10 +42,20 @@ CLOUDFLARE_API_TOKEN=具備CachePurge權限的token
 
 Cloudflare token 只放在 VM 的 `.env.production`，不可放入瀏覽器、Git 或公開環境變數。若暫時不設定 Cloudflare purge，origin ISR 仍可運作，但正式環境應保持短 TTL 並觀察 `/admin/cache`。
 
+## 反向代理與部署模式
+
+正式環境二選一：
+
+- 原生 Docker Compose：使用 `docker-compose.vm.yml`，由 Caddy 負責 80／443、HTTPS 與 `web:3000` 反向代理。
+- Coolify：使用 `docker-compose.coolify.yml`，由 Coolify Proxy 負責 80／443、HTTPS 與網域轉發；Coolify 網域應綁定 `web` 的 container port `3000`。
+
+兩個 Compose 檔不可同時啟動。Coolify 方案不會改變快取失效流程；`cache-invalidator` 仍會先清除 Next ISR，再依設定清除 Cloudflare HTML cache。Coolify Proxy 本身不是 HTML 快取層，公開頁面的速度仍取決於 Cloudflare cache、ISR 命中率、資料庫查詢與圖片 CDN。
+
 ## 驗收
 
 ```bash
 docker compose -f docker-compose.vm.yml ps
+# Coolify 部署則在 Coolify resource 的 Logs／服務狀態查看，不要在同一台 VM 再啟動 Caddy。
 curl -i -X POST "$SITE_URL/api/internal/cache/revalidate" \
   -H "Authorization: Bearer $CACHE_REVALIDATE_SECRET" \
   -H 'Content-Type: application/json' \

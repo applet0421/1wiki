@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
 import { InfoPage } from "@/components/site/info-page";
 import { LocalizedInfoPage } from "@/components/site/localized-info-page";
+import { ManagedInfoPage } from "@/components/site/managed-info-page";
+import { getManagedInfoPageMetadata } from "@/components/site/managed-info-page";
 import { notFound } from "next/navigation";
-import { getLocaleConfig, isLocale } from "@/lib/i18n/config";
+import { isLocale } from "@/lib/i18n/config";
 
 type Props = { params: Promise<{ locale: string }> };
-export async function generateMetadata({ params }: Props): Promise<Metadata> { const { locale } = await params; const published = isLocale(locale) && getLocaleConfig(locale).publishedInfoPages.includes("terms"); return { title: "Terms", alternates: { canonical: `/${locale}/terms` }, robots: published ? undefined : { index: false, follow: true } }; }
+export async function generateMetadata({ params }: Props): Promise<Metadata> { const { locale } = await params; return getManagedInfoPageMetadata(locale, "terms", "Terms"); }
 
 export default async function TermsPage({ params }: Props) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   return (
-    <LocalizedInfoPage locale={locale} page="terms">
+    <ManagedInfoPage locale={locale} page="terms"><LocalizedInfoPage locale={locale} page="terms">
     <InfoPage
       eyebrow="Terms"
       title="使用條款"
@@ -39,6 +41,6 @@ export default async function TermsPage({ params }: Props) {
         <p>我們可能因功能、法規或營運方式調整本條款。更新後的版本自刊登於本頁起生效，並會同步更新日期。</p>
       </section>
     </InfoPage>
-    </LocalizedInfoPage>
+    </LocalizedInfoPage></ManagedInfoPage>
   );
 }
