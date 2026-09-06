@@ -27,7 +27,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </label>
           <label>
             密碼
-            <input name="password" type="password" autoComplete="current-password" required minLength={12} />
+            <input name="password" type="password" autoComplete="current-password" required />
           </label>
           <button type="submit" className="button button-primary">登入</button>
         </form>
