@@ -43,6 +43,12 @@ enum SearchNotificationStatus {
   FAILED
 }
 
+enum PublicInvalidationStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
 model User {
   id                    String            @id @default(cuid())
   username              String            @unique
@@ -316,6 +322,7 @@ model ImageGeneration {
 model WorkerHeartbeat {
   id            String   @id
   name          String
+  desiredState  String   @default("RUNNING")
   startedAt     DateTime
   lastHeartbeat DateTime
   processed     Int      @default(0)
@@ -336,5 +343,18 @@ model SearchEngineNotification {
   sentAt      DateTime?
 
   @@unique([engine, url, eventType])
+  @@index([status, nextAttemptAt])
+}
+
+model PublicInvalidation {
+  id            String                   @id @default(cuid())
+  paths         Json
+  status        PublicInvalidationStatus @default(PENDING)
+  attempts      Int                      @default(0)
+  lastError     String?                  @db.VarChar(500)
+  nextAttemptAt DateTime                 @default(now())
+  createdAt     DateTime                 @default(now())
+  completedAt   DateTime?
+
   @@index([status, nextAttemptAt])
 }

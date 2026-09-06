@@ -6,6 +6,7 @@ import { saveAuthorAction, archiveAuthorAction } from "./actions";
 
 vi.mock("@/lib/auth/session", () => ({ getCurrentUser: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("@/lib/content/public-invalidation-outbox", () => ({ enqueuePublicInvalidation: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: (url: string) => { throw new Error(`redirect:${url}`); } }));
 
 beforeEach(async () => { await resetDatabase(); vi.mocked(getCurrentUser).mockResolvedValue(null); });

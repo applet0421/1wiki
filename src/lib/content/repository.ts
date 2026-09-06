@@ -3,7 +3,7 @@ import { load } from "cheerio";
 import { categoryInputSchema, postInputSchema, type CategoryInput, type PostInput } from "./schema";
 import { sanitizeArticleHtml } from "./sanitize";
 import { buildCategoryTree } from "./category-tree";
-import type { Locale } from "@/lib/i18n/config";
+import { isLocale, type Locale } from "@/lib/i18n/config";
 
 type DatabaseClient = PrismaClient | Prisma.TransactionClient;
 const CATEGORY_TRANSACTION_ATTEMPTS = 3;
@@ -224,6 +224,13 @@ export async function getCategoryAncestors(client: DatabaseClient, categoryId: s
   }
 
   return ancestors;
+}
+
+export async function getPublicCategoryPath(client: DatabaseClient, categoryId: string) {
+  const category = await client.category.findUnique({ where: { id: categoryId } });
+  if (!category || !isLocale(category.locale)) return null;
+  const ancestors = await getCategoryAncestors(client, categoryId);
+  return { locale: category.locale, path: [...ancestors.map(({ slug }) => slug), category.slug].join("/") };
 }
 
 export async function getCategoryDescendantIds(client: DatabaseClient, categoryId: string): Promise<string[]> {

@@ -1,0 +1,1 @@
+ALTER TABLE "WorkerHeartbeat" ADD COLUMN "desiredState" TEXT NOT NULL DEFAULT 'RUNNING';

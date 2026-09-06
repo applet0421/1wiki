@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { deletePost, savePost } from "@/lib/content/repository";
@@ -9,6 +8,8 @@ import { localeSchema } from "@/lib/content/schema";
 import { articleUrl, enqueueSearchNotification } from "@/lib/search-engine/repository";
 import { classifySearchEvent } from "@/lib/search-engine/notifications";
 import { getSiteUrl } from "@/lib/config/site";
+import { revalidatePublicContent } from "@/lib/content/public-invalidation";
+import { enqueuePublicInvalidation } from "@/lib/content/public-invalidation-outbox";
 
 function field(formData: FormData, name: string): string { return String(formData.get(name) || ""); }
 function completeSeo(input: { title: string; excerpt: string; contentHtml: string; seoTitle: string; seoDescription: string; seoKeywords: string }) {
@@ -39,8 +40,9 @@ export async function savePostAction(formData: FormData) {
   const previous = id ? await prisma.post.findUnique({ where: { id }, select: { status: true, locale: true, slug: true } }) : null;
   const contentHtml = isPublishing ? completeImageAlt(rawContentHtml, title) : rawContentHtml;
   const seo = isPublishing ? completeSeo({ title, excerpt, contentHtml, seoTitle: field(formData, "seoTitle"), seoDescription: field(formData, "seoDescription"), seoKeywords: field(formData, "seoKeywords") }) : { seoTitle: field(formData, "seoTitle"), seoDescription: field(formData, "seoDescription"), seoKeywords: field(formData, "seoKeywords") };
+  let saved: Awaited<ReturnType<typeof savePost>> | null = null;
   try {
-    const saved = await savePost(prisma, user.id, {
+    saved = await savePost(prisma, user.id, {
       id, locale: localeSchema.parse(field(formData, "locale")), title, slug: field(formData, "slug"), excerpt,
       contentHtml, coverImage: field(formData, "coverImage"),
       status: field(formData, "intent") === "publish" ? "PUBLISHED" : "DRAFT",
@@ -52,7 +54,14 @@ export async function savePostAction(formData: FormData) {
     const message = error instanceof Error ? error.message : "文章儲存失敗";
     redirect(`${id ? `/admin/posts/${id}` : "/admin/posts/new"}?error=${encodeURIComponent(message)}`);
   }
-  revalidatePath("/", "layout");
+  revalidatePublicContent({
+    locale: localeSchema.parse(saved?.locale ?? previous?.locale ?? "zh-tw"),
+    articleSlugs: [previous?.slug ?? "", saved?.slug ?? ""],
+  });
+  await enqueuePublicInvalidation(prisma, {
+    locale: localeSchema.parse(saved?.locale ?? previous?.locale ?? "zh-tw"),
+    articleSlugs: [previous?.slug ?? "", saved?.slug ?? ""],
+  });
   redirect("/admin?success=saved");
 }
 
@@ -76,14 +85,22 @@ export async function togglePostStatusAction(formData: FormData) {
     const message = error instanceof Error ? error.message : "狀態更新失敗";
     redirect(`/admin?error=${encodeURIComponent(message)}`);
   }
-  revalidatePath("/", "layout");
+  const locale = localeSchema.parse(current.locale);
+  revalidatePublicContent({ locale, articleSlugs: [current.slug] });
+  await enqueuePublicInvalidation(prisma, { locale, articleSlugs: [current.slug] });
   redirect("/admin");
 }
 
 export async function deletePostAction(formData: FormData) {
   await requireContentUser();
+  const id = field(formData, "id");
+  const current = await prisma.post.findUnique({ where: { id }, select: { locale: true, slug: true } });
   try { await deletePost(prisma, field(formData, "id")); }
   catch (error) { const message = error instanceof Error ? error.message : "文章刪除失敗"; redirect(`/admin?error=${encodeURIComponent(message)}`); }
-  revalidatePath("/", "layout");
+  if (current) {
+    const locale = localeSchema.parse(current.locale);
+    revalidatePublicContent({ locale, articleSlugs: [current.slug] });
+    await enqueuePublicInvalidation(prisma, { locale, articleSlugs: [current.slug] });
+  }
   redirect("/admin");
 }

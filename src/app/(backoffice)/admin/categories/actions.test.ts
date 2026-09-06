@@ -10,21 +10,26 @@ const {
   createCategory,
   updateCategory,
   deleteCategory,
+  getPublicCategoryPath,
   revalidatePath,
   redirect,
+  enqueuePublicInvalidation,
 } = vi.hoisted(() => ({
   getCurrentUser: vi.fn(),
   createCategory: vi.fn(),
   updateCategory: vi.fn(),
   deleteCategory: vi.fn(),
+  getPublicCategoryPath: vi.fn().mockResolvedValue(null),
   revalidatePath: vi.fn(),
   redirect: vi.fn((path: string) => { throw new Error(`redirect:${path}`); }),
+  enqueuePublicInvalidation: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({ getCurrentUser }));
 vi.mock("@/lib/db/prisma", () => ({ prisma: {} }));
-vi.mock("@/lib/content/repository", () => ({ createCategory, updateCategory, deleteCategory }));
+vi.mock("@/lib/content/repository", () => ({ createCategory, updateCategory, deleteCategory, getPublicCategoryPath }));
 vi.mock("next/cache", () => ({ revalidatePath }));
+vi.mock("@/lib/content/public-invalidation-outbox", () => ({ enqueuePublicInvalidation }));
 vi.mock("next/navigation", () => ({ redirect }));
 
 describe("category actions", () => {
@@ -54,7 +59,8 @@ describe("category actions", () => {
       showInNavigation: false,
       sortOrder: 7,
     });
-    expect(revalidatePath).toHaveBeenCalledWith("/", "layout");
+    expect(revalidatePath).toHaveBeenCalledWith("/zh-tw");
+    expect(revalidatePath).toHaveBeenCalledWith("/sitemap.xml");
   });
 
   it("updates a root category and its navigation setting", async () => {

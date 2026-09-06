@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 
 export async function resetDatabase() {
+  await prisma.publicInvalidation.deleteMany();
   await prisma.lLMUsage.deleteMany();
   await prisma.lLMModelPrice.deleteMany();
   await prisma.promptDefinition.updateMany({ data: { activeVersionNumber: 1 } });

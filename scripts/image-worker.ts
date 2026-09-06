@@ -13,7 +13,12 @@ console.log("AI image worker ready");
 try {
   do {
     try {
-      await prisma.workerHeartbeat.upsert({ where: { id: workerId }, create: { id: workerId, name: "AI image worker", startedAt, lastHeartbeat: new Date() }, update: { lastHeartbeat: new Date(), lastError: null } });
+      const heartbeat = await prisma.workerHeartbeat.upsert({ where: { id: workerId }, create: { id: workerId, name: "AI image worker", startedAt, lastHeartbeat: new Date() }, update: { lastHeartbeat: new Date(), lastError: null } });
+      if (heartbeat.desiredState === "STOPPED") {
+        if (process.argv.includes("--once")) break;
+        await delay(2000);
+        continue;
+      }
       await recoverImageJobs(prisma);
       const processed = await processNextImageJob(prisma);
       if (processed) await prisma.workerHeartbeat.update({ where: { id: workerId }, data: { lastHeartbeat: new Date(), processed: { increment: 1 } } });

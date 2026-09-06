@@ -1,13 +1,14 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
-import { createCategory, deleteCategory, updateCategory } from "@/lib/content/repository";
+import { createCategory, deleteCategory, getPublicCategoryPath, updateCategory } from "@/lib/content/repository";
 import { localeSchema } from "@/lib/content/schema";
 import { slugifyTitle } from "@/lib/content/slug";
 import { prisma } from "@/lib/db/prisma";
 import { defaultLocale, isLocale, type Locale } from "@/lib/i18n/config";
+import { revalidatePublicContent } from "@/lib/content/public-invalidation";
+import { enqueuePublicInvalidation } from "@/lib/content/public-invalidation-outbox";
 
 async function requireUser() {
   const user = await getCurrentUser();
@@ -40,20 +41,22 @@ function categoriesUrl(locale: Locale, parameters: Record<string, string>): stri
   return `/admin/categories?${search.toString()}`;
 }
 
-function refreshCategories() {
-  revalidatePath("/", "layout");
+async function refreshCategories(locale: Locale, categoryId?: string) {
+  const categoryPath = categoryId ? await getPublicCategoryPath(prisma, categoryId) : null;
+  revalidatePublicContent({ locale, categoryPaths: categoryPath ? [categoryPath.path] : [] });
+  return enqueuePublicInvalidation(prisma, { locale, categoryPaths: categoryPath ? [categoryPath.path] : [] });
 }
 
 export async function createCategoryAction(formData: FormData) {
   await requireUser();
   const locale = requestedLocale(formData);
   try {
-    await createCategory(prisma, categoryInput(formData));
+    const created = await createCategory(prisma, categoryInput(formData));
+    await refreshCategories(locale, created?.id);
   } catch (error) {
     const message = error instanceof Error ? error.message : "分類建立失敗";
     redirect(categoriesUrl(locale, { error: message }));
   }
-  refreshCategories();
   redirect(categoriesUrl(locale, { success: "created" }));
 }
 
@@ -61,12 +64,13 @@ export async function updateCategoryAction(formData: FormData) {
   await requireUser();
   const locale = requestedLocale(formData);
   try {
-    await updateCategory(prisma, String(formData.get("id") || ""), categoryInput(formData));
+    const id = String(formData.get("id") || "");
+    await updateCategory(prisma, id, categoryInput(formData));
+    await refreshCategories(locale, id);
   } catch (error) {
     const message = error instanceof Error ? error.message : "分類更新失敗";
     redirect(categoriesUrl(locale, { error: message }));
   }
-  refreshCategories();
   redirect(categoriesUrl(locale, { success: "updated" }));
 }
 
@@ -74,11 +78,14 @@ export async function deleteCategoryAction(formData: FormData) {
   await requireUser();
   const locale = requestedLocale(formData);
   try {
-    await deleteCategory(prisma, String(formData.get("id") || ""));
+    const id = String(formData.get("id") || "");
+    const categoryPath = await getPublicCategoryPath(prisma, id);
+    await deleteCategory(prisma, id);
+    revalidatePublicContent({ locale, categoryPaths: categoryPath ? [categoryPath.path] : [] });
+    await enqueuePublicInvalidation(prisma, { locale, categoryPaths: categoryPath ? [categoryPath.path] : [] });
   } catch (error) {
     const message = error instanceof Error ? error.message : "分類刪除失敗";
     redirect(categoriesUrl(locale, { error: message }));
   }
-  refreshCategories();
   redirect(categoriesUrl(locale, { success: "deleted" }));
 }

@@ -174,13 +174,13 @@ docker compose -f docker-compose.vm.yml up -d --build
 SITE_URL=https://www.example.com PREWARM_LIMIT=100 scripts/prewarm-public-pages.sh
 ```
 
-`build` service 會在 PostgreSQL 健康且 migration 完成後執行 production build，網站與 Worker 共用 build volume；公開頁面使用 ISR，快取存於 `next_build` volume。Caddy 負責 HTTPS，需讓 VM 的 80／443 port 通過 GCP Firewall。
+`build` service 會在 PostgreSQL 健康且 migration 完成後執行 production build，網站與 Worker 共用 build volume；公開頁面使用 ISR，快取存於 `next_build` volume。`cache-invalidator` 會處理發布後的公開 URL 失效事件，呼叫受保護的 Next endpoint 並在設定 Cloudflare 憑證時清除 HTML edge cache。Caddy 負責 HTTPS，需讓 VM 的 80／443 port 通過 GCP Firewall。
 
 若網站前方使用 Cloudflare，建議只對不含登入 Cookie 的公開 GET 頁面啟用 HTML cache：`/zh-tw`、`/en`、`/ja`、`/articles/*`、`/category/*`、`/authors/*`。`/admin/*`、`/login`、`/api/*`、帶 session Cookie 的請求必須 bypass。文章發布或編輯後，除呼叫 Next.js 的 `revalidatePath` 外，也要透過 Cloudflare API 清除對應 URL；在尚未接上 purge API 前，HTML edge cache TTL 應保持短期，避免發布後持續顯示舊內容。
 
 正式環境請另以 Cloud Scheduler 或 VM cron 執行 `scripts/backup-vm-postgres.sh`，並將 `BACKUP_BUCKET` 指向不同於 VM 所在磁碟的 Cloud Storage bucket。恢復備份前必須先在隔離 VM 或測試資料庫演練。
 
-Worker 管理頁面會在網站容器內執行 `WORKER_*_COMMAND`；若使用 Compose，請將控制命令改成容器內可執行且只操作本服務的 supervisor／管理腳本，勿把 Docker socket 暴露給網站容器。未設定時保留管理頁面的設定錯誤提示。
+Worker 管理頁面不操作 Docker，也不需要 `WORKER_*_COMMAND`。它只更新 `WorkerHeartbeat.desiredState`，AI Worker 自己依此狀態暫停或繼續處理；Compose 只負責維持 Worker 容器存活，不需暴露 Docker socket。
 
 多語系架構決策見 [`docs/superpowers/specs/2026-09-04-1wiki-locale-architecture-design.md`](docs/superpowers/specs/2026-09-04-1wiki-locale-architecture-design.md)，執行計畫見 [`docs/superpowers/plans/2026-09-04-1wiki-locale-architecture.md`](docs/superpowers/plans/2026-09-04-1wiki-locale-architecture.md)。原始 MVP 的完整需求與決策見 [`docs/superpowers/specs/2026-09-04-1wiki-adsense-seo-mvp-design.md`](docs/superpowers/specs/2026-09-04-1wiki-adsense-seo-mvp-design.md)。
 
