@@ -9,6 +9,7 @@ type CategorySelectProps = {
   categories: CategoryOption[];
   value?: string;
   includeAll?: boolean;
+  emptyLabel?: string;
   required?: boolean;
   onChange?: (value: string) => void;
 };
@@ -19,6 +20,7 @@ export function CategorySelect({
   categories,
   value,
   includeAll = false,
+  emptyLabel,
   required = false,
   onChange,
 }: CategorySelectProps) {
@@ -36,7 +38,7 @@ export function CategorySelect({
       onChange={onChange ? (event) => onChange(event.currentTarget.value) : undefined}
     >
       <option value="" disabled={!includeAll}>
-        {includeAll ? "全部分類" : "選擇分類"}
+        {emptyLabel || (includeAll ? "全部分類" : "選擇分類")}
       </option>
       {visibleCategories.map((category) => (
         <option key={category.id} value={category.id}>{category.label}</option>

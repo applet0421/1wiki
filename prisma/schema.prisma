@@ -100,6 +100,7 @@ model Category {
   parent           Category?  @relation("CategoryTree", fields: [parentId, locale], references: [id, locale], onDelete: Restrict)
   children         Category[] @relation("CategoryTree")
   posts            Post[]
+  sitePages        SitePage[]
   trafficDaily     TrafficDailyPage[]
 
   @@unique([id, locale])
@@ -175,12 +176,15 @@ model SitePage {
   seoDescription  String?    @db.Text
   seoKeywords     String?    @db.Text
   canonicalUrl    String?    @db.Text
+  categoryId      String?
   publishedAt     DateTime?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
+  category        Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   @@unique([locale, slug])
   @@index([locale, status, publishedAt])
+  @@index([categoryId, locale, status])
 }
 
 model TrafficDailyPage {

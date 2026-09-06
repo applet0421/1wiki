@@ -14,6 +14,7 @@ describe("CategoryPageContent", () => {
         publishedAt: new Date("2026-09-03T00:00:00Z"),
         category: { name: "ChatGPT", slug: "chatgpt", parent: { name: "AI", slug: "ai", parent: null } },
       }],
+      sitePages: [],
     }} />);
 
     expect(screen.getByRole("link", { name: "ChatGPT" })).toHaveAttribute("href", "/zh-tw/category/ai/chatgpt");
@@ -32,12 +33,26 @@ describe("CategoryPageContent", () => {
       category: { name: "ChatGPT", slug: "chatgpt", parent: { name: "AI", slug: "ai", parent: null } },
     }));
     render(<CategoryPageContent locale="zh-tw" dictionary={getDictionary("zh-tw")} data={{
-      category: { id: "root", name: "AI", slug: "ai", description: "AI 教學" }, ancestors: [], children: [], posts,
+      category: { id: "root", name: "AI", slug: "ai", description: "AI 教學" }, ancestors: [], children: [], posts, sitePages: [],
     }} />);
     expect(screen.getByTestId("ad-preview-category_after_intro")).toBeInTheDocument();
     expect(screen.getByTestId("ad-preview-category_inline")).toBeInTheDocument();
     expect(screen.getByTestId("ad-preview-category_end")).toBeInTheDocument();
     expect(screen.getByTestId("ad-preview-category_sidebar_desktop")).toBeInTheDocument();
     vi.unstubAllEnvs();
+  });
+
+  it("renders mounted site pages in a separate About block", () => {
+    render(<CategoryPageContent locale="zh-tw" dictionary={getDictionary("zh-tw")} data={{
+      category: { id: "root", name: "AI", slug: "ai", description: "AI 教學" }, ancestors: [], children: [], posts: [],
+      sitePages: [{ id: "page", title: "關於 1Wiki", slug: "about", excerpt: "介紹" }],
+    }} />);
+
+    const about = screen.getByRole("region", { name: "About" });
+    expect(within(about).queryByText("網站資訊")).not.toBeInTheDocument();
+    expect(within(about).queryByText("1 個頁面")).not.toBeInTheDocument();
+    expect(within(about).getByRole("link", { name: /關於 1Wiki/ })).toHaveAttribute("href", "/zh-tw/about");
+    expect(within(about).getByRole("list")).toHaveClass("category-site-pages-list");
+    expect(within(about).getByRole("listitem")).toHaveClass("category-site-page-item");
   });
 });

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db/prisma";
 import { resetDatabase } from "../../../tests/helpers/database";
-import { deleteSitePage, getPublishedSitePage, listAdminSitePages, saveSitePage } from "./pages";
+import { deleteSitePage, getPublishedCategoryPages, getPublishedSitePage, listAdminSitePages, saveSitePage } from "./pages";
 
 describe("site page repository", () => {
   beforeEach(resetDatabase);
@@ -49,5 +49,13 @@ describe("site page repository", () => {
     const page = await saveSitePage(prisma, input());
     await expect(deleteSitePage(prisma, page.id)).resolves.toMatchObject({ id: page.id });
     await expect(getPublishedSitePage(prisma, "zh-tw", "about")).resolves.toBeNull();
+  });
+
+  it("allows an optional same-locale category mount and lists only published mounted pages", async () => {
+    const category = await prisma.category.create({ data: { locale: "zh-tw", name: "AI", slug: "ai" } });
+    const mounted = await saveSitePage(prisma, input({ categoryId: category.id, status: "PUBLISHED" }));
+    await saveSitePage(prisma, input({ title: "未發布", slug: "draft", categoryId: category.id }));
+    await expect(getPublishedCategoryPages(prisma, "zh-tw", category.id)).resolves.toMatchObject([{ id: mounted.id, categoryId: category.id }]);
+    await expect(saveSitePage(prisma, input({ locale: "en", title: "About", slug: "about", categoryId: category.id }))).rejects.toThrow("分類語系必須與頁面一致");
   });
 });

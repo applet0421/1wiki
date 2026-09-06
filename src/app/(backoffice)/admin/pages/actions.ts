@@ -37,7 +37,7 @@ export async function saveSitePageAction(formData: FormData) {
   let saved;
   try {
     saved = await saveSitePage(prisma, {
-      id, locale: localeSchema.parse(locale), title: field(formData, "title"), slug: field(formData, "slug"), excerpt: field(formData, "excerpt"), contentHtml: field(formData, "contentHtml"), status,
+      id, locale: localeSchema.parse(locale), title: field(formData, "title"), slug: field(formData, "slug"), excerpt: field(formData, "excerpt"), contentHtml: field(formData, "contentHtml"), status, categoryId: field(formData, "categoryId") || null,
       seoTitle: field(formData, "seoTitle"), seoDescription: field(formData, "seoDescription"), seoKeywords: field(formData, "seoKeywords"), canonicalUrl: field(formData, "canonicalUrl"),
     });
   } catch (error) {

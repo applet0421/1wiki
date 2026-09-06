@@ -360,7 +360,7 @@ export async function getPublishedCategoryTreePage(
     getCategoryAncestors(client, category.id),
     getCategoryDescendantIds(client, category.id),
   ]);
-  const [categoryRows, posts] = await Promise.all([
+  const [categoryRows, posts, sitePages] = await Promise.all([
     client.category.findMany({
       where: { id: { in: descendantIds } },
       include: {
@@ -376,6 +376,11 @@ export async function getPublishedCategoryTreePage(
       orderBy: { publishedAt: "desc" },
       take: 10,
     }),
+    client.sitePage.findMany({
+      where: { locale, status: "PUBLISHED", publishedAt: { lte: new Date() }, categoryId: { in: descendantIds } },
+      select: { id: true, title: true, slug: true, excerpt: true },
+      orderBy: [{ updatedAt: "desc" }, { title: "asc" }],
+    }),
   ]);
 
   const tree = buildCategoryTree(categoryRows.map((row) => ({
@@ -390,13 +395,14 @@ export async function getPublishedCategoryTreePage(
     directPostCount: row._count.posts,
   })));
   const current = tree[0];
-  if (!current || current.aggregatePostCount === 0) return null;
+  if (!current || (current.aggregatePostCount === 0 && sitePages.length === 0)) return null;
 
   return {
     category,
     ancestors,
     children: current.children.filter((child) => child.aggregatePostCount > 0),
     posts,
+    sitePages,
   };
 }
 

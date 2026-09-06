@@ -42,6 +42,7 @@ type CategoryPageData = {
   ancestors: PublicCategory[];
   children: CategoryChild[];
   posts: CategoryPost[];
+  sitePages: { id: string; title: string; slug: string; excerpt: string }[];
 };
 
 export function CategoryPageContent({
@@ -82,6 +83,7 @@ export function CategoryPageContent({
         <p>{data.category.description}</p>
       </header>
       {showAds ? <AdSlot placement="category_after_intro" config={getAdSlotConfig("category_after_intro", adEnvironment, adContext)} /> : null}
+      {data.sitePages.length > 0 ? <section className="category-site-pages" aria-label="About"><ul className="category-site-pages-list">{data.sitePages.map((page) => <li className="category-site-page-item" key={page.id}><Link href={`/${locale}/${page.slug}`}><span className="card-category">About</span><strong>{page.title}</strong>{page.excerpt ? <span className="category-site-page-excerpt">{page.excerpt}</span> : null}<span className="category-site-page-cta">查看頁面 <span aria-hidden="true">→</span></span></Link></li>)}</ul></section> : null}
       {data.children.length > 0 ? (
         <section className="category-grid" aria-label="子分類">
           {data.children.map((child) => (
