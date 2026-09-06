@@ -180,7 +180,7 @@ SITE_URL=https://www.example.com PREWARM_LIMIT=100 scripts/prewarm-public-pages.
 
 正式環境請另以 Cloud Scheduler 或 VM cron 執行 `scripts/backup-vm-postgres.sh`，並將 `BACKUP_BUCKET` 指向不同於 VM 所在磁碟的 Cloud Storage bucket。恢復備份前必須先在隔離 VM 或測試資料庫演練。
 
-Worker 管理頁面不操作 Docker，也不需要 `WORKER_*_COMMAND`。它只更新 `WorkerHeartbeat.desiredState`，AI Worker 自己依此狀態暫停或繼續處理；Compose 只負責維持 Worker 容器存活，不需暴露 Docker socket。
+Worker 管理頁面不操作 Docker，也不需要 `WORKER_*_COMMAND`。它只更新 `WorkerHeartbeat.desiredState`，AI Worker 自己依此狀態暫停或繼續處理；Compose 只負責維持 Worker 容器存活，不需暴露 Docker socket。OWNER 可在 `/admin/cache` 查看公開快取失效事件、Cloudflare purge 設定與失敗重試佇列。
 
 多語系架構決策見 [`docs/superpowers/specs/2026-09-04-1wiki-locale-architecture-design.md`](docs/superpowers/specs/2026-09-04-1wiki-locale-architecture-design.md)，執行計畫見 [`docs/superpowers/plans/2026-09-04-1wiki-locale-architecture.md`](docs/superpowers/plans/2026-09-04-1wiki-locale-architecture.md)。原始 MVP 的完整需求與決策見 [`docs/superpowers/specs/2026-09-04-1wiki-adsense-seo-mvp-design.md`](docs/superpowers/specs/2026-09-04-1wiki-adsense-seo-mvp-design.md)。
 

@@ -18,6 +18,7 @@ export function AdminNav({ user }: { user: SessionUser }) {
             <Link href="/admin/traffic">流量監測</Link>
             <Link href="/admin/search-engine">搜尋引擎</Link>
             <Link href="/admin/worker">Worker 監控</Link>
+            <Link href="/admin/cache">快取監控</Link>
             <Link href="/admin/users">帳號</Link>
           </>
         ) : null}
