@@ -2,6 +2,7 @@ import sanitizeHtml from "sanitize-html";
 
 const allowedTags = [
   "p",
+  "div",
   "h2",
   "h3",
   "strong",

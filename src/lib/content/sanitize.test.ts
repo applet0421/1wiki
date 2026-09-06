@@ -33,4 +33,10 @@ describe("sanitizeArticleHtml", () => {
       '<a href="https://example.com" target="_blank" rel="noopener noreferrer">文件</a>',
     );
   });
+
+  it("preserves line breaks produced by Enter in the rich text editor", () => {
+    expect(sanitizeArticleHtml("<div>第一行</div><div>第二行</div>")).toBe(
+      "<div>第一行</div><div>第二行</div>",
+    );
+  });
 });
