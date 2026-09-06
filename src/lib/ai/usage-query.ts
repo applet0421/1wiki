@@ -2,6 +2,8 @@ import type { LLMUsageStatus, Prisma, PrismaClient } from "@prisma/client";
 
 type RawFilters = Record<string, string | undefined>;
 
+const PAGE_SIZE = 20;
+
 export type UsageFilters = {
   from: Date;
   to: Date;
@@ -10,7 +12,7 @@ export type UsageFilters = {
   model?: string;
   status?: LLMUsageStatus;
   page: number;
-  pageSize: 50;
+  pageSize: typeof PAGE_SIZE;
 };
 
 export type UsageRow = {
@@ -36,7 +38,7 @@ export type UsageDashboard = {
   rows: UsageRow[];
   totalRows: number;
   page: number;
-  pageSize: 50;
+  pageSize: typeof PAGE_SIZE;
   filterOptions: { promptKeys: string[]; providers: string[]; models: string[] };
 };
 
@@ -66,7 +68,7 @@ export function parseUsageFilters(raw: RawFilters, now = new Date()): UsageFilte
     model: bounded(raw.model),
     status: raw.status === "SUCCESS" || raw.status === "FAILURE" ? raw.status : undefined,
     page: Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1,
-    pageSize: 50,
+    pageSize: PAGE_SIZE,
   };
 }
 
@@ -121,7 +123,7 @@ export async function getUsageDashboard(client: PrismaClient, filters: UsageFilt
     })),
     totalRows,
     page: filters.page,
-    pageSize: 50,
+    pageSize: PAGE_SIZE,
     filterOptions: {
       promptKeys: promptGroups.map((item) => item.key),
       providers: providerGroups.map((item) => item.provider),

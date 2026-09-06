@@ -84,17 +84,6 @@ export function CategoryPageContent({
       </header>
       {showAds ? <AdSlot placement="category_after_intro" config={getAdSlotConfig("category_after_intro", adEnvironment, adContext)} /> : null}
       {data.sitePages.length > 0 ? <section className="category-site-pages" aria-label="About"><ul className="category-site-pages-list">{data.sitePages.map((page) => <li className="category-site-page-item" key={page.id}><Link href={`/${locale}/${page.slug}`}><span className="card-category">About</span><strong>{page.title}</strong>{page.excerpt ? <span className="category-site-page-excerpt">{page.excerpt}</span> : null}<span className="category-site-page-cta">查看頁面 <span aria-hidden="true">→</span></span></Link></li>)}</ul></section> : null}
-      {data.children.length > 0 ? (
-        <section className="category-grid" aria-label="子分類">
-          {data.children.map((child) => (
-            <Link className="category-card" href={getCategoryHref(locale, [...segments, child.slug])} key={child.id}>
-              <span>{child.aggregatePostCount} 篇文章</span>
-              <h2>{child.name}</h2>
-              <p>{child.description}</p>
-            </Link>
-          ))}
-        </section>
-      ) : null}
       <div className="category-content-layout">
         <section aria-label="文章列表">
           <CategoryArticleList initialPosts={data.posts} locale={locale} dictionary={dictionary} path={segments.join("/")} adInterval={adInterval} inlineAdConfig={getAdSlotConfig("category_inline", adEnvironment, adContext)} />

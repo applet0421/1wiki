@@ -10,11 +10,16 @@ export async function processSearchEngineAction() {
   const rows = await prisma.searchEngineNotification.findMany({ where: { status: "PENDING" }, take: 100, orderBy: { createdAt: "asc" } });
   const bingRows = rows.filter((row) => row.engine === "bing");
   const googleRows = rows.filter((row) => row.engine === "google");
+  let skipped = true;
   try {
     const result = await submitIndexNow(bingRows.map((row) => row.url));
+    skipped = result.skipped;
     if (!result.skipped && bingRows.length) await prisma.searchEngineNotification.updateMany({ where: { id: { in: bingRows.map((row) => row.id) } }, data: { status: "SUCCESS", sentAt: new Date(), attempts: { increment: 1 } } });
     const googleResult = await submitGoogleSitemap();
+    skipped = skipped && googleResult.skipped;
     if (!googleResult.skipped && googleRows.length) await prisma.searchEngineNotification.updateMany({ where: { id: { in: googleRows.map((row) => row.id) } }, data: { status: "SUCCESS", sentAt: new Date(), attempts: { increment: 1 } } });
-    redirect(`/admin/search-engine?success=${result.skipped ? "skipped" : "processed"}`);
-  } catch (error) { redirect(`/admin/search-engine?error=${encodeURIComponent(error instanceof Error ? error.message : "同步失敗")}`); }
+  } catch (error) {
+    redirect(`/admin/search-engine?error=${encodeURIComponent(error instanceof Error ? error.message : "同步失敗")}`);
+  }
+  redirect(`/admin/search-engine?success=${skipped ? "skipped" : "processed"}`);
 }

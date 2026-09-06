@@ -8,7 +8,7 @@ describe("LLM usage filters", () => {
     const filters = parseUsageFilters({}, now);
     expect(filters.from.toISOString()).toBe("2026-08-06T00:00:00.000Z");
     expect(filters.to.toISOString()).toBe("2026-09-04T23:59:59.999Z");
-    expect(filters).toMatchObject({ page: 1, pageSize: 50 });
+    expect(filters).toMatchObject({ page: 1, pageSize: 20 });
   });
 
   it("includes the complete selected end date", () => {

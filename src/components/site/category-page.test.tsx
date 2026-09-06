@@ -4,7 +4,7 @@ import { getDictionary } from "@/lib/i18n/dictionaries";
 import { CategoryPageContent } from "./category-page";
 
 describe("CategoryPageContent", () => {
-  it("renders child links, breadcrumbs, and descendant articles", () => {
+  it("renders breadcrumbs and descendant articles without the child-category section", () => {
     render(<CategoryPageContent locale="zh-tw" dictionary={getDictionary("zh-tw")} data={{
       category: { id: "root", name: "AI", slug: "ai", description: "AI 教學" },
       ancestors: [],
@@ -17,7 +17,7 @@ describe("CategoryPageContent", () => {
       sitePages: [],
     }} />);
 
-    expect(screen.getByRole("link", { name: "ChatGPT" })).toHaveAttribute("href", "/zh-tw/category/ai/chatgpt");
+    expect(screen.queryByRole("region", { name: "子分類" })).not.toBeInTheDocument();
     expect(screen.getByText("Leaf article")).toBeInTheDocument();
     expect(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByText("AI"))
       .toHaveAttribute("aria-current", "page");

@@ -17,9 +17,9 @@ export async function controlWorkerAction(formData: FormData) {
       create: { id: "image-worker", name: "AI image worker", desiredState: action === "stop" ? "STOPPED" : "RUNNING", startedAt: new Date(), lastHeartbeat: new Date() },
       update: { desiredState: action === "stop" ? "STOPPED" : "RUNNING", lastError: null },
     });
-    revalidatePath("/admin/worker"); redirect(`/admin/worker?success=${action}`);
-  }
-  catch { redirect(`/admin/worker?error=${encodeURIComponent(`Worker ${action} 操作失敗`)}`); }
+    revalidatePath("/admin/worker");
+  } catch { redirect(`/admin/worker?error=${encodeURIComponent(`Worker ${action} 操作失敗`)}`); }
+  redirect(`/admin/worker?success=${action}`);
 }
 
 export async function retryWorkerJobAction(formData: FormData) {

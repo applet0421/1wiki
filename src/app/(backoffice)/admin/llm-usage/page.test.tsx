@@ -37,6 +37,23 @@ describe("LLM usage page", () => {
     expect(screen.getByText("無法估算")).toBeInTheDocument();
   });
 
+  it("shows pagination links while preserving active filters", async () => {
+    getCurrentUser.mockResolvedValueOnce({ role: "OWNER" });
+    getUsageDashboard.mockResolvedValueOnce({
+      totals: { calls: 21, successes: 21, successRate: 1, inputTokens: 100, outputTokens: 20, estimatedCostUsd: "0.0012" },
+      rows: [], totalRows: 21, page: 1, pageSize: 20,
+      filterOptions: { promptKeys: [], providers: [], models: [] },
+    });
+
+    render(await UsagePage({ searchParams: Promise.resolve({ from: "2026-09-01", provider: "deepseek" }) }));
+
+    expect(screen.getByRole("link", { name: "下一頁" })).toHaveAttribute(
+      "href",
+      "/admin/llm-usage?from=2026-09-01&provider=deepseek&page=2",
+    );
+    expect(screen.getByText("第 1 頁，共 2 頁")).toBeInTheDocument();
+  });
+
   it.each([
     ["price-updated", "模型費率已更新。"],
     ["price-deleted", "模型費率已刪除。"],
