@@ -2,6 +2,16 @@
 
 最後更新：2026-09-06
 
+## 2026-09-06 資料保留清理功能
+
+- `src/lib/retention/settings.test.ts`：3 項測試通過。
+- `src/lib/retention/cleanup.test.ts`：2 項測試通過，涵蓋日期 cutoff、狀態保護與清理摘要。
+- `src/lib/backup/worker-cycle.test.ts`：2 項測試通過，涵蓋 24 小時執行間隔與清理錯誤隔離。
+- `src/app/(backoffice)/admin/database-backups/actions.test.ts`：2 項測試通過。
+- `src/app/(backoffice)/admin/database-backups/page.test.tsx`：1 項測試通過。
+- TypeScript 與 ESLint：通過。
+- 正式資料庫 migration 與正式環境清理尚未執行；部署後由 Worker 依設定逐步清理。
+
 基準：目前 `main` 工作樹；本次文件同步與 Coolify Compose 部署檔驗證未連線外部服務，也未執行正式 VM／Coolify 部署或瀏覽器驗收。這份紀錄不取代歷史測試，也不證明正式環境可發布。
 
 ## 2026-09-06 最新全量驗證

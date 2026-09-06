@@ -17,7 +17,7 @@ export default async function CachePage({ searchParams }: { searchParams: Promis
     {params.success === "retried" ? <p className="form-success" role="status">失效事件已重新排入處理。</p> : null}
     <div className="metric-grid">
       <div className="metric-card"><span>待處理</span><strong>{dashboard.counts.PENDING || 0}</strong></div>
-      <div className="metric-card"><span>成功</span><strong>{dashboard.counts.SUCCESS || 0}</strong></div>
+      <div className="metric-card"><span>目前保留紀錄</span><strong>{(dashboard.counts.PENDING || 0) + (dashboard.counts.FAILED || 0)}</strong></div>
       <div className="metric-card"><span>失敗</span><strong>{dashboard.counts.FAILED || 0}</strong></div>
       <div className="metric-card"><span>最早待處理</span><strong>{time(dashboard.oldestPending)}</strong></div>
       <div className="metric-card"><span>Cloudflare purge</span><strong>{cloudflareConfigured ? "已設定" : "未設定"}</strong></div>

@@ -5,3 +5,7 @@ export async function enqueuePublicInvalidation(client: PrismaClient, input: Pub
   const paths = buildPublicInvalidationPaths(input);
   return client.publicInvalidation.create({ data: { paths } });
 }
+
+export async function completePublicInvalidation(client: PrismaClient, id: string) {
+  return client.publicInvalidation.delete({ where: { id } });
+}

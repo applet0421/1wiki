@@ -3,6 +3,7 @@ import { setTimeout as delay } from "node:timers/promises";
 
 nextEnv.loadEnvConfig(process.cwd(), process.env.NODE_ENV !== "production");
 const { prisma } = await import("../src/lib/db/prisma");
+const { completePublicInvalidation } = await import("../src/lib/content/public-invalidation-outbox");
 
 const revalidateUrl = process.env.CACHE_REVALIDATE_URL || "http://web:3000/api/internal/cache/revalidate";
 const secret = process.env.CACHE_REVALIDATE_SECRET || process.env.CRON_SECRET;
@@ -40,7 +41,7 @@ async function processOne(): Promise<boolean> {
     });
     if (!response.ok) throw new Error(`Next revalidation failed: ${response.status}`);
     await purgeCloudflare(paths);
-    await prisma.publicInvalidation.update({ where: { id: row.id }, data: { status: "SUCCESS", completedAt: new Date(), attempts: { increment: 1 }, lastError: null } });
+    await completePublicInvalidation(prisma, row.id);
   } catch (error) {
     const attempts = row.attempts + 1;
     await prisma.publicInvalidation.update({ where: { id: row.id }, data: { status: attempts >= 10 ? "FAILED" : "PENDING", attempts, lastError: error instanceof Error ? error.message : "快取失效失敗", nextAttemptAt: new Date(Date.now() + Math.min(attempts * 60_000, 15 * 60_000)) } });

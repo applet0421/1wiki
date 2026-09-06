@@ -379,6 +379,21 @@ model DatabaseBackupSetting {
   updatedAt      DateTime @updatedAt
 }
 
+model DataRetentionSetting {
+  id                         String   @id
+  llmUsageDays               Int      @default(180)
+  trafficDailyPageDays       Int      @default(365)
+  trafficDailySiteDays       Int      @default(730)
+  trafficSyncRunDays         Int      @default(180)
+  searchSuccessDays          Int      @default(90)
+  searchFailureDays          Int      @default(365)
+  imageGenerationDays        Int      @default(90)
+  publicInvalidationDays     Int      @default(180)
+  databaseBackupFailureDays  Int      @default(30)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+}
+
 model DatabaseBackup {
   id          String                @id @default(cuid())
   status      DatabaseBackupStatus  @default(RUNNING)

@@ -7,7 +7,8 @@ export async function POST(request: Request) {
   const cronSecret = process.env.SEARCH_ENGINE_CRON_SECRET || process.env.CRON_SECRET;
   if (!cronSecret || request.headers.get("authorization") !== `Bearer ${cronSecret}`) return Response.json({ error: "未授權" }, { status: 401 });
   const workerId = "search-engine-worker";
-  await prisma.workerHeartbeat.upsert({ where: { id: workerId }, create: { id: workerId, name: "Search engine notification worker", desiredState: "RUNNING", startedAt: new Date(), lastHeartbeat: new Date() }, update: { lastHeartbeat: new Date(), lastError: null } });
+  const heartbeat = await prisma.workerHeartbeat.upsert({ where: { id: workerId }, create: { id: workerId, name: "Search engine notification worker", desiredState: "RUNNING", startedAt: new Date(), lastHeartbeat: new Date() }, update: { lastHeartbeat: new Date(), lastError: null } });
+  if (heartbeat.desiredState === "STOPPED") return Response.json({ summary: 0, success: 0, failure: 0, skipped: true });
   const rows = await prisma.searchEngineNotification.findMany({ where: { status: "PENDING", nextAttemptAt: { lte: new Date() } }, orderBy: { createdAt: "asc" }, take: 100 });
   const bingRows = rows.filter((row) => row.engine === "bing");
   const googleRows = rows.filter((row) => row.engine === "google");

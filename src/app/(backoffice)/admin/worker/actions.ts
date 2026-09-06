@@ -11,10 +11,13 @@ export async function controlWorkerAction(formData: FormData) {
   assertOwner(await getCurrentUser());
   const action = String(formData.get("action") || "") as WorkerControlAction;
   if (!["start", "restart", "stop"].includes(action)) redirect("/admin/worker?error=無效的 Worker 操作");
+  const worker = String(formData.get("worker") || "image");
+  const workerId = worker === "search-engine" ? "search-engine-worker" : "image-worker";
+  const workerName = workerId === "search-engine-worker" ? "Search engine notification worker" : "AI image worker";
   try {
     await prisma.workerHeartbeat.upsert({
-      where: { id: "image-worker" },
-      create: { id: "image-worker", name: "AI image worker", desiredState: action === "stop" ? "STOPPED" : "RUNNING", startedAt: new Date(), lastHeartbeat: new Date() },
+      where: { id: workerId },
+      create: { id: workerId, name: workerName, desiredState: action === "stop" ? "STOPPED" : "RUNNING", startedAt: new Date(), lastHeartbeat: new Date() },
       update: { desiredState: action === "stop" ? "STOPPED" : "RUNNING", lastError: null },
     });
     revalidatePath("/admin/worker");

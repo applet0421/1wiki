@@ -5,11 +5,13 @@ import { scheduleKeyFor, isDailyBackupDue } from "../src/lib/backup/schedule";
 import { runDatabaseBackup } from "../src/lib/backup/runner";
 import { prisma } from "../src/lib/db/prisma";
 import { getOrCreateBackupSettings } from "../src/lib/backup/repository";
+import { runRetentionCleanupIfDue } from "../src/lib/backup/worker-cycle";
 
 nextEnv.loadEnvConfig(process.cwd(), process.env.NODE_ENV !== "production");
 const workerId = "database-backup-worker";
 const startedAt = new Date();
 let stopping = false;
+const retentionState = { lastCleanupAt: null as Date | null };
 process.on("SIGINT", () => { stopping = true; });
 process.on("SIGTERM", () => { stopping = true; });
 
@@ -42,6 +44,15 @@ try {
     try {
       const heartbeat = await prisma.workerHeartbeat.upsert({ where: { id: workerId }, create: { id: workerId, name: "Database backup worker", startedAt, lastHeartbeat: new Date() }, update: { lastHeartbeat: new Date(), lastError: null } });
       if (heartbeat.desiredState !== "STOPPED") await processSchedule();
+      if (heartbeat.desiredState !== "STOPPED") {
+        const cleanup = await runRetentionCleanupIfDue(prisma, retentionState);
+        if (cleanup.ran && cleanup.summary) console.log(JSON.stringify({ type: "data-retention-cleanup", ...cleanup.summary }));
+        if (cleanup.ran && cleanup.error) {
+          const error = cleanup.error instanceof Error ? cleanup.error.message : "資料清理失敗";
+          await prisma.workerHeartbeat.updateMany({ where: { id: workerId }, data: { lastHeartbeat: new Date(), lastError: error } });
+          console.error("Data retention cleanup failed", cleanup.error);
+        }
+      }
       if (process.argv.includes("--once")) break;
       await delay(30_000);
     } catch (error) {

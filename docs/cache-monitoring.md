@@ -12,13 +12,15 @@
 2. 若設定 `CLOUDFLARE_ZONE_ID` 與 `CLOUDFLARE_API_TOKEN`，清除對應公開 URL 的 Cloudflare HTML cache。
 3. 失敗時以遞增間隔重試，10 次後標記為 `FAILED`。
 
+成功事件完成後會從 `PublicInvalidation` outbox 移除；`PENDING` 不會自動刪除，`FAILED` 則依 `/admin/database-backups` 的「資料清理保留期限」設定保留，預設 180 天。資料清理由 `database-backup-worker` 每 24 小時最多執行一次。
+
 這個流程不使用長時間 TTL 掩蓋失效問題；快取命中是速度策略，Outbox 是內容正確性保障。
 
 ## OWNER 監控
 
 開啟 `/admin/cache` 可查看：
 
-- Pending、Success、Failed 失效事件數量
+- Pending、Failed 與目前保留的失效事件數量
 - 最早待處理事件
 - Cloudflare purge 憑證是否已設定
 - 最近 20 筆事件、嘗試次數、路徑數與錯誤

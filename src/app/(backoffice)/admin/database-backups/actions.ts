@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db/prisma";
 import { BACKUP_SETTING_ID } from "@/lib/backup/repository";
 import { validateBackupSettings } from "@/lib/backup/schedule";
 import { createBackupDownloadUrl, getBackupR2Configuration } from "@/lib/backup/r2-backups";
+import { DATA_RETENTION_SETTING_ID, validateRetentionSettings, type RetentionSettings } from "@/lib/retention/settings";
 
 async function requireOwner() {
   const user = await getCurrentUser();
@@ -28,6 +29,24 @@ export async function saveBackupSettingsAction(formData: FormData) {
     const message = error instanceof Error ? error.message : "備份設定儲存失敗";
     redirect(`/admin/database-backups?error=${encodeURIComponent(message)}`);
   }
+}
+
+export async function saveRetentionSettingsAction(formData: FormData) {
+  await requireOwner();
+  try {
+    const settings = Object.fromEntries([
+      "llmUsageDays", "trafficDailyPageDays", "trafficDailySiteDays", "trafficSyncRunDays",
+      "searchSuccessDays", "searchFailureDays", "imageGenerationDays", "publicInvalidationDays",
+      "databaseBackupFailureDays",
+    ].map((key) => [key, Number(formData.get(key))])) as RetentionSettings;
+    validateRetentionSettings(settings);
+    await prisma.dataRetentionSetting.upsert({ where: { id: DATA_RETENTION_SETTING_ID }, create: { id: DATA_RETENTION_SETTING_ID, ...settings }, update: settings });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "資料清理設定儲存失敗";
+    redirect(`/admin/database-backups?error=${encodeURIComponent(message)}`);
+  }
+  revalidatePath("/admin/database-backups");
+  redirect("/admin/database-backups?success=retention-settings");
 }
 
 export async function createManualBackupAction() {
