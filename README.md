@@ -170,9 +170,13 @@ npm start
 cp deploy/vm.env.example .env.production
 # 填妥 .env.production，並確認 SITE_HOST 的 DNS 指向 VM 固定 IP
 docker compose -f docker-compose.vm.yml up -d --build
+# 預熱首頁、sitemap 中的公開頁面，避免第一位訪客遇到 ISR cold miss
+SITE_URL=https://www.example.com PREWARM_LIMIT=100 scripts/prewarm-public-pages.sh
 ```
 
 `build` service 會在 PostgreSQL 健康且 migration 完成後執行 production build，網站與 Worker 共用 build volume；公開頁面使用 ISR，快取存於 `next_build` volume。Caddy 負責 HTTPS，需讓 VM 的 80／443 port 通過 GCP Firewall。
+
+若網站前方使用 Cloudflare，建議只對不含登入 Cookie 的公開 GET 頁面啟用 HTML cache：`/zh-tw`、`/en`、`/ja`、`/articles/*`、`/category/*`、`/authors/*`。`/admin/*`、`/login`、`/api/*`、帶 session Cookie 的請求必須 bypass。文章發布或編輯後，除呼叫 Next.js 的 `revalidatePath` 外，也要透過 Cloudflare API 清除對應 URL；在尚未接上 purge API 前，HTML edge cache TTL 應保持短期，避免發布後持續顯示舊內容。
 
 正式環境請另以 Cloud Scheduler 或 VM cron 執行 `scripts/backup-vm-postgres.sh`，並將 `BACKUP_BUCKET` 指向不同於 VM 所在磁碟的 Cloud Storage bucket。恢復備份前必須先在隔離 VM 或測試資料庫演練。
 
