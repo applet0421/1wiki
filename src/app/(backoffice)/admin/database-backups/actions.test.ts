@@ -17,7 +17,7 @@ import { saveRetentionSettingsAction } from "./actions";
 function validForm() {
   const form = new FormData();
   for (const [key, value] of Object.entries({
-    llmUsageDays: 180, trafficDailyPageDays: 365, trafficDailySiteDays: 730, trafficSyncRunDays: 180,
+    llmUsageDays: 180, trafficSyncRunDays: 180,
     searchSuccessDays: 90, searchFailureDays: 365, imageGenerationDays: 90, publicInvalidationDays: 180,
     databaseBackupFailureDays: 30,
   })) form.set(key, String(value));
@@ -34,7 +34,7 @@ describe("retention settings action", () => {
     await expect(saveRetentionSettingsAction(validForm())).rejects.toThrow("redirect:/admin/database-backups?success=retention-settings");
     expect(upsert).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: "default" },
-      update: expect.objectContaining({ llmUsageDays: 180, trafficDailyPageDays: 365, databaseBackupFailureDays: 30 }),
+      update: expect.objectContaining({ llmUsageDays: 180, trafficSyncRunDays: 180, databaseBackupFailureDays: 30 }),
     }));
     expect(revalidatePath).toHaveBeenCalledWith("/admin/database-backups");
   });

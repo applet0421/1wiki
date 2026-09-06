@@ -1,16 +1,33 @@
 import { describe, expect, it } from "vitest";
-import { parseTrafficFilters } from "./traffic-query";
+import { getTrafficDashboard, parseTrafficFilters } from "./traffic-query";
 
 describe("parseTrafficFilters", () => {
-  it("defaults to the latest 30 Taiwan calendar days", () => {
-    const filters = parseTrafficFilters({}, new Date("2026-09-06T04:00:00+08:00"));
-    expect(filters.from.toISOString().slice(0, 10)).toBe("2026-08-08");
-    expect(filters.to.toISOString().slice(0, 10)).toBe("2026-09-06");
+  it("keeps only the supported locale filter", () => {
+    expect(parseTrafficFilters({}).locale).toBeUndefined();
   });
 
-  it("accepts valid date and locale filters and rejects invalid values", () => {
-    const filters = parseTrafficFilters({ from: "2026-09-01", to: "2026-09-05", locale: "en" }, new Date("2026-09-06T00:00:00Z"));
+  it("accepts valid locale filters and rejects invalid values", () => {
+    const filters = parseTrafficFilters({ locale: "en" });
     expect(filters.locale).toBe("en");
-    expect(parseTrafficFilters({ locale: "xx" }, new Date("2026-09-06T00:00:00Z")).locale).toBeUndefined();
+    expect(parseTrafficFilters({ locale: "xx" }).locale).toBeUndefined();
+  });
+});
+
+describe("getTrafficDashboard", () => {
+  it("reads page totals without querying daily traffic tables", async () => {
+    const client = {
+      trafficPageTotal: {
+        findMany: async () => [
+          { pagePath: "/en/articles/one", pageTitle: "One", pageType: "article", locale: "en", views: 12, post: { id: "p1", title: "One" }, category: { id: "c1", name: "Guides" } },
+          { pagePath: "/en/category/guides", pageTitle: "Guides", pageType: "category", locale: "en", views: 8, post: null, category: { id: "c1", name: "Guides" } },
+        ],
+      },
+      trafficSyncRun: { findFirst: async () => ({ status: "SUCCESS" }) },
+    };
+    const dashboard = await getTrafficDashboard(client as never);
+    expect(dashboard.totals).toEqual({ views: 20 });
+    expect(dashboard.posts).toEqual([{ id: "p1", title: "One", views: 12 }]);
+    expect(dashboard.categories).toEqual([{ id: "c1", name: "Guides", views: 20 }]);
+    expect(dashboard).not.toHaveProperty("daily");
   });
 });

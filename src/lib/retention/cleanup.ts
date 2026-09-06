@@ -5,8 +5,6 @@ const DAY_MS = 86_400_000;
 
 export type CleanupSummary = {
   llmUsage: number;
-  trafficDailyPage: number;
-  trafficDailySite: number;
   trafficSyncRun: number;
   searchSuccess: number;
   searchFailure: number;
@@ -24,8 +22,6 @@ function cutoff(now: Date, days: number) {
 export async function runDataRetentionCleanup(client: PrismaClient, settings: RetentionSettings, now = new Date()): Promise<CleanupSummary> {
   const results = await Promise.all([
     client.lLMUsage.deleteMany({ where: { createdAt: { lt: cutoff(now, settings.llmUsageDays) } } }),
-    client.trafficDailyPage.deleteMany({ where: { date: { lt: cutoff(now, settings.trafficDailyPageDays) } } }),
-    client.trafficDailySite.deleteMany({ where: { date: { lt: cutoff(now, settings.trafficDailySiteDays) } } }),
     client.trafficSyncRun.deleteMany({ where: { startedAt: { lt: cutoff(now, settings.trafficSyncRunDays) }, status: { in: ["SUCCESS", "FAILURE"] } } }),
     client.searchEngineNotification.deleteMany({ where: { createdAt: { lt: cutoff(now, settings.searchSuccessDays) }, status: "SUCCESS" } }),
     client.searchEngineNotification.deleteMany({ where: { createdAt: { lt: cutoff(now, settings.searchFailureDays) }, status: "FAILED" } }),
@@ -41,6 +37,6 @@ export async function runDataRetentionCleanup(client: PrismaClient, settings: Re
       },
     }),
   ]);
-  const [llmUsage, trafficDailyPage, trafficDailySite, trafficSyncRun, searchSuccess, searchFailure, imageGeneration, publicInvalidation, sessions, databaseBackups] = results.map(({ count }) => count);
-  return { llmUsage, trafficDailyPage, trafficDailySite, trafficSyncRun, searchSuccess, searchFailure, imageGeneration, publicInvalidation, sessions, databaseBackups, totalDeleted: results.reduce((total, result) => total + result.count, 0) };
+  const [llmUsage, trafficSyncRun, searchSuccess, searchFailure, imageGeneration, publicInvalidation, sessions, databaseBackups] = results.map(({ count }) => count);
+  return { llmUsage, trafficSyncRun, searchSuccess, searchFailure, imageGeneration, publicInvalidation, sessions, databaseBackups, totalDeleted: results.reduce((total, result) => total + result.count, 0) };
 }

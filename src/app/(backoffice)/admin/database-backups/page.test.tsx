@@ -21,7 +21,7 @@ describe("database backups page", () => {
     getCurrentUser.mockResolvedValue({ role: "OWNER" });
     getOrCreateBackupSettings.mockResolvedValue({ enabled: true, dailyTime: "02:00", timezone: "Asia/Taipei", retentionCount: 7 });
     getOrCreateRetentionSettings.mockResolvedValue({
-      llmUsageDays: 180, trafficDailyPageDays: 365, trafficDailySiteDays: 730, trafficSyncRunDays: 180,
+      llmUsageDays: 180, trafficSyncRunDays: 180,
       searchSuccessDays: 90, searchFailureDays: 365, imageGenerationDays: 90, publicInvalidationDays: 180,
       databaseBackupFailureDays: 30,
     });

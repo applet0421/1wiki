@@ -6,8 +6,6 @@ describe("data retention settings", () => {
   it("returns the documented defaults", () => {
     expect(DEFAULT_RETENTION_SETTINGS).toEqual({
       llmUsageDays: 180,
-      trafficDailyPageDays: 365,
-      trafficDailySiteDays: 730,
       trafficSyncRunDays: 180,
       searchSuccessDays: 90,
       searchFailureDays: 365,

@@ -2,6 +2,12 @@
 
 最後更新：2026-09-06
 
+## 2026-09-06 累計流量資料簡化
+
+- `TrafficDailyPage` 與 `TrafficDailySite` 改由 `TrafficPageTotal` 取代，每個 canonical page path 僅保留一筆累計瀏覽量。
+- 流量後台移除日期趨勢、活躍使用者、工作階段與互動欄位。
+- migration 會先彙整既有每日頁面瀏覽量，再移除每日資料表。
+
 ## 2026-09-06 資料保留清理功能
 
 - `src/lib/retention/settings.test.ts`：3 項測試通過。

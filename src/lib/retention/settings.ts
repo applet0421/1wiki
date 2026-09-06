@@ -4,8 +4,6 @@ export const DATA_RETENTION_SETTING_ID = "default";
 
 export const DEFAULT_RETENTION_SETTINGS = {
   llmUsageDays: 180,
-  trafficDailyPageDays: 365,
-  trafficDailySiteDays: 730,
   trafficSyncRunDays: 180,
   searchSuccessDays: 90,
   searchFailureDays: 365,
@@ -33,8 +31,6 @@ export async function getOrCreateRetentionSettings(client: PrismaClient): Promis
   });
   return {
     llmUsageDays: row.llmUsageDays,
-    trafficDailyPageDays: row.trafficDailyPageDays,
-    trafficDailySiteDays: row.trafficDailySiteDays,
     trafficSyncRunDays: row.trafficSyncRunDays,
     searchSuccessDays: row.searchSuccessDays,
     searchFailureDays: row.searchFailureDays,

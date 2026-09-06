@@ -36,33 +36,43 @@ async function runReport(token: string, body: object, fetcher: typeof fetch): Pr
   return result;
 }
 
-const metrics = ["screenPageViews", "activeUsers", "sessions", "engagedSessions", "userEngagementDuration", "entrances"].map((name) => ({ name }));
+const metrics = [{ name: "screenPageViews" }];
 const iso = (date: Date) => date.toISOString().slice(0, 10);
-const gaDate = (value: string) => new Date(`${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}T00:00:00.000Z`);
 const count = (row: Record<string, string | number>, key: string) => Math.round(Number(row[key] || 0));
+
+export function aggregatePageTrafficRows(rows: Record<string, string | number>[]) {
+  const totals = new Map<string, { pagePath: string; pageTitle: string; views: number }>();
+  for (const row of rows) {
+    const pagePath = String(row.pagePath || "").split("?")[0];
+    if (!pagePath) continue;
+    const current = totals.get(pagePath) || { pagePath, pageTitle: String(row.pageTitle || ""), views: 0 };
+    current.views += count(row, "screenPageViews");
+    if (!current.pageTitle && row.pageTitle) current.pageTitle = String(row.pageTitle);
+    totals.set(pagePath, current);
+  }
+  return [...totals.values()];
+}
 
 export async function syncGa4Traffic(client: PrismaClient, from: Date, to: Date, fetcher: typeof fetch = fetch) {
   const run = await client.trafficSyncRun.create({ data: { fromDate: from, toDate: to } });
   try {
     const token = await accessToken(fetcher);
     const dateRanges = [{ startDate: iso(from), endDate: iso(to) }];
-    const [siteReport, pageReport, posts, categories] = await Promise.all([
-      runReport(token, { dateRanges, dimensions: [{ name: "date" }], metrics, limit: "100000" }, fetcher),
-      runReport(token, { dateRanges, dimensions: [{ name: "date" }, { name: "pagePath" }, { name: "pageTitle" }], metrics, limit: "100000" }, fetcher),
+    const [pageReport, posts, categories] = await Promise.all([
+      runReport(token, { dateRanges, dimensions: [{ name: "pagePath" }, { name: "pageTitle" }], metrics, limit: "100000" }, fetcher),
       client.post.findMany({ select: { id: true, slug: true, locale: true, categoryId: true } }),
       client.category.findMany({ select: { id: true, slug: true, locale: true } }),
     ]);
     const postMap = new Map(posts.map((post) => [`${post.locale}:${post.slug}`, post]));
     const categoryMap = new Map(categories.map((category) => [`${category.locale}:${category.slug}`, category]));
-    const siteRows = parseGa4ReportRows(siteReport), pageRows = parseGa4ReportRows(pageReport);
+    const pageRows = aggregatePageTrafficRows(parseGa4ReportRows(pageReport));
     await client.$transaction([
-      ...siteRows.map((row) => client.trafficDailySite.upsert({ where: { date: gaDate(String(row.date)) }, create: { date: gaDate(String(row.date)), views: count(row, "screenPageViews"), activeUsers: count(row, "activeUsers"), sessions: count(row, "sessions"), engagedSessions: count(row, "engagedSessions"), engagementSeconds: count(row, "userEngagementDuration") }, update: { views: count(row, "screenPageViews"), activeUsers: count(row, "activeUsers"), sessions: count(row, "sessions"), engagedSessions: count(row, "engagedSessions"), engagementSeconds: count(row, "userEngagementDuration"), syncedAt: new Date() } })),
       ...pageRows.flatMap((row) => {
-        const pagePath = String(row.pagePath).split("?")[0]; const context = classifyPagePath(pagePath); if (!context) return [];
+        const pagePath = row.pagePath; const context = classifyPagePath(pagePath); if (!context) return [];
         const post = context.pageType === "article" ? postMap.get(`${context.locale}:${context.contentSlug}`) : undefined;
         const category = context.pageType === "category" ? categoryMap.get(`${context.locale}:${context.categorySlug}`) : post ? categories.find((item) => item.id === post.categoryId) : undefined;
-        const data = { pageTitle: String(row.pageTitle || ""), pageType: context.pageType, locale: context.locale, postId: post?.id || null, categoryId: category?.id || null, views: count(row, "screenPageViews"), activeUsers: count(row, "activeUsers"), sessions: count(row, "sessions"), engagedSessions: count(row, "engagedSessions"), engagementSeconds: count(row, "userEngagementDuration"), entrances: count(row, "entrances"), syncedAt: new Date() };
-        return [client.trafficDailyPage.upsert({ where: { date_pagePath: { date: gaDate(String(row.date)), pagePath } }, create: { date: gaDate(String(row.date)), pagePath, ...data }, update: data })];
+        const data = { pageTitle: row.pageTitle, pageType: context.pageType, locale: context.locale, postId: post?.id || null, categoryId: category?.id || null, views: row.views, syncedAt: new Date() };
+        return [client.trafficPageTotal.upsert({ where: { pagePath }, create: { pagePath, ...data }, update: data })];
       }),
     ]);
     await client.trafficSyncRun.update({ where: { id: run.id }, data: { status: "SUCCESS", rowCount: pageRows.length, completedAt: new Date() } });

@@ -35,7 +35,7 @@ export async function saveRetentionSettingsAction(formData: FormData) {
   await requireOwner();
   try {
     const settings = Object.fromEntries([
-      "llmUsageDays", "trafficDailyPageDays", "trafficDailySiteDays", "trafficSyncRunDays",
+      "llmUsageDays", "trafficSyncRunDays",
       "searchSuccessDays", "searchFailureDays", "imageGenerationDays", "publicInvalidationDays",
       "databaseBackupFailureDays",
     ].map((key) => [key, Number(formData.get(key))])) as RetentionSettings;

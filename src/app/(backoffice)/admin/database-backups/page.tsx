@@ -25,8 +25,6 @@ export default async function DatabaseBackupsPage({ searchParams }: { searchPara
     </form></div>
     <div className="panel"><div className="heading-row"><div><h2>資料清理保留期限</h2><p className="muted">每日由 database-backup-worker 執行；核心文章與設定資料不會自動刪除。單位為天，範圍 1–3650 天。</p></div></div><form action={saveRetentionSettingsAction} className="form-grid retention-settings-form">
       <label>LLM 用量<input type="number" name="llmUsageDays" min={1} max={3650} defaultValue={retentionSettings.llmUsageDays} required /><span className="field-help">成功與失敗的模型呼叫紀錄。</span></label>
-      <label>流量頁面明細<input type="number" name="trafficDailyPageDays" min={1} max={3650} defaultValue={retentionSettings.trafficDailyPageDays} required /><span className="field-help">每日頁面流量資料。</span></label>
-      <label>流量網站彙總<input type="number" name="trafficDailySiteDays" min={1} max={3650} defaultValue={retentionSettings.trafficDailySiteDays} required /></label>
       <label>流量同步執行紀錄<input type="number" name="trafficSyncRunDays" min={1} max={3650} defaultValue={retentionSettings.trafficSyncRunDays} required /></label>
       <label>搜尋成功通知<input type="number" name="searchSuccessDays" min={1} max={3650} defaultValue={retentionSettings.searchSuccessDays} required /></label>
       <label>搜尋失敗通知<input type="number" name="searchFailureDays" min={1} max={3650} defaultValue={retentionSettings.searchFailureDays} required /></label>

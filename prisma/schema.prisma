@@ -112,7 +112,7 @@ model Category {
   children         Category[] @relation("CategoryTree")
   posts            Post[]
   sitePages        SitePage[]
-  trafficDaily     TrafficDailyPage[]
+  trafficTotals     TrafficPageTotal[]
 
   @@unique([id, locale])
   @@unique([locale, slug])
@@ -165,7 +165,7 @@ model Post {
   byline Author? @relation(fields: [bylineId, locale], references: [id, locale], onDelete: Restrict)
 
   imageGenerations ImageGeneration[]
-  trafficDaily     TrafficDailyPage[]
+  trafficTotals     TrafficPageTotal[]
 
   @@unique([locale, slug])
   @@index([status, publishedAt])
@@ -198,9 +198,8 @@ model SitePage {
   @@index([categoryId, locale, status])
 }
 
-model TrafficDailyPage {
+model TrafficPageTotal {
   id                String   @id @default(cuid())
-  date              DateTime @db.Date
   pagePath          String
   pageTitle         String   @default("")
   pageType          String
@@ -208,33 +207,14 @@ model TrafficDailyPage {
   postId            String?
   categoryId        String?
   views             Int      @default(0)
-  activeUsers       Int      @default(0)
-  sessions          Int      @default(0)
-  engagedSessions   Int      @default(0)
-  engagementSeconds Int      @default(0)
-  entrances         Int      @default(0)
   syncedAt          DateTime @default(now())
   post              Post?    @relation(fields: [postId], references: [id], onDelete: SetNull)
   category          Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
-  @@unique([date, pagePath])
-  @@index([date])
-  @@index([locale, date])
-  @@index([categoryId, date])
-  @@index([postId, date])
-}
-
-model TrafficDailySite {
-  id                String   @id @default(cuid())
-  date              DateTime @unique @db.Date
-  views             Int      @default(0)
-  activeUsers       Int      @default(0)
-  sessions          Int      @default(0)
-  engagedSessions   Int      @default(0)
-  engagementSeconds Int      @default(0)
-  syncedAt          DateTime @default(now())
-
-  @@index([date])
+  @@unique([pagePath])
+  @@index([locale])
+  @@index([categoryId])
+  @@index([postId])
 }
 
 model TrafficSyncRun {
@@ -382,8 +362,6 @@ model DatabaseBackupSetting {
 model DataRetentionSetting {
   id                         String   @id
   llmUsageDays               Int      @default(180)
-  trafficDailyPageDays       Int      @default(365)
-  trafficDailySiteDays       Int      @default(730)
   trafficSyncRunDays         Int      @default(180)
   searchSuccessDays          Int      @default(90)
   searchFailureDays          Int      @default(365)

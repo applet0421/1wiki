@@ -30,7 +30,7 @@
 
 **Interfaces:**
 - Produces `DATA_RETENTION_SETTING_ID = "default"`.
-- Produces `DEFAULT_RETENTION_SETTINGS` with `llmUsageDays: 180`, `trafficDailyPageDays: 365`, `trafficDailySiteDays: 730`, `trafficSyncRunDays: 180`, `searchSuccessDays: 90`, `searchFailureDays: 365`, `imageGenerationDays: 90`, `publicInvalidationDays: 180`, and `databaseBackupFailureDays: 30`.
+- Produces `DEFAULT_RETENTION_SETTINGS` with `llmUsageDays: 180`, `trafficSyncRunDays: 180`, `searchSuccessDays: 90`, `searchFailureDays: 365`, `imageGenerationDays: 90`, `publicInvalidationDays: 180`, and `databaseBackupFailureDays: 30`. Page traffic is stored as one lifetime total per canonical path and is not cleaned by age.
 - Produces `RetentionSettings` with those nine numeric fields.
 - Produces `validateRetentionSettings(input: RetentionSettings): RetentionSettings` and `getOrCreateRetentionSettings(client: PrismaClient)`.
 
@@ -39,7 +39,7 @@
 ```ts
 it("returns the documented defaults", () => {
   expect(DEFAULT_RETENTION_SETTINGS).toEqual({
-    llmUsageDays: 180, trafficDailyPageDays: 365, trafficDailySiteDays: 730,
+    llmUsageDays: 180, trafficSyncRunDays: 180,
     trafficSyncRunDays: 180, searchSuccessDays: 90, searchFailureDays: 365,
     imageGenerationDays: 90, publicInvalidationDays: 180, databaseBackupFailureDays: 30,
   });
