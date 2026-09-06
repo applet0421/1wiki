@@ -1,11 +1,12 @@
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth/session";
+import { getSiteUrl } from "@/lib/config/site";
 import { AIProviderError } from "./errors";
 
 export async function imageApiUser(request: Request) {
   if (request.method !== "GET") {
     const origin = request.headers.get("origin");
-    if (origin && origin !== new URL(request.url).origin) return Response.json({ error: "不允許跨網站配圖請求" }, { status: 403 });
+    if (origin && origin !== new URL(getSiteUrl()).origin) return Response.json({ error: "不允許跨網站配圖請求" }, { status: 403 });
   }
   const user = await getCurrentUser();
   if (!user) return Response.json({ error: "請先登入" }, { status: 401 });
