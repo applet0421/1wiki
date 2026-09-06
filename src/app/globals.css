@@ -99,7 +99,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--brand); outline:
 .heading-row, .editor-actions, .row-actions { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
 .heading-actions { display: flex; align-items: center; gap: .75rem; }
 .article-creation-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
-.article-creation-option { display: grid; grid-template-columns: 2.4rem minmax(0, 1fr); gap: 1rem; align-items: start; }
+.article-creation-option { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; align-items: start; }
 .article-creation-option h2 { margin: 0 0 .45rem; font-size: 1.2rem; }
 .article-creation-option p { min-height: 3.4rem; }
 .article-creation-option-key { display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 999px; background: var(--brand); color: #fff; font-weight: 900; }
