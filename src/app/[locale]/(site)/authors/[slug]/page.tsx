@@ -11,7 +11,7 @@ import { prisma } from "@/lib/db/prisma";
 import { isLocale, getLocaleConfig } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 type Props = { params: Promise<{ locale: string; slug: string }> };
 const getAuthor = cache(async (locale: string, slug: string) => {
   if (!isLocale(locale)) notFound();
@@ -34,8 +34,12 @@ export default async function AuthorPage({ params }: Props) {
   const dictionary = getDictionary(locale);
   const posts = await prisma.post.findMany({
     where: { bylineId: author.id, locale, status: "PUBLISHED", publishedAt: { lte: new Date() } },
-    include: { category: { include: { parent: { include: { parent: true } } } } },
+    select: {
+      id: true, slug: true, title: true, excerpt: true, coverImage: true, publishedAt: true,
+      category: { select: { name: true, slug: true, parent: { select: { name: true, slug: true, parent: { select: { name: true, slug: true } } } } } },
+    },
     orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
+    take: 24,
   });
   return <main className="public-main author-profile">
     <JsonLd value={{ "@context": "https://schema.org", "@type": "ProfilePage", url: `${getSiteUrl()}/${locale}/authors/${author.slug}`, inLanguage: getLocaleConfig(locale).htmlLang, dateModified: author.updatedAt.toISOString(), mainEntity: { "@type": "Person", name: author.name, url: `${getSiteUrl()}/${locale}/authors/${author.slug}` } }} />

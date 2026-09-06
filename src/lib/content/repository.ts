@@ -322,9 +322,9 @@ export function listCategories(client: PrismaClient, locale?: Locale) {
 export function listPublishedPosts(client: PrismaClient, locale: Locale, limit = 12) {
   return client.post.findMany({
     where: { locale, status: "PUBLISHED" },
-    include: {
-      category: { include: { parent: { include: { parent: true } } } },
-      author: { select: { displayName: true } }, byline: { select: { name: true, slug: true, id: true } },
+    select: {
+      id: true, slug: true, title: true, excerpt: true, coverImage: true, publishedAt: true,
+      category: { select: { name: true, slug: true, parent: { select: { name: true, slug: true, parent: { select: { name: true, slug: true } } } } } },
     },
     orderBy: { publishedAt: "desc" },
     take: limit,
@@ -362,9 +362,9 @@ export async function getPublishedCategoryTreePage(
     }),
     client.post.findMany({
       where: { locale, status: "PUBLISHED", categoryId: { in: descendantIds } },
-      include: {
-        category: { include: { parent: { include: { parent: true } } } },
-        author: { select: { displayName: true } }, byline: { select: { name: true, slug: true, id: true } },
+      select: {
+        id: true, slug: true, title: true, excerpt: true, coverImage: true, publishedAt: true,
+        category: { select: { name: true, slug: true, parent: { select: { name: true, slug: true, parent: { select: { name: true, slug: true } } } } } },
       },
       orderBy: { publishedAt: "desc" },
       take: 10,
@@ -405,7 +405,14 @@ export async function getPublishedCategoryPosts(
   const descendantIds = await getCategoryDescendantIds(client, category.id);
   const where = { locale, status: "PUBLISHED" as const, categoryId: { in: descendantIds } };
   const [posts, total] = await Promise.all([
-    client.post.findMany({ where, include: { category: { include: { parent: { include: { parent: true } } } }, author: { select: { displayName: true } }, byline: { select: { name: true, slug: true, id: true } } }, orderBy: { publishedAt: "desc" }, skip: offset, take: limit }),
+    client.post.findMany({
+      where,
+      select: {
+        id: true, slug: true, title: true, excerpt: true, coverImage: true, publishedAt: true,
+        category: { select: { name: true, slug: true, parent: { select: { name: true, slug: true, parent: { select: { name: true, slug: true } } } } } },
+      },
+      orderBy: { publishedAt: "desc" }, skip: offset, take: limit,
+    }),
     client.post.count({ where }),
   ]);
   return { posts, total };

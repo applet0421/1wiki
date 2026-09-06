@@ -10,7 +10,7 @@ import { decodeRouteSlug } from "@/lib/content/slug";
 import { prisma } from "@/lib/db/prisma";
 import { buildPostMetadata } from "@/lib/seo/metadata";
 type Props = { params: Promise<{ locale: string; slug: string }> };
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 const getPost = cache((locale: Locale, slug: string) => getPublishedPostBySlug(prisma, locale, slug));
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

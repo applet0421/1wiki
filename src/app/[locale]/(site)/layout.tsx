@@ -12,7 +12,7 @@ import { prisma } from "@/lib/db/prisma";
 import { AnalyticsTracker } from "@/components/site/analytics-tracker";
 import { getAnalyticsConfig } from "@/lib/analytics/config";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function SiteLayout({ children, params }: { children: ReactNode; params: Promise<{ locale: string }> }) {
   const { locale } = await params;

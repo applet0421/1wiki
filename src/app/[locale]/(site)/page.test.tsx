@@ -8,7 +8,7 @@ const { listPublishedPosts, listPublishedRootCategories } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/content/repository", () => ({ listPublishedPosts, listPublishedRootCategories }));
-vi.mock("@/lib/db/prisma", () => ({ prisma: { post: { count: vi.fn() } } }));
+vi.mock("@/lib/db/prisma", () => ({ prisma: {} }));
 
 describe("HomePage", () => {
   it("shows only root category cards with canonical category URLs", async () => {
