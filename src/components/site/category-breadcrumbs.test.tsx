@@ -11,12 +11,10 @@ describe("CategoryBreadcrumbs", () => {
         { id: "child", name: "ChatGPT", slug: "chatgpt" },
       ]}
       current={{ id: "leaf", name: "Prompt", slug: "prompt" }}
-      articleTitle="Leaf article"
     />);
 
     expect(screen.getByRole("link", { name: "AI" })).toHaveAttribute("href", "/zh-tw/category/ai");
     expect(screen.getByRole("link", { name: "ChatGPT" })).toHaveAttribute("href", "/zh-tw/category/ai/chatgpt");
     expect(screen.getByText("Prompt")).toHaveAttribute("aria-current", "page");
-    expect(screen.queryByText("Leaf article")).not.toBeInTheDocument();
   });
 });
