@@ -6,6 +6,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --include=dev
 
 COPY . .
+RUN npx prisma generate
 
 ENV NODE_ENV=production
 
