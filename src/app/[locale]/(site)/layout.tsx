@@ -11,6 +11,7 @@ import { listNavigationCategories } from "@/lib/content/repository";
 import { prisma } from "@/lib/db/prisma";
 import { AnalyticsTracker } from "@/components/site/analytics-tracker";
 import { getAnalyticsConfig } from "@/lib/analytics/config";
+import { AdsenseScript } from "@/components/ads/adsense-script";
 
 export const revalidate = 60;
 
@@ -21,7 +22,10 @@ export default async function SiteLayout({ children, params }: { children: React
   const dictionary = getDictionary(locale);
   const categories = await listNavigationCategories(prisma, locale);
   const analytics = getAnalyticsConfig();
-  return <>{analytics.enabled ? <AnalyticsTracker measurementId={analytics.measurementId} /> : null}<JsonLd value={buildWebsiteJsonLd(siteUrl, locale)} /><JsonLd value={buildOrganizationJsonLd(siteUrl)} /><SiteHeader locale={locale} dictionary={dictionary} categories={categories.map((category) => ({
+  const adsenseClientId = process.env.NEXT_PUBLIC_ADSENSE_ENABLED === "true"
+    ? process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.trim() || null
+    : null;
+  return <>{adsenseClientId ? <AdsenseScript clientId={adsenseClientId} /> : null}{analytics.enabled ? <AnalyticsTracker measurementId={analytics.measurementId} /> : null}<JsonLd value={buildWebsiteJsonLd(siteUrl, locale)} /><JsonLd value={buildOrganizationJsonLd(siteUrl)} /><SiteHeader locale={locale} dictionary={dictionary} categories={categories.map((category) => ({
     id: category.id,
     name: category.name,
     segments: [category.slug],
