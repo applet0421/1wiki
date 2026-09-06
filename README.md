@@ -64,6 +64,8 @@ npm run dev
 | `INITIAL_OWNER_*` | 僅首次建立 OWNER 時暫時設定 |
 | `CLOUDFLARE_R2_*` | R2 圖片上傳所需的帳號、bucket 與 S3 API 金鑰 |
 | `R2_PUBLIC_BASE_URL` | R2 bucket 連接的公開自訂網域，例如 `https://media.example.com` |
+| `DATABASE_BACKUP_R2_BUCKET` | 私有數據庫備份 R2 bucket；必須與公開圖片 bucket 分開 |
+| `DATABASE_BACKUP_R2_PREFIX` | 備份物件前綴，預設 `database-backups` |
 | `CACHE_REVALIDATE_SECRET` | cache-invalidator 呼叫 Next ISR 失效 endpoint 的內部密鑰 |
 | `CLOUDFLARE_ZONE_ID` | Cloudflare HTML cache purge 的 zone ID；可選 |
 | `CLOUDFLARE_API_TOKEN` | 僅具 Cache Purge 權限的 Cloudflare token；可選 |
@@ -87,6 +89,12 @@ npm run dev
   }
 ]
 ```
+
+## 數據庫備份（Cloudflare R2）
+
+後台 `/admin/database-backups` 僅 OWNER 可用。設定每日時間、時區與保留數量後，`database-backup-worker` 會使用 PostgreSQL `pg_dump` custom format 壓縮數據庫，再上傳到私有 R2；備份檔不加密，下載時才產生五分鐘有效的簽名網址。超過保留數量的成功備份會自動刪除 R2 物件及紀錄。
+
+請為備份建立獨立的私有 R2 bucket 與專用 API token，並填入 `DATABASE_BACKUP_R2_BUCKET`。不要把備份 bucket 設為公開，也不要使用 `R2_PUBLIC_BASE_URL`；Docker image 已包含 `postgresql-client`，Compose 會另外啟動 `database-backup-worker`。
 
 ## AI 供應商
 

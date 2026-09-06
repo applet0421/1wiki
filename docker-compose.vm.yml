@@ -96,6 +96,23 @@ services:
     networks:
       - internal
 
+  database-backup-worker:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - path: .env.production
+        required: false
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-onewiki}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-onewiki}
+      DIRECT_URL: postgresql://${POSTGRES_USER:-onewiki}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-onewiki}
+    command: ["npm", "run", "worker:database-backup"]
+    depends_on:
+      build:
+        condition: service_completed_successfully
+    networks:
+      - internal
+
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped

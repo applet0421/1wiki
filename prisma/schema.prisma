@@ -54,6 +54,17 @@ enum PublicInvalidationStatus {
   FAILED
 }
 
+enum DatabaseBackupStatus {
+  RUNNING
+  SUCCESS
+  FAILURE
+}
+
+enum DatabaseBackupTrigger {
+  SCHEDULE
+  MANUAL
+}
+
 model User {
   id                    String            @id @default(cuid())
   username              String            @unique
@@ -357,6 +368,34 @@ model WorkerHeartbeat {
   processed     Int      @default(0)
   lastError     String?  @db.VarChar(500)
   updatedAt     DateTime @updatedAt
+}
+
+model DatabaseBackupSetting {
+  id             String   @id
+  enabled        Boolean  @default(true)
+  dailyTime      String   @default("02:00")
+  timezone       String   @default("Asia/Taipei")
+  retentionCount Int      @default(7)
+  updatedAt      DateTime @updatedAt
+}
+
+model DatabaseBackup {
+  id          String                @id @default(cuid())
+  status      DatabaseBackupStatus  @default(RUNNING)
+  trigger     DatabaseBackupTrigger
+  scheduleKey String?               @unique
+  objectKey   String?               @db.Text
+  fileName    String?               @db.VarChar(255)
+  fileSize    BigInt?
+  checksum    String?               @db.VarChar(64)
+  error       String?               @db.VarChar(1000)
+  startedAt   DateTime              @default(now())
+  completedAt DateTime?
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@index([status, startedAt])
+  @@index([createdAt])
 }
 
 model SearchEngineNotification {

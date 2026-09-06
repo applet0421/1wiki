@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { deletePost, savePost } from "@/lib/content/repository";
 import { prisma } from "@/lib/db/prisma";
 import { localeSchema } from "@/lib/content/schema";
-import { articleUrl, enqueueSearchNotification } from "@/lib/search-engine/repository";
+import { articleUrl, enqueueGoogleSitemapNotification, enqueueSearchNotification } from "@/lib/search-engine/repository";
 import { classifySearchEvent } from "@/lib/search-engine/notifications";
 import { getSiteUrl } from "@/lib/config/site";
 import { revalidatePublicContent } from "@/lib/content/public-invalidation";
@@ -49,7 +49,10 @@ export async function savePostAction(formData: FormData) {
       bylineId: field(formData, "bylineId") || null, categoryId: field(formData, "categoryId"), ...seo, canonicalUrl: field(formData, "canonicalUrl"),
     });
     const event = classifySearchEvent(previous?.status || "DRAFT", isPublishing ? "PUBLISHED" : "DRAFT");
-    if (event && saved && (!saved.canonicalUrl || saved.canonicalUrl.startsWith(getSiteUrl()))) await enqueueSearchNotification(prisma, articleUrl(saved.locale, saved.slug), event);
+    if (event && saved && (!saved.canonicalUrl || saved.canonicalUrl.startsWith(getSiteUrl()))) {
+      await enqueueSearchNotification(prisma, articleUrl(saved.locale, saved.slug), event);
+      await enqueueGoogleSitemapNotification(prisma);
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : "文章儲存失敗";
     redirect(`${id ? `/admin/posts/${id}` : "/admin/posts/new"}?error=${encodeURIComponent(message)}`);
@@ -80,7 +83,10 @@ export async function togglePostStatusAction(formData: FormData) {
       categoryId: current.categoryId, ...seo, canonicalUrl: current.canonicalUrl || "",
     });
     const event = classifySearchEvent(current.status, isPublishing ? "PUBLISHED" : "DRAFT");
-    if (event && (!current.canonicalUrl || current.canonicalUrl.startsWith(getSiteUrl()))) await enqueueSearchNotification(prisma, articleUrl(current.locale, current.slug), event);
+    if (event && (!current.canonicalUrl || current.canonicalUrl.startsWith(getSiteUrl()))) {
+      await enqueueSearchNotification(prisma, articleUrl(current.locale, current.slug), event);
+      await enqueueGoogleSitemapNotification(prisma);
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : "狀態更新失敗";
     redirect(`/admin?error=${encodeURIComponent(message)}`);
