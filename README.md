@@ -160,6 +160,24 @@ npm start
 
 `20260904180000_prompt_llm_usage` 會同時建立 Prompt、版本、模型費率、用量資料表與四個既有功能的初始 Prompt，因此應先完成 migration 再啟動新版應用。
 
+## GCP VM 部署（正式建議模式）
+
+若需要讓 Next.js、PostgreSQL 與 AI 配圖 Worker 位於同一個亞洲區域，可使用 `asia-southeast1` 的 Compute Engine VM。專案提供 `docker-compose.vm.yml`，包含 Next.js、AI Worker、PostgreSQL 與 Caddy；PostgreSQL 不會發布任何 host port，只有 Compose 內部網路可連線。
+
+首次部署：
+
+```bash
+cp deploy/vm.env.example .env.production
+# 填妥 .env.production，並確認 SITE_HOST 的 DNS 指向 VM 固定 IP
+docker compose -f docker-compose.vm.yml up -d --build
+```
+
+`build` service 會在 PostgreSQL 健康且 migration 完成後執行 production build，網站與 Worker 共用 build volume；公開頁面使用 ISR，快取存於 `next_build` volume。Caddy 負責 HTTPS，需讓 VM 的 80／443 port 通過 GCP Firewall。
+
+正式環境請另以 Cloud Scheduler 或 VM cron 執行 `scripts/backup-vm-postgres.sh`，並將 `BACKUP_BUCKET` 指向不同於 VM 所在磁碟的 Cloud Storage bucket。恢復備份前必須先在隔離 VM 或測試資料庫演練。
+
+Worker 管理頁面會在網站容器內執行 `WORKER_*_COMMAND`；若使用 Compose，請將控制命令改成容器內可執行且只操作本服務的 supervisor／管理腳本，勿把 Docker socket 暴露給網站容器。未設定時保留管理頁面的設定錯誤提示。
+
 多語系架構決策見 [`docs/superpowers/specs/2026-09-04-1wiki-locale-architecture-design.md`](docs/superpowers/specs/2026-09-04-1wiki-locale-architecture-design.md)，執行計畫見 [`docs/superpowers/plans/2026-09-04-1wiki-locale-architecture.md`](docs/superpowers/plans/2026-09-04-1wiki-locale-architecture.md)。原始 MVP 的完整需求與決策見 [`docs/superpowers/specs/2026-09-04-1wiki-adsense-seo-mvp-design.md`](docs/superpowers/specs/2026-09-04-1wiki-adsense-seo-mvp-design.md)。
 
 ## 上游來源

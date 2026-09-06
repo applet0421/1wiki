@@ -16,16 +16,20 @@ services:
     networks:
       - internal
 
-  migrate:
+  build:
     build: .
     restart: "no"
     env_file: .env.production
     environment:
       NODE_ENV: production
-    command: ["npm", "run", "db:migrate"]
+      DATABASE_URL: postgresql://${POSTGRES_USER:-onewiki}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-onewiki}
+      DIRECT_URL: postgresql://${POSTGRES_USER:-onewiki}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-onewiki}
+    command: ["sh", "-c", "npm run db:migrate && npm run build"]
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - next_build:/app/.next
     networks:
       - internal
 
@@ -39,10 +43,10 @@ services:
       DIRECT_URL: ${DIRECT_URL:-postgresql://onewiki:${POSTGRES_PASSWORD}@postgres:5432/onewiki}
     command: ["npm", "run", "start"]
     depends_on:
-      migrate:
+      build:
         condition: service_completed_successfully
     volumes:
-      - next_cache:/app/.next/cache
+      - next_build:/app/.next
     expose:
       - "3000"
     healthcheck:
@@ -63,7 +67,7 @@ services:
       DIRECT_URL: ${DIRECT_URL:-postgresql://onewiki:${POSTGRES_PASSWORD}@postgres:5432/onewiki}
     command: ["npm", "run", "worker:images"]
     depends_on:
-      migrate:
+      build:
         condition: service_completed_successfully
     networks:
       - internal
@@ -88,7 +92,7 @@ services:
 
 volumes:
   postgres_data:
-  next_cache:
+  next_build:
   caddy_data:
   caddy_config:
 
