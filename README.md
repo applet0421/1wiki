@@ -20,12 +20,12 @@
 - OWNER／EDITOR 後台帳號，無公開註冊與第三方登入
 - 文章、三級分類、Rich Text Editor、YouTube／Shorts 嵌入與 SEO 欄位管理
 - 作者庫、語系化作者頁與署名；文章卡片封面、同分類連續閱讀及分類頁載入更多
-- OWNER 專用 GA4 流量監測與 AI 配圖 Worker 監控
+- OWNER 專用 GA4 流量監測、AI 配圖 Worker 監控與公開快取監控
 - DeepSeek（預設）、OpenAI、Gemini 三選一的 AI 文章初稿、來源分析與選題生成
 - OWNER 專用 Prompt 版本管理、歷史回復、LLM Token／失敗／耗時追蹤與美元成本估算
 - canonical、Open Graph、Article structured data、sitemap 與 robots
 - 手動 AdSense slot；Auto ads 預設關閉
-- PostgreSQL、Prisma、Next.js App Router，可部署至 Vercel
+- PostgreSQL、Prisma、Next.js App Router；正式建議部署至 GCP VM，Vercel 文件僅保留作為歷史替代方案
 
 ## 本機啟動
 
@@ -64,6 +64,9 @@ npm run dev
 | `INITIAL_OWNER_*` | 僅首次建立 OWNER 時暫時設定 |
 | `CLOUDFLARE_R2_*` | R2 圖片上傳所需的帳號、bucket 與 S3 API 金鑰 |
 | `R2_PUBLIC_BASE_URL` | R2 bucket 連接的公開自訂網域，例如 `https://media.example.com` |
+| `CACHE_REVALIDATE_SECRET` | cache-invalidator 呼叫 Next ISR 失效 endpoint 的內部密鑰 |
+| `CLOUDFLARE_ZONE_ID` | Cloudflare HTML cache purge 的 zone ID；可選 |
+| `CLOUDFLARE_API_TOKEN` | 僅具 Cache Purge 權限的 Cloudflare token；可選 |
 
 可以用 `openssl rand -base64 48` 產生 session secret。後台密碼至少 12 字元，且需同時包含字母與數字；連續登入失敗五次會鎖定 15 分鐘。
 
@@ -137,9 +140,9 @@ npm run test:e2e
 
 端到端測試會先建立測試資料，再以正式建置模式驗證語系轉址、語言選擇器、英文與日文空白首頁、內容隔離、sitemap、登入權限、政策頁，以及 360／390／768／1280px 下的 AdSense 關閉狀態。測試資料庫不得指向正式資料庫，因為測試會清空其中的 1Wiki 資料表。
 
-## Vercel 部署（確認後執行）
+## Vercel 部署（歷史替代方案）
 
-以下流程目前僅作為發布手冊保留。完成本機修改與驗證後，仍需取得專案負責人的明確確認，才可操作 Vercel、遠端資料庫或正式環境設定。
+正式環境優先採用下方 GCP VM 方案。以下流程僅作為既有 Vercel 環境的維護參考；完成本機修改與驗證後，仍需取得專案負責人的明確確認，才可操作 Vercel、遠端資料庫或正式環境設定。Vercel 若啟用公開 HTML cache，必須另行接妥相同的精準失效流程。
 
 1. 建立 Vercel 專案並連接本 repository。
 2. 建立可從 Vercel 連線的 PostgreSQL，填入 Production、Preview 所需環境變數。
@@ -175,6 +178,8 @@ SITE_URL=https://www.example.com PREWARM_LIMIT=100 scripts/prewarm-public-pages.
 ```
 
 `build` service 會在 PostgreSQL 健康且 migration 完成後執行 production build，網站與 Worker 共用 build volume；公開頁面使用 ISR，快取存於 `next_build` volume。`cache-invalidator` 會處理發布後的公開 URL 失效事件，呼叫受保護的 Next endpoint 並在設定 Cloudflare 憑證時清除 HTML edge cache。Caddy 負責 HTTPS，需讓 VM 的 80／443 port 通過 GCP Firewall。
+
+快取失效、`/admin/cache` 監控與 Cloudflare token 設定見 [公開快取與 Cloudflare 監控](docs/cache-monitoring.md)。
 
 若網站前方使用 Cloudflare，建議只對不含登入 Cookie 的公開 GET 頁面啟用 HTML cache：`/zh-tw`、`/en`、`/ja`、`/articles/*`、`/category/*`、`/authors/*`。`/admin/*`、`/login`、`/api/*`、帶 session Cookie 的請求必須 bypass。文章發布或編輯後，除呼叫 Next.js 的 `revalidatePath` 外，也要透過 Cloudflare API 清除對應 URL；在尚未接上 purge API 前，HTML edge cache TTL 應保持短期，避免發布後持續顯示舊內容。
 

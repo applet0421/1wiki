@@ -36,7 +36,7 @@ npm run prisma:generate
 npm run worker:images
 ```
 
-另行執行網站 dev/start。正式環境需要一個有相同環境設定、可連 PostgreSQL/R2/Gemini 的常駐 Node worker，以 process supervisor 管理重啟。請勿將持續 polling worker 當成短生命週期的 serverless route。沒有 worker 時任務維持等待中；資料庫任務本身不會執行。變更 `.env` 後需重啟網站與 worker；既有方案保留建立時的模型／尺寸／比例，需重新分析以採用新設定。
+另行執行網站 dev/start。正式環境使用 GCP VM Docker Compose：`worker` 執行 `npm run worker:images`，`cache-invalidator` 執行 `npm run worker:cache`。兩者都是常駐 Node worker，透過 Compose `restart: unless-stopped` 管理重啟；請勿將持續 polling worker 當成短生命週期的 serverless route。沒有 image worker 時任務維持等待中；資料庫任務本身不會執行。變更 `.env` 後需重啟相關 container；既有方案保留建立時的模型／尺寸／比例，需重新分析以採用新設定。
 
 ## 狀態與復原
 
@@ -85,6 +85,6 @@ npm run lint
 
 OWNER 可在 `/admin/worker` 查看最近 20 個任務、佇列數量與最近心跳，並手動重新整理。心跳未滿 15 秒顯示執行中、未滿 120 秒顯示心跳逾時，其後為離線；無紀錄顯示尚未啟動。長時間生圖期間心跳可能變舊，須同時查看任務狀態。
 
-啟動／重啟／停止按鈕分別使用 `WORKER_START_COMMAND`、`WORKER_RESTART_COMMAND`、`WORKER_STOP_COMMAND`；未設定時顯示設定錯誤。指令在網站所在主機執行，不會自動控制另一台 worker 主機。操作送出後須重新查看心跳確認結果。
+啟動／重啟／停止按鈕更新 `WorkerHeartbeat.desiredState`，不執行 shell 指令，也不需要 Docker socket。image worker 每輪輪詢會讀取該狀態並暫停或繼續處理；操作送出後須重新查看心跳確認結果。
 
-只有 FAILED 且仍有 imageBytes 的任務顯示「重試上傳」，會改為 GENERATED 交給 worker，沿用已生成圖片。心跳 migration 為 `20260905110000_worker_heartbeat`。
+只有 FAILED 且仍有 imageBytes 的任務顯示「重試上傳」，會改為 GENERATED 交給 worker，沿用已生成圖片。心跳 migration 為 `20260905110000_worker_heartbeat`；desired state migration 為 `20260906140000_worker_desired_state`。公開內容快取失效與 OWNER 監控另見 [公開快取與 Cloudflare 監控](cache-monitoring.md)。

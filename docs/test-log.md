@@ -4,7 +4,28 @@
 
 基準：測試當時 HEAD `5339e2e` 加本機未提交程式（現已提交為 `d5f0074`，相關程式內容未變）；本次工作為文件同步。只執行下列聚焦測試與 lint，沒有連線外部服務、執行資料庫 migration、完整測試、型別檢查、build 或瀏覽器驗收。這份紀錄不取代歷史測試，也不證明整個版本可發布。
 
-## 2026-09-06 執行結果
+## 2026-09-06 最新全量驗證
+
+使用本機隔離 PostgreSQL `127.0.0.1:5432/onewiki_test`，不使用正式資料庫：
+
+```sh
+DATABASE_URL=postgresql://eirikr@127.0.0.1:5432/onewiki_test \
+DIRECT_URL=postgresql://eirikr@127.0.0.1:5432/onewiki_test npm test
+npx tsc --noEmit
+npm run lint
+DATABASE_URL=postgresql://eirikr@127.0.0.1:5432/onewiki_test \
+DIRECT_URL=postgresql://eirikr@127.0.0.1:5432/onewiki_test \
+NEXT_PUBLIC_SITE_URL=http://localhost:3000 npm run build
+```
+
+- PostgreSQL migration：13 個 migration 全部成功套用，包含公開快取失效與 Worker desired state。
+- Vitest：90 個測試檔、310 項測試通過。
+- TypeScript：通過。
+- ESLint：通過。
+- Next.js production build：通過；公開首頁為 ISR／SSG，後台、API、Worker 控制維持 Dynamic。
+- Cloudflare 真實 zone purge、正式 VM 部署與實機 Lighthouse 尚未執行。
+
+## 歷史驗證結果
 
 ```sh
 npm test -- src/lib/search-engine/notifications.test.ts src/components/admin/admin-nav.test.tsx src/components/site/article-card.test.tsx src/components/admin/youtube.test.ts src/lib/seo/image.test.ts src/lib/ai/image-config.test.ts

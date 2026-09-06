@@ -4,9 +4,9 @@
 
 ## 2026-09-06 執行狀態
 
-已實作 `WorkerHeartbeat`、OWNER `/admin/worker`、啟停指令 action、失敗圖片重試上傳及 `scripts/image-worker.ts` 心跳。實際介面為 Server Component 與手動表單重新整理，並沒有計畫中的 `worker-monitor.tsx`／對應元件測試；心跳也寫在 script 而非此計畫列出的 library。
+已實作 `WorkerHeartbeat`、OWNER `/admin/worker`、失敗圖片重試上傳及 `scripts/image-worker.ts` 心跳。Worker 啟停已改為資料庫 `desiredState`，不再使用 shell 指令或 Docker socket；另新增 OWNER `/admin/cache` 監控公開 ISR／Cloudflare purge Outbox。實際介面為 Server Component 與手動表單重新整理，並沒有計畫中的 `worker-monitor.tsx`／對應元件測試；心跳也寫在 script 而非此計畫列出的 library。
 
-已存在的實作不等於下方 checklist 全部驗收；本次未啟停 worker 或重跑其整合測試。操作與心跳判讀見 [AI 配圖](../../ai-article-images.md)，本次驗證見 [測試紀錄](../../test-log.md)。
+已存在的實作不等於下方 checklist 全部驗收；目前已完成本機 90 個測試檔／310 項測試、型別、Lint 與 production build。正式 VM、Cloudflare purge 與真實 AI/R2 整合仍待外部環境驗收。操作與心跳判讀見 [AI 配圖](../../ai-article-images.md)，快取失效見 [快取監控](../../cache-monitoring.md)，本次驗證見 [測試紀錄](../../test-log.md)。
 
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
