@@ -27,6 +27,11 @@ export function RichTextEditor({ initialHtml = "", inputName = "contentHtml", ar
   const [pendingUpload, setPendingUpload] = useState<{ publicUrl: string } | null>(null);
   const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null);
   function updateHtml(nextHtml: string) { setHtml(nextHtml); onHtmlChange?.(nextHtml); }
+  function saveSelection() {
+    const selection = window.getSelection();
+    const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+    if (range && editorRef.current?.contains(range.commonAncestorContainer)) selectionRef.current = range.cloneRange();
+  }
   function restoreSelection() {
     const range = selectionRef.current;
     const editor = editorRef.current;
@@ -37,9 +42,7 @@ export function RichTextEditor({ initialHtml = "", inputName = "contentHtml", ar
   }
   function command(name: string, value?: string) { editorRef.current?.focus(); restoreSelection(); document.execCommand(name, false, value); selectionRef.current = null; updateHtml(editorRef.current?.innerHTML || ""); }
   function openInsert(mode: "link" | "image" | "youtube") {
-    const selection = window.getSelection();
-    const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
-    selectionRef.current = range && editorRef.current?.contains(range.commonAncestorContainer) ? range.cloneRange() : null;
+    saveSelection();
     setInsertUrl("");
     setImageAlt("");
     setInsertMode(mode);
@@ -149,7 +152,7 @@ export function RichTextEditor({ initialHtml = "", inputName = "contentHtml", ar
       <button type="button" disabled={!imageAlt.trim()} onClick={updateSelectedImage}>更新圖片</button>
       <button type="button" onClick={() => setSelectedImage(null)}>取消</button>
     </div> : null}
-    <div ref={editorRef} className="rich-editor article-prose" contentEditable suppressContentEditableWarning dangerouslySetInnerHTML={initialMarkup} onInput={(event) => updateHtml(event.currentTarget.innerHTML)} onClick={selectImage} aria-label={ariaLabel} />
+    <div ref={editorRef} className="rich-editor article-prose" contentEditable suppressContentEditableWarning dangerouslySetInnerHTML={initialMarkup} onInput={(event) => updateHtml(event.currentTarget.innerHTML)} onBlur={saveSelection} onClick={selectImage} aria-label={ariaLabel} />
     <input ref={fileInputRef} className="sr-only" aria-label="選擇要上傳的圖片" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={uploadImage} />
     {uploadStatus ? <p className="editor-upload-status" role="status">{uploadStatus}</p> : null}
     {inputName ? <input type="hidden" name={inputName} value={html} /> : null}

@@ -22,6 +22,26 @@ describe("RichTextEditor media controls", () => {
     expect(container.querySelector('[contenteditable="true"] img')).toHaveAttribute("src", "https://media.example.com/image.png");
   });
 
+  it("inserts a URL image at the saved cursor position after the editor loses focus", () => {
+    const { container } = render(<RichTextEditor initialHtml="<p>前後</p>" />);
+    const editor = container.querySelector('[contenteditable="true"]') as HTMLElement;
+    const text = editor.querySelector("p")?.firstChild as Text;
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.setStart(text, 1);
+    range.collapse(true);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    fireEvent.blur(editor);
+    selection?.removeAllRanges();
+    fireEvent.click(screen.getByRole("button", { name: "圖片網址" }));
+    fireEvent.change(screen.getByLabelText("圖片網址"), { target: { value: "https://media.example.com/image.png" } });
+    fireEvent.click(screen.getByRole("button", { name: "插入圖片" }));
+
+    expect(editor.querySelector("p img")).toHaveAttribute("src", "https://media.example.com/image.png");
+    expect(editor.querySelector("p")?.textContent).toBe("前後");
+  });
+
   it("does not nest the inline URL controls inside the article form", () => {
     const { container } = render(<form><RichTextEditor /></form>);
 
