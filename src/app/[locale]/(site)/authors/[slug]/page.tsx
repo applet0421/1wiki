@@ -12,6 +12,12 @@ import { isLocale, getLocaleConfig } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 
 export const revalidate = 300;
+export const dynamicParams = true;
+
+export function generateStaticParams() {
+  return [];
+}
+
 type Props = { params: Promise<{ locale: string; slug: string }> };
 const getAuthor = cache(async (locale: string, slug: string) => {
   if (!isLocale(locale)) notFound();

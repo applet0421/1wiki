@@ -11,6 +11,12 @@ import { prisma } from "@/lib/db/prisma";
 import { buildPostMetadata } from "@/lib/seo/metadata";
 type Props = { params: Promise<{ locale: string; slug: string }> };
 export const revalidate = 300;
+export const dynamicParams = true;
+
+export function generateStaticParams() {
+  return [];
+}
+
 const getPost = cache((locale: Locale, slug: string) => getPublishedPostBySlug(prisma, locale, slug));
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

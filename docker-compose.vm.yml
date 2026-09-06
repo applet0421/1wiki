@@ -19,7 +19,9 @@ services:
   build:
     build: .
     restart: "no"
-    env_file: .env.production
+    env_file:
+      - path: .env.production
+        required: false
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER:-onewiki}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-onewiki}
@@ -36,11 +38,13 @@ services:
   web:
     build: .
     restart: unless-stopped
-    env_file: .env.production
+    env_file:
+      - path: .env.production
+        required: false
     environment:
       NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:-postgresql://onewiki:${POSTGRES_PASSWORD}@postgres:5432/onewiki}
-      DIRECT_URL: ${DIRECT_URL:-postgresql://onewiki:${POSTGRES_PASSWORD}@postgres:5432/onewiki}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-onewiki}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-onewiki}
+      DIRECT_URL: postgresql://${POSTGRES_USER:-onewiki}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-onewiki}
     command: ["npm", "run", "start"]
     depends_on:
       build:
@@ -60,11 +64,13 @@ services:
   worker:
     build: .
     restart: unless-stopped
-    env_file: .env.production
+    env_file:
+      - path: .env.production
+        required: false
     environment:
       NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:-postgresql://onewiki:${POSTGRES_PASSWORD}@postgres:5432/onewiki}
-      DIRECT_URL: ${DIRECT_URL:-postgresql://onewiki:${POSTGRES_PASSWORD}@postgres:5432/onewiki}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-onewiki}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-onewiki}
+      DIRECT_URL: postgresql://${POSTGRES_USER:-onewiki}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-onewiki}
     command: ["npm", "run", "worker:images"]
     depends_on:
       build:
