@@ -26,7 +26,7 @@ services:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER:-onewiki}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-onewiki}
       DIRECT_URL: postgresql://${POSTGRES_USER:-onewiki}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-onewiki}
-    command: ["sh", "-c", "npm run db:migrate && npm run build"]
+    command: ["sh", "-c", "rm -rf /app/.next/* /app/.next/.[!.]* && npm run db:migrate && npm run build"]
     depends_on:
       postgres:
         condition: service_healthy
