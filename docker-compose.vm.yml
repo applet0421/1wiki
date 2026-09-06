@@ -121,6 +121,7 @@ services:
       - "443:443"
     environment:
       SITE_HOST: ${SITE_HOST:?SITE_HOST must be set}
+      SITE_REDIRECT_HOST: ${SITE_REDIRECT_HOST:?SITE_REDIRECT_HOST must be set}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

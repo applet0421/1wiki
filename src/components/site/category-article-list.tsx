@@ -37,6 +37,6 @@ export function CategoryArticleList({ initialPosts, locale, dictionary, path, in
     <ol className="category-article-list" aria-label="文章列表">
       {posts.map((post, index) => <Fragment key={post.id}><li className="category-article-item"><ArticleCard post={{ ...post, publishedAt: post.publishedAt ? new Date(post.publishedAt) : null }} locale={locale} dictionary={dictionary} /></li>{(index + 1) % adInterval === 0 && index + 1 < posts.length ? <li className="category-feed-ad"><AdSlot placement="category_inline" config={inlineAdConfig} /></li> : null}</Fragment>)}
     </ol>
-    <div ref={sentinel} className="category-load-sentinel" aria-live="polite">{loading ? "載入更多文章…" : hasMore ? "" : "已載入全部文章"}</div>
+    <div ref={sentinel} className="category-load-sentinel" aria-live="polite">{loading ? "載入更多文章…" : ""}</div>
   </>;
 }

@@ -2,3 +2,7 @@
   encode zstd gzip
   reverse_proxy web:3000
 }
+
+{$SITE_REDIRECT_HOST} {
+  redir https://{$SITE_HOST}{uri} 301
+}

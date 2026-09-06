@@ -9,12 +9,10 @@ export function CategoryBreadcrumbs({
   locale,
   ancestors,
   current,
-  articleTitle,
 }: {
   locale: Locale;
   ancestors: BreadcrumbCategory[];
   current: BreadcrumbCategory;
-  articleTitle?: string;
 }) {
   const categories = [...ancestors, current];
   const homeLabel = getDictionary(locale).article.home;
@@ -23,7 +21,7 @@ export function CategoryBreadcrumbs({
     <nav className="breadcrumbs" aria-label="Breadcrumb">
       <Link href={`/${locale}`}>{homeLabel}</Link>
       {categories.map((category, index) => {
-        const isCurrentPage = index === categories.length - 1 && !articleTitle;
+        const isCurrentPage = index === categories.length - 1;
         const href = getCategoryHref(locale, categories.slice(0, index + 1).map(({ slug }) => slug));
         return (
           <span className="breadcrumb-item" key={category.id || href}>
@@ -34,7 +32,6 @@ export function CategoryBreadcrumbs({
           </span>
         );
       })}
-      {articleTitle ? <span className="breadcrumb-item"><span aria-hidden>／</span><span aria-current="page">{articleTitle}</span></span> : null}
     </nav>
   );
 }

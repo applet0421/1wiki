@@ -181,7 +181,7 @@ npm start
 
 ```bash
 cp deploy/vm.env.example .env.production
-# 填妥 .env.production，並確認 SITE_HOST 的 DNS 指向 VM 固定 IP
+# 填妥 .env.production，並確認 SITE_HOST（正式 www 網域）與 SITE_REDIRECT_HOST（非 www 網域）的 DNS 都指向 VM 固定 IP
 docker compose -f docker-compose.vm.yml up -d --build
 # 預熱首頁、sitemap 中的公開頁面，避免第一位訪客遇到 ISR cold miss
 SITE_URL=https://www.example.com PREWARM_LIMIT=100 scripts/prewarm-public-pages.sh
@@ -191,7 +191,7 @@ SITE_URL=https://www.example.com PREWARM_LIMIT=100 scripts/prewarm-public-pages.
 
 ### Coolify Proxy 部署替代方案
 
-若使用 Coolify 管理這台 VM，請改用 `docker-compose.coolify.yml`，不要再啟動 `docker-compose.vm.yml` 的 Caddy service。Coolify Proxy 會負責 HTTPS、80／443 與網域轉發；在 Coolify 的 Compose service 設定中，將網域綁定到 `web` 的 container port `3000`。Coolify Compose 部署會自動將 Proxy 接入服務網路，因此 `web` 只需保留 `expose: 3000`，PostgreSQL、Worker 與 `cache-invalidator` 維持內部網路。
+若使用 Coolify 管理這台 VM，請改用 `docker-compose.coolify.yml`，不要再啟動 `docker-compose.vm.yml` 的 Caddy service。Coolify Proxy 會負責 HTTPS、80／443 與網域轉發；在 Coolify 的 Compose service 設定中，將正式網域 `www.example.com` 綁定到 `web` 的 container port `3000`，再新增 `example.com` 網域並設定 301 redirect 到 `https://www.example.com`。Coolify Compose 部署會自動將 Proxy 接入服務網路，因此 `web` 只需保留 `expose: 3000`，PostgreSQL、Worker 與 `cache-invalidator` 維持內部網路。
 
 ```bash
 # 在 Coolify 建立 Git-based Docker Compose resource，檔案選此檔

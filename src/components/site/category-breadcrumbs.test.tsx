@@ -16,7 +16,7 @@ describe("CategoryBreadcrumbs", () => {
 
     expect(screen.getByRole("link", { name: "AI" })).toHaveAttribute("href", "/zh-tw/category/ai");
     expect(screen.getByRole("link", { name: "ChatGPT" })).toHaveAttribute("href", "/zh-tw/category/ai/chatgpt");
-    expect(screen.getByRole("link", { name: "Prompt" })).toHaveAttribute("href", "/zh-tw/category/ai/chatgpt/prompt");
-    expect(screen.getByText("Leaf article")).toHaveAttribute("aria-current", "page");
+    expect(screen.getByText("Prompt")).toHaveAttribute("aria-current", "page");
+    expect(screen.queryByText("Leaf article")).not.toBeInTheDocument();
   });
 });
