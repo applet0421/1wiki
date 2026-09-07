@@ -75,7 +75,10 @@ export async function safeHttpsGet(rawUrl: URL | string, options: SafeGetOptions
         method: "GET",
         headers: options.headers,
         servername: allowedUrl.hostname,
-        lookup: (_host, _opts, callback) => callback(null, resolved.address, resolved.family),
+        lookup: (_host, lookupOptions, callback) => {
+          if (lookupOptions.all) return callback(null, [{ address: resolved.address, family: resolved.family }]);
+          return callback(null, resolved.address, resolved.family);
+        },
       }, (response) => {
         const status = response.statusCode || 0;
         const headerEntries: [string, string][] = [];
