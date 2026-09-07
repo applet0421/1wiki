@@ -14,6 +14,7 @@ export function AdminNav({ user }: { user: SessionUser }) {
         <Link href="/admin/authors">作者庫</Link>
         {user.role === "OWNER" ? (
           <>
+            <Link href="/admin/brand-seo">品牌與 SEO</Link>
             <Link href="/admin/prompts">Prompt 管理</Link>
             <Link href="/admin/llm-usage">LLM 用量</Link>
             <Link href="/admin/traffic">流量監測</Link>
