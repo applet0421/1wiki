@@ -2,6 +2,29 @@
 
 最後更新：2026-09-07
 
+## 2026-09-07 品牌 SEO OWNER 後台與多語系設定
+
+- `20260907130000_add_brand_seo_settings`：在隔離 PostgreSQL 成功套用，建立全域品牌設定與依系統語系儲存的首頁／分享 SEO 設定。
+- 品牌素材會先取得 R2 的實際位元組，再以圖片解碼檢查格式、大小與尺寸；管理端僅接受短效上傳流程產生的 R2 公開網址。
+- 目標回歸涵蓋 repository 預設值、表單驗證、實體圖片驗證、OWNER 上傳 API、OWNER action、管理表單、公開固定素材路由、metadata、manifest 與 JSON-LD。
+
+執行命令：
+
+```sh
+DATABASE_URL=postgresql://eirikr@127.0.0.1:5432/onewiki_test \
+DIRECT_URL=postgresql://eirikr@127.0.0.1:5432/onewiki_test npx prisma migrate deploy
+npm test -- src/lib/brand-seo 'src/app/api/admin/brand-seo/uploads/route.test.ts' 'src/app/(backoffice)/admin/brand-seo' src/components/admin/brand-seo-form.test.tsx 'src/app/brand/[asset]/route.test.ts' 'src/app/[locale]/layout.test.ts' src/app/manifest.test.ts src/lib/seo/structured-data.test.ts
+npx tsc --noEmit
+DATABASE_URL=postgresql://eirikr@127.0.0.1:5432/onewiki_test \
+DIRECT_URL=postgresql://eirikr@127.0.0.1:5432/onewiki_test \
+NEXT_PUBLIC_SITE_URL=http://localhost:3000 npm run build
+```
+
+- 隔離資料庫：20 個 migration 已套用，包含本輪品牌 SEO migration。
+- 目標測試：13 個測試檔、26 項測試通過；TypeScript 與 production build：通過。
+- 對本輪程式檔執行的 ESLint：通過。完整 `npm run lint` 仍僅受既有 `src/lib/wechat-import/browser-extractor.ts` 的 1 個 error 與 `src/lib/retention/cleanup.ts` 的 1 個 warning 阻擋。
+- 未執行正式資料庫 migration、部署、Google Search Console 提交或要求重新檢索。
+
 ## 2026-09-07 Google 品牌搜尋外觀
 
 - `src/lib/seo/structured-data.test.ts`：驗證 `WebSite` 使用精簡品牌名、根網址與網域備援名稱。

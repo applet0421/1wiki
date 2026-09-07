@@ -6,7 +6,8 @@
 
 ## 已有程式能力
 
-- 品牌搜尋訊號包含 48×48 ICO／PNG 與 SVG 圖示、首頁品牌式 description、`WebSite.name = 1Wiki`、網域備援 `alternateName`，以及初始 HTML 中可直接爬取的頂層分類連結。Google 是否採用 favicon、網站名稱、摘要與 sitelinks 仍由搜尋系統決定。
+- 品牌搜尋訊號包含 48×48 ICO／PNG 與 SVG 圖示、首頁品牌式 description、`WebSite.name = 1Wiki`、網域備援 `alternateName`，以及初始 HTML 中可直接爬取的頂層分類連結。僅 OWNER 可用的 `/admin/brand-seo` 可維護網站名稱、備用名稱、三種品牌素材與 `zh-tw`、`en`、`ja` 各自的首頁／分享標題與摘要；語言清單沿用系統既有語系，未另建語言管理。公開素材固定經由 `/brand/icon-48.png`、`/brand/logo`、`/brand/og-default` 提供，資料來源則為 R2。Google 是否採用 favicon、網站名稱、摘要與 sitelinks 仍由搜尋系統決定。
+- 各語系內容獨立維護，現階段不宣告 `hreflang`；這不是翻譯對照資料，避免向搜尋引擎暗示不存在的互譯關係。
 - 動態 `/sitemap.xml` 提供各語系文章、分類、已公開資訊頁與作者頁。文章／分類查詢目前僅依 PUBLISHED 篩選；作者頁另檢查發布時間。尚未統一未來發布時間與 canonical 排除規則。
 - 新 migration `20260906120000_search_engine_notifications` 建立通知表，保存 URL、引擎、事件、狀態、嘗試次數、下次時間、最後錯誤與送出時間，以 `(engine, url, eventType)` 唯一鍵 upsert。
 - 文章保存與切換狀態後產生 `publish`、`update`、`unpublish`；canonical 空白或以本站網址開頭才入列。通知寫入在保存交易之外。
@@ -34,7 +35,7 @@
 ## Google 與 Bing 上線設定手冊（待執行）
 
 1. 確認正式 `NEXT_PUBLIC_SITE_URL`，以規劃中的 `https://www.1wiki.org` 為例，在 Google Search Console 與 Bing Webmaster 驗證對應網站資源，提交 `https://www.1wiki.org/sitemap.xml`。
-2. 部署後檢查 `/favicon.ico`、`/icon-48.png`、首頁 favicon link、description、`WebSite` JSON-LD、sitemap、robots、canonical、DNS 及 HTTPS，再由 Search Console 對首頁要求建立索引。搜尋外觀更新可能需要數天至數週。
+2. 部署後檢查 `/favicon.ico`、`/brand/icon-48.png`、`/brand/logo`、`/brand/og-default`、首頁 favicon link、description、`WebSite` JSON-LD、sitemap、robots、canonical、DNS 及 HTTPS，再由 Search Console 對首頁要求建立索引。搜尋外觀更新可能需要數天至數週。
 3. Google 一般教學文章以 sitemap 與公開連結供發現；目前沒有 Search Console API 串接。[Google Indexing API](https://developers.google.com/search/apis/indexing-api/v3/using-api) 僅適用 JobPosting 或特定直播影片頁，不能用來實作本站一般文章即時索引。
 4. 補齊 IndexNow key 公開檔案、上述程式缺口，完成隔離資料庫 migration 與回歸，再依 README 發布政策安排啟用。
 

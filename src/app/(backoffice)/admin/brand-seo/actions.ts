@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 import { supportedLocales } from "@/lib/i18n/config";
 import { parseBrandSeoForm } from "@/lib/brand-seo/schema";
+import { validateStoredBrandAssets } from "@/lib/brand-seo/assets";
 import { BRAND_SEO_SETTINGS_ID } from "@/lib/brand-seo/constants";
 import { brandSeoInvalidationPaths } from "@/lib/brand-seo/invalidation";
 
@@ -29,6 +30,7 @@ export async function saveBrandSeoAction(formData: FormData) {
   if (user.role !== "OWNER") redirect("/admin");
   try {
     const input = parseBrandSeoForm(payload(formData));
+    await validateStoredBrandAssets(input.assets);
     await prisma.$transaction(async (tx) => {
       await tx.brandSeoSettings.upsert({
         where: { id: BRAND_SEO_SETTINGS_ID },

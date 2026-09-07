@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
-import { getLocaleConfig, supportedLocales } from "@/lib/i18n/config";
 import { resolveBrandSeo } from "@/lib/brand-seo/repository";
 import { saveBrandSeoAction } from "./actions";
 import { BrandSeoForm } from "@/components/admin/brand-seo-form";

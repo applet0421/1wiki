@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isLocale, supportedLocales, type Locale } from "@/lib/i18n/config";
+import { supportedLocales, type Locale } from "@/lib/i18n/config";
 
 const limits = { siteName: 80, alternateName: 120, title: 120, description: 320 } as const;
 type LocaleSeoInput = { homeTitle: string | null; homeDescription: string | null; ogTitle: string | null; ogDescription: string | null };
@@ -29,6 +29,5 @@ export function parseBrandSeoForm(value: unknown): BrandSeoInput {
     const item = raw.locales[locale] ?? {};
     return [locale, { homeTitle: text(item.homeTitle, limits.title), homeDescription: text(item.homeDescription, limits.description), ogTitle: text(item.ogTitle, limits.title), ogDescription: text(item.ogDescription, limits.description) }];
   })) as Record<Locale, LocaleSeoInput>;
-  for (const locale of Object.keys(raw.locales)) if (!isLocale(locale)) continue;
   return { siteName, alternateName: text(raw.alternateName, limits.alternateName), assets: { icon48SourceUrl: assetUrl(raw.assets.icon48SourceUrl), logoSourceUrl: assetUrl(raw.assets.logoSourceUrl), defaultOgSourceUrl: assetUrl(raw.assets.defaultOgSourceUrl) }, locales };
 }
