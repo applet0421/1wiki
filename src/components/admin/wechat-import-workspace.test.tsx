@@ -31,11 +31,10 @@ describe("WeChat wizard", () => {
     expect(screen.queryByRole("button", { name: "確認內容並轉存圖片" })).not.toBeInTheDocument();
   });
 
-  it("requires review before transfer and confirmation before abandonment", () => {
+  it("allows transfer without a review acknowledgement and still confirms abandonment", () => {
     render(<WeChatImportWorkspace imported={imported} />);
-    expect(screen.getByRole("button", { name: "確認內容並轉存圖片" })).toBeDisabled();
-    fireEvent.click(screen.getByRole("checkbox"));
     expect(screen.getByRole("button", { name: "確認內容並轉存圖片" })).toBeEnabled();
+    expect(screen.queryByRole("checkbox", { name: "我已檢視完整內容、圖片與待核實事項。" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "放棄並清除暫存" }));
     expect(screen.getByRole("alertdialog")).toBeInTheDocument();
     expect(actions.abandonWeChatImportAction).not.toHaveBeenCalled();
