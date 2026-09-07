@@ -12,8 +12,8 @@ export async function controlWorkerAction(formData: FormData) {
   const action = String(formData.get("action") || "") as WorkerControlAction;
   if (!["start", "restart", "stop"].includes(action)) redirect("/admin/worker?error=無效的 Worker 操作");
   const worker = String(formData.get("worker") || "image");
-  const workerId = worker === "search-engine" ? "search-engine-worker" : "image-worker";
-  const workerName = workerId === "search-engine-worker" ? "Search engine notification worker" : "AI image worker";
+  const workerId = worker === "search-engine" ? "search-engine-worker" : worker === "wechat-import" ? "wechat-import-worker" : "image-worker";
+  const workerName = workerId === "search-engine-worker" ? "Search engine notification worker" : workerId === "wechat-import-worker" ? "WeChat import worker" : "AI image worker";
   try {
     await prisma.workerHeartbeat.upsert({
       where: { id: workerId },
