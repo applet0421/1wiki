@@ -406,6 +406,27 @@ model DataRetentionSetting {
   updatedAt                  DateTime @updatedAt
 }
 
+model BrandSeoSettings {
+  id                 String   @id
+  siteName           String
+  alternateName      String?
+  icon48SourceUrl    String?  @db.Text
+  logoSourceUrl      String?  @db.Text
+  defaultOgSourceUrl String?  @db.Text
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model LocaleSeoSettings {
+  locale          String   @id
+  homeTitle       String?
+  homeDescription String?  @db.Text
+  ogTitle         String?
+  ogDescription   String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
 model WeChatImport {
   id                  String              @id @default(cuid())
   userId              String
