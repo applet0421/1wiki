@@ -18,7 +18,8 @@ describe("data retention cleanup", () => {
     };
     const now = new Date("2026-09-06T00:00:00.000Z");
 
-    const result = await runDataRetentionCleanup(client as never, DEFAULT_RETENTION_SETTINGS, now);
+    const transactionalClient = { ...client, $transaction: async (run: (tx: typeof client) => Promise<unknown>) => run(client) };
+    const result = await runDataRetentionCleanup(transactionalClient as never, DEFAULT_RETENTION_SETTINGS, now);
 
     expect(client.lLMUsage.deleteMany).toHaveBeenCalledWith({ where: { createdAt: { lt: new Date("2026-03-10T00:00:00.000Z") } } });
     expect(client.trafficSyncRun.deleteMany).toHaveBeenCalledWith({ where: { startedAt: { lt: new Date("2026-03-10T00:00:00.000Z") }, status: { in: ["SUCCESS", "FAILURE"] } } });
@@ -26,9 +27,9 @@ describe("data retention cleanup", () => {
     expect(client.imageGeneration.deleteMany).toHaveBeenCalledWith({ where: { createdAt: { lt: new Date("2026-06-08T00:00:00.000Z") }, status: { in: ["READY", "FAILED"] }, imageBytes: null } });
     expect(client.publicInvalidation.deleteMany).toHaveBeenCalledWith({ where: { createdAt: { lt: new Date("2026-03-10T00:00:00.000Z") }, status: { in: ["SUCCESS", "FAILED"] } } });
     expect(client.session.deleteMany).toHaveBeenCalledWith({ where: { expiresAt: { lt: now } } });
-    expect(client.weChatImport.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ status: { in: ["FETCHED", "REWRITTEN", "FAILED", "UNKNOWN", "TRANSFER_FAILED", "ABANDONED"] } }) }));
+    expect(client.weChatImport.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { status: "EXPIRED", leaseExpiresAt: null } }));
     expect(client.weChatImportAsset.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { imageBytes: null, originalUrl: "" } }));
-    expect(result.weChatImportPayloads).toBe(2);
+    expect(result.weChatImportPayloads).toBe(3);
     expect(result.totalDeleted).toBe(8);
   });
 
@@ -41,7 +42,8 @@ describe("data retention cleanup", () => {
       weChatImport: { updateMany: deleteMany }, weChatImportAsset: { updateMany: deleteMany },
     };
 
-    await runDataRetentionCleanup(client as never, DEFAULT_RETENTION_SETTINGS, new Date("2026-09-06T00:00:00.000Z"));
+    const transactionalClient = { ...client, $transaction: async (run: (tx: typeof client) => Promise<unknown>) => run(client) };
+    await runDataRetentionCleanup(transactionalClient as never, DEFAULT_RETENTION_SETTINGS, new Date("2026-09-06T00:00:00.000Z"));
 
     for (const call of deleteMany.mock.calls as unknown as Array<[unknown]>) expect(JSON.stringify(call[0])).not.toMatch(/PENDING/);
   });
