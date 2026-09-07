@@ -16,7 +16,9 @@ export function normalizeWeChatArticleUrl(raw: string): URL {
   if (raw.trim().length > MAX_URL_LENGTH) invalidArticle();
   let url: URL;
   try { url = new URL(raw.trim()); } catch { invalidArticle(); }
-  if (url.protocol !== "https:" || url.hostname !== ARTICLE_HOST || url.username || url.password || url.port || !url.pathname.startsWith("/s/") || url.pathname.length <= 3) invalidArticle();
+  const isShortPath = url.pathname.startsWith("/s/") && url.pathname.length > 3;
+  const isQueryPath = url.pathname === "/s" && url.searchParams.size > 0;
+  if (url.protocol !== "https:" || url.hostname !== ARTICLE_HOST || url.username || url.password || url.port || (!isShortPath && !isQueryPath)) invalidArticle();
   url.hash = "";
   return url;
 }
@@ -51,6 +53,12 @@ export async function resolvePublicAddress(hostname: string, lookup: Lookup = as
   const publicAnswer = answers.find((answer) => (answer.family === 4 || answer.family === 6) && isPublicAddress(answer));
   if (!publicAnswer) throw new Error("來源必須解析到公開網路位址");
   return publicAnswer;
+}
+
+export function classifyWeChatRedirect(url: URL): "SOURCE_VERIFICATION_REQUIRED" | "SOURCE_LOGIN_REQUIRED" | null {
+  if (url.pathname.includes("captcha") || url.pathname.includes("verify")) return "SOURCE_VERIFICATION_REQUIRED";
+  if (url.pathname.includes("login")) return "SOURCE_LOGIN_REQUIRED";
+  return null;
 }
 
 type SafeGetOptions = {
@@ -92,6 +100,8 @@ export async function safeHttpsGet(rawUrl: URL | string, options: SafeGetOptions
           if (redirects >= maxRedirects) return reject(new Error("重新導向次數超過上限"));
           let next: URL;
           try { next = new URL(location, allowedUrl); } catch { return reject(new Error("重新導向網址無效")); }
+          const redirectError = classifyWeChatRedirect(next);
+          if (redirectError) return reject(new Error(redirectError));
           return void get(next, redirects + 1).then(resolve, reject);
         }
         const length = Number(response.headers["content-length"] || 0);
