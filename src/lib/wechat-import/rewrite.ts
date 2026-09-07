@@ -27,6 +27,32 @@ const rewriteJsonSchema = {
   required: ["title", "slug", "excerpt", "blocks", "seoTitle", "seoDescription", "seoKeywords", "needsVerification"],
 } as const;
 
+function assignUniqueDeepSeoTextIds(source: ArticleBlock[], rewritten: ArticleBlock[]): ArticleBlock[] {
+  const reservedImageIds = new Set(source.filter((block) => block.type === "image").map((block) => block.id));
+  const maxBlockNumber = Math.max(0, ...[...source, ...rewritten].map((block) => Number(block.id.slice(2))).filter(Number.isFinite));
+  let nextBlockNumber = maxBlockNumber + 1;
+  const usedIds = new Set<string>();
+
+  return rewritten.map((block) => {
+    if (block.type === "image") {
+      usedIds.add(block.id);
+      return block;
+    }
+    if (!reservedImageIds.has(block.id) && !usedIds.has(block.id)) {
+      usedIds.add(block.id);
+      return block;
+    }
+    let id = `b-${String(nextBlockNumber).padStart(4, "0")}`;
+    while (reservedImageIds.has(id) || usedIds.has(id)) {
+      nextBlockNumber += 1;
+      id = `b-${String(nextBlockNumber).padStart(4, "0")}`;
+    }
+    nextBlockNumber += 1;
+    usedIds.add(id);
+    return { ...block, id };
+  });
+}
+
 export async function rewriteWeChatArticle(input: { mode: WeChatRewriteMode; locale: Locale; sourceTitle: string; sourceMetadata: Record<string, unknown>; blocks: ArticleBlock[]; instructions?: string }, options: { execute?: LLMExecutor } = {}): Promise<WeChatRewriteDraft> {
   const execute = options.execute || executeLLMCall;
   const value = await execute({
@@ -48,12 +74,13 @@ export async function rewriteWeChatArticle(input: { mode: WeChatRewriteMode; loc
     parse: (value) => parseStructuredJson(value, parseRewriteDraft),
   }) as WeChatRewriteDraft;
   const sourceImages = new Map(input.blocks.filter((block) => block.type === "image").map((block) => [block.id, block]));
-  const draft = parseRewriteDraft({ ...value, blocks: value.blocks.map((block) => {
+  const sanitizedBlocks = value.blocks.map((block) => {
     if (block.type === "text") return { ...block, html: sanitizeArticleHtml(block.html) };
     const original = sourceImages.get(block.id);
     // Asset references are server-owned, not editable model output.
     return original ? { ...block, assetId: original.assetId } : block;
-  }) });
+  });
+  const draft = parseRewriteDraft({ ...value, blocks: input.mode === "DEEP_SEO" ? assignUniqueDeepSeoTextIds(input.blocks, sanitizedBlocks) : sanitizedBlocks });
   assertImageInvariant(input.mode, input.blocks, draft.blocks);
   return draft;
 }

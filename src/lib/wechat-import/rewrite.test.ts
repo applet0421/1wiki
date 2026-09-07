@@ -25,6 +25,13 @@ describe("WeChat article rewrite", () => {
     await expect(rewriteWeChatArticle({ mode: "FAITHFUL", locale: "zh-tw", sourceTitle: "原標題", sourceMetadata: {}, blocks }, { execute: execute as never })).resolves.toMatchObject({ title: "改寫標題", blocks });
   });
 
+  it("assigns a unique text block id when deep SEO output collides with an image id", async () => {
+    const execute = async () => ({ title: "標題", slug: "guide", excerpt: "摘要", blocks: [{ id: "b-0002", type: "text" as const, html: "<p>重組段落</p>" }, blocks[1]], seoTitle: "標題", seoDescription: "描述", seoKeywords: "教學", needsVerification: [] });
+    const draft = await rewriteWeChatArticle({ mode: "DEEP_SEO", locale: "zh-tw", sourceTitle: "原標題", sourceMetadata: {}, blocks }, { execute });
+    expect(draft.blocks.map((block) => block.id)).toEqual(["b-0003", "b-0002"]);
+    expect(draft.blocks[1]).toMatchObject({ type: "image", assetId: "asset-1" });
+  });
+
   it("uses separate prompt keys and heading contracts for each rewrite mode", async () => {
     const draft = { title: "標題", slug: "guide", excerpt: "摘要", blocks, seoTitle: "標題", seoDescription: "描述", seoKeywords: "教學", needsVerification: [] };
     const faithfulRequests: ExecuteLLMInput<unknown>[] = [];
