@@ -23,7 +23,7 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000 npm run build
 - 隔離資料庫：20 個 migration 已套用，包含本輪品牌 SEO migration。
 - 目標測試：13 個測試檔、26 項測試通過；TypeScript 與 production build：通過。
 - 對本輪程式檔執行的 ESLint：通過。完整 `npm run lint` 仍僅受既有 `src/lib/wechat-import/browser-extractor.ts` 的 1 個 error 與 `src/lib/retention/cleanup.ts` 的 1 個 warning 阻擋。
-- 未執行正式資料庫 migration、部署、Google Search Console 提交或要求重新檢索。
+- 其後已透過 Supabase Direct connection 在目前設定的遠端資料庫套用全部 21 個 migration，包含 `20260907130000_add_brand_seo_settings`；本機 `/zh-tw` 回應為 HTTP 200。尚未部署新版 web、提交 Google Search Console 或要求重新檢索。
 
 ## 2026-09-07 Google 品牌搜尋外觀
 

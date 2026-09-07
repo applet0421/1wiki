@@ -2,7 +2,7 @@
 
 最後更新：2026-09-07
 
-本文件以 `main` 最新程式與文件為基準。GCP VM、ISR、Cloudflare purge 與 `/admin/cache` 已完成本機實作與驗證，但不代表正式環境已部署；正式 VM migration、外部 Cloudflare 設定與 DNS 切換仍須另行執行。
+本文件以 `main` 最新程式與文件為基準。GCP VM、ISR、Cloudflare purge 與 `/admin/cache` 已完成本機實作與驗證，但不代表正式環境已部署；目前設定的 Supabase 已套用至最新 migration，正式 VM／web 部署、外部 Cloudflare 設定與 DNS 切換仍須另行執行。
 
 ## 功能與文件入口
 
@@ -31,7 +31,7 @@
 
 ## 資料庫與發布
 
-目前 migration 包含多語系、Prompt／用量、AI 配圖、Worker 心跳、作者庫、GA4、搜尋通知、公開快取失效、Worker desired state 與品牌 SEO 設定；最新品牌 SEO migration 為 `20260907130000_add_brand_seo_settings`。migration 檔存在不代表正式環境已套用。Coolify 部署仍須先完成 migration，再讓新版 `web` 啟動；PostgreSQL 與 `next_build` 必須使用持久儲存。
+目前 migration 包含多語系、Prompt／用量、AI 配圖、Worker 心跳、作者庫、GA4、搜尋通知、公開快取失效、Worker desired state 與品牌 SEO 設定；最新品牌 SEO migration 為 `20260907130000_add_brand_seo_settings`。2026-09-07 已透過 Supabase Direct connection 在目前設定的遠端資料庫成功套用全部 21 個 migration。Coolify 部署仍須讓新版 `web` 啟動；PostgreSQL 與 `next_build` 必須使用持久儲存。
 
 發布前先完成適用的隔離資料庫回歸、型別檢查與 production build，確認 migration 與環境設定，再依 README 的發布政策取得確認。搜尋引擎功能應先完成上列缺口再啟用排程。
 
