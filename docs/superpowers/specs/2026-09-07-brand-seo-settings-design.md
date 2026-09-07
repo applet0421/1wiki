@@ -80,7 +80,7 @@ brand-seo repository ──► locale layout / manifest / JSON-LD / OG metadata
 - `src/app/[locale]/layout.tsx` 以目前 locale 的 `homeTitle`、`homeDescription` 建立首頁 metadata；`siteName` 永遠取共用品牌名稱。文章與分類等非首頁維持原本由內容決定的 title／description，但其 Open Graph `siteName`、Organization 名稱與 logo 取共用設定。
 - `src/app/manifest.ts` 使用預設語系（`zh-tw`）的首頁名稱／描述，並使用穩定的品牌 icon 路徑。
 - `buildWebSiteStructuredData` 的 `name`、`alternateName` 與 `buildOrganizationStructuredData` 的名稱、logo 均從解析後品牌設定取值；每個 locale 仍各自輸出正確 `inLanguage`。
-- 新增固定 public route，例如 `/brand/icon-48.png`、`/brand/logo.png`、`/brand/og-default.png`。route 以設定的 R2 原始檔回應相應內容，未設定時回退至既有公開資產；既有 `/favicon.ico` 保留為 fallback。品牌 metadata 使用這些固定網址，讓更換檔案不需要改每一個消費端。
+- 新增固定 public route，例如 `/brand/icon-48.png`、`/brand/logo`、`/brand/og-default`。route 以設定的 R2 原始檔回應相應內容，未設定時回退至既有公開資產；既有 `/favicon.ico` 保留為 fallback。`logo` 與 `og-default` 不固定副檔名，以便正確回應 JPEG、PNG 或 WebP 的真實 content type。品牌 metadata 使用這些固定網址，讓更換檔案不需要改每一個消費端。
 - 儲存後重新驗證 `/zh-tw`、`/en`、`/ja`、`/manifest.webmanifest`、各品牌資產 route 與 `/sitemap.xml`；也重新驗證 `/admin/brand-seo`。公開頁仍保有既有 ISR 行為，避免等待整個快取週期才看到新設定。
 
 ## 5. 後台介面與行為
