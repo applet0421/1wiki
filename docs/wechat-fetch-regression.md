@@ -16,3 +16,12 @@
 自動回歸：`npx vitest run src/lib/wechat-import/http-extractor.test.ts src/lib/wechat-import/normalize-content.test.ts src/lib/wechat-import/asset-fetcher.test.ts`，3 檔 5 項通過；`npx tsc --noEmit` 通過。
 
 範圍：本次驗證傳統 `#js_content` 文章。舊版的 `content_noencode` 新版頁面解析、獨立封面與後續改寫/R2/發佈仍需另外驗證，不能由此次成功推定已完成。
+
+## 改寫錯誤回歸（2026-09-08）
+
+- LLM 紀錄確認原始錯誤為 `expected object, received string`：provider 回傳 JSON 字串，改寫流程漏掉 JSON 解碼。已使用共用結構化解析器後再做 Zod 驗證。
+- 首次修正後的實際重試仍因輸出欄位格式不符失敗；補齊文字／圖片 block schema、SEO 字串及長度規格，將完整規格傳入 JSON-only provider 的 Prompt。
+- 第二次實際重試成功產生 40 個區塊、14 個圖片區塊。另發現一個模型改錯的 assetId，改由伺服器依原始 block id 綁定圖片；已無模型呼叫地修復這筆既有草稿，並驗證完整圖片集合及忠實模式的 id/type 順序。
+- Worker 現在區分模型驗證、限流、逾時、輸出格式等錯誤，不再全部顯示「檢查模型設定」。未加入自動付費重試。
+- 回歸命令：`npx vitest run src/lib/wechat-import/rewrite.test.ts src/lib/wechat-import/worker.test.ts src/lib/wechat-import/schema.test.ts`，12 項通過。測試使用獨立 `onewiki_test` 資料庫。
+- 未完成項目：實際模型草稿仍含簡體用字，需繁體校正及內容人工審核；本次未確認 R2 轉存、編輯器或發佈流程，亦未實測其他模型供應商。

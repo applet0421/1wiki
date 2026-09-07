@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { PrismaClient } from "@prisma/client";
+import { AIProviderError } from "@/lib/ai/errors";
 import { extractViaBrowser } from "./browser-extractor";
 import { extractViaHttp } from "./http-extractor";
 import { createReport } from "./report";
@@ -35,8 +36,10 @@ export async function processNextWeChatImport(client: PrismaClient, dependencies
       const blocks = parseStoredBlocks(job.sourceBlocks);
       const draft = await (dependencies.rewrite || rewriteWeChatArticle)({ mode: job.rewriteMode, locale: job.targetLocale as "zh-tw" | "en" | "ja", sourceTitle: job.sourceTitle || "", sourceMetadata: { accountName: job.sourceAccountName, author: job.sourceAuthor, publishedAt: job.sourcePublishedAt?.toISOString() }, blocks });
       await client.weChatImport.updateMany({ where: { id: job.id, status: "REWRITING" }, data: { status: "REWRITTEN", rewrittenDraft: draft as never, leaseExpiresAt: null, failureStage: null, errorCode: null, errorSummary: null } });
-    } catch {
-      await client.weChatImport.updateMany({ where: { id: job.id, status: "REWRITING" }, data: { status: "FAILED", failureStage: "REWRITE", errorCode: "LLM_FAILED", errorSummary: "文章改寫失敗，請檢查模型設定後明確重試。", leaseExpiresAt: null } });
+    } catch (error) {
+      const errorCode = error instanceof AIProviderError ? `LLM_${error.category.toUpperCase()}` : "LLM_FAILED";
+      const errorSummary = error instanceof AIProviderError ? error.message : "文章改寫未完成，請查看 LLM 用量紀錄並明確重試。";
+      await client.weChatImport.updateMany({ where: { id: job.id, status: "REWRITING" }, data: { status: "FAILED", failureStage: "REWRITE", errorCode, errorSummary, leaseExpiresAt: null } });
     }
     return true;
   }

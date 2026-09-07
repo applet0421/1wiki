@@ -5,9 +5,17 @@ import { createWeChatImport } from "./repository";
 import { processNextWeChatImport } from "./worker";
 import * as transfer from "./r2-transfer";
 import type { ArticleBlock } from "./types";
+import { AIProviderError } from "@/lib/ai/errors";
 
 describe("WeChat import worker", () => {
   beforeEach(resetDatabase);
+
+  it("distinguishes invalid model output from configuration failures", async () => {
+    const user = await prisma.user.create({ data: { username: "wechat-invalid", displayName: "Worker", passwordHash: "test", mustChangePassword: false } });
+    const job = await prisma.weChatImport.create({ data: { userId: user.id, status: "REWRITE_QUEUED", sourceUrl: "https://mp.weixin.qq.com/s/example", normalizedUrl: "https://mp.weixin.qq.com/s/example", targetLocale: "zh-tw", sourceBlocks: [{ id: "b-0001", type: "text", html: "<p>內文</p>" }], expiresAt: new Date(Date.now() + 86400000) } });
+    await processNextWeChatImport(prisma, { rewrite: async () => { throw new AIProviderError("invalid_output"); } });
+    await expect(prisma.weChatImport.findUniqueOrThrow({ where: { id: job.id } })).resolves.toMatchObject({ status: "FAILED", errorCode: "LLM_INVALID_OUTPUT", errorSummary: expect.stringContaining("格式不正確") });
+  });
 
   it("claims one queued job and persists a completed HTTP extraction", async () => {
     const user = await prisma.user.create({ data: { username: "wechat-worker", displayName: "Worker", passwordHash: "test", mustChangePassword: false } });
