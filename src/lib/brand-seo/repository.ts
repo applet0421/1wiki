@@ -1,6 +1,7 @@
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { isLocale, supportedLocales, type Locale } from "@/lib/i18n/config";
 import { brandAssetPaths } from "./constants";
+import { prisma } from "@/lib/db/prisma";
 
 type BrandRow = { siteName: string; alternateName: string | null; icon48SourceUrl: string | null; logoSourceUrl: string | null; defaultOgSourceUrl: string | null } | null;
 type LocaleRow = { locale: string; homeTitle: string | null; homeDescription: string | null; ogTitle: string | null; ogDescription: string | null };
@@ -46,4 +47,12 @@ export async function resolveBrandSeo(client: BrandSeoClient): Promise<ResolvedB
     console.error("brand-seo read failed", error);
     return fallback;
   }
+}
+
+export async function getBrandAssetSource(asset: "icon48" | "logo" | "defaultOg", client: BrandSeoClient = prisma): Promise<string | null> {
+  try {
+    const row = await client.brandSeoSettings.findUnique({ where: { id: "default" } });
+    if (!row) return null;
+    return asset === "icon48" ? row.icon48SourceUrl : asset === "logo" ? row.logoSourceUrl : row.defaultOgSourceUrl;
+  } catch { return null; }
 }
