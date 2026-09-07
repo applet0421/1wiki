@@ -23,7 +23,7 @@
 | 語言來源 | 唯一語言清單維持 `src/lib/i18n/config.ts` 的 `supportedLocales`。後台只讀取此清單並顯示設定分頁。 |
 | 搜尋國際化 | 獨立內容不輸出 `hreflang`；每頁維持自己的 canonical、可見語言內容、`html lang`、Open Graph locale 與 JSON-LD `inLanguage`。 |
 | 權限 | 僅 `OWNER` 可讀取、上傳或儲存品牌與 SEO 設定；`EDITOR` 看不到導覽連結，也不能經由 action 或 API 寫入。 |
-| 資產網址 | 公開 `<link rel="icon">`、manifest、Organization logo 與預設 OG 圖均使用穩定的本站路徑；後台換圖只改路徑背後的設定，不把帶雜湊的 R2 上傳網址暴露為主要品牌網址。 |
+| 資產網址 | 公開 `<link rel="icon">`、manifest、Organization logo 與預設 OG 圖均使用穩定的本站路徑；後台換圖只改路徑背後的設定，不把帶雜湊的 R2 上傳網址暴露為主要品牌網址。既有 `/favicon.ico` 保留作安全回退，可設定的品牌圖示使用固定 PNG 路徑。 |
 | 空白語系 | 無已發布內容的語系維持既有 `noindex, follow`；填寫該語系 SEO 欄位不會讓空白站被索引。 |
 
 ## 3. 資料模型與預設值
@@ -80,7 +80,7 @@ brand-seo repository ──► locale layout / manifest / JSON-LD / OG metadata
 - `src/app/[locale]/layout.tsx` 以目前 locale 的 `homeTitle`、`homeDescription` 建立首頁 metadata；`siteName` 永遠取共用品牌名稱。文章與分類等非首頁維持原本由內容決定的 title／description，但其 Open Graph `siteName`、Organization 名稱與 logo 取共用設定。
 - `src/app/manifest.ts` 使用預設語系（`zh-tw`）的首頁名稱／描述，並使用穩定的品牌 icon 路徑。
 - `buildWebSiteStructuredData` 的 `name`、`alternateName` 與 `buildOrganizationStructuredData` 的名稱、logo 均從解析後品牌設定取值；每個 locale 仍各自輸出正確 `inLanguage`。
-- 新增固定 public route，例如 `/brand/favicon.ico`、`/brand/icon-48.png`、`/brand/logo.png`、`/brand/og-default.png`。route 以設定的 R2 原始檔回應相應內容，未設定時回退至既有公開資產。品牌 metadata 使用這些固定網址，讓更換檔案不需要改每一個消費端。
+- 新增固定 public route，例如 `/brand/icon-48.png`、`/brand/logo.png`、`/brand/og-default.png`。route 以設定的 R2 原始檔回應相應內容，未設定時回退至既有公開資產；既有 `/favicon.ico` 保留為 fallback。品牌 metadata 使用這些固定網址，讓更換檔案不需要改每一個消費端。
 - 儲存後重新驗證 `/zh-tw`、`/en`、`/ja`、`/manifest.webmanifest`、各品牌資產 route 與 `/sitemap.xml`；也重新驗證 `/admin/brand-seo`。公開頁仍保有既有 ISR 行為，避免等待整個快取週期才看到新設定。
 
 ## 5. 後台介面與行為
@@ -98,7 +98,7 @@ brand-seo repository ──► locale layout / manifest / JSON-LD / OG metadata
 
 既有一般文章圖片上傳 API 允許已登入使用者使用，不能直接拿來當品牌設定入口。新增 OWNER 專用的品牌資產簽名／驗證流程，使用獨立 `uploads/brand/` key 前綴；公開設定只接受該流程回傳、驗證過的 URL。
 
-- favicon 與 48px icon：只接受 PNG 來源；前端在上傳前讀取尺寸，要求 1:1；伺服器在儲存設定前以實際檔案內容再驗證 MIME、像素與方形比例。系統產生／提供符合 public 輸出的 `.ico` 與 PNG endpoint。
+- favicon 與 48px icon：只接受 PNG 來源；前端在上傳前讀取尺寸，要求 1:1；伺服器在儲存設定前以實際檔案內容再驗證 MIME、像素與方形比例。公開 metadata 與 manifest 使用固定 PNG endpoint；既有 `/favicon.ico` 仍作未設定或舊用戶端的安全回退。
 - logo 與 OG 圖：只接受 JPEG、PNG 或 WebP；檔案上限與既有服務一致（10 MB），伺服器驗證真實內容型別與可解碼尺寸。OG 圖必須滿足最低可用寬高，並在介面提示建議 1200×630。
 - 所有文字欄位 trim 後驗證：網站名稱必填且有限長；替代名稱、title 與 description 皆限制合理長度。所有展示位置都以純文字輸出，不接受 HTML。
 - 直接 R2 上傳後但未通過驗證的物件不會被設定引用；保留為可清理的 orphan，不覆寫目前生效資產。
@@ -126,7 +126,7 @@ brand-seo repository ──► locale layout / manifest / JSON-LD / OG metadata
 
 ## 9. 發佈與搜尋引擎驗收
 
-1. 部署後確認 `/brand/favicon.ico`、`/brand/icon-48.png`、manifest 與三個首頁都能公開取得並回傳正確 content type。
+1. 部署後確認 `/favicon.ico`、`/brand/icon-48.png`、manifest 與三個首頁都能公開取得並回傳正確 content type。
 2. 在各語言首頁檢查 HTML metadata、canonical、`lang`、Open Graph 和 JSON-LD；確認沒有新增 `hreflang`。
 3. 以 Google Search Console 重新提交 sitemap／要求檢索重要首頁。Google 是否採用網站名稱、摘要或顯示 sitelinks 仍由它自行決定，通常需要重新抓取與一段觀察期。
 4. 定期以品牌詞搜尋檢查實際呈現，不以本機預覽當作 SERP 的保證。
