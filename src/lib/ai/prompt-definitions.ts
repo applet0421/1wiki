@@ -6,6 +6,7 @@ export const promptKeys = [
   "IMAGE_PLAN",
   "IMAGE_GENERATE",
   "IMAGE_ALT",
+  "WECHAT_ARTICLE_REWRITE",
 ] as const;
 
 export type PromptKey = (typeof promptKeys)[number];
@@ -17,6 +18,7 @@ export type PromptMetadata = {
 };
 
 export const promptMetadata: Record<PromptKey, PromptMetadata> = {
+  WECHAT_ARTICLE_REWRITE: { name: "微信文章改寫", allowedVariables: ["languageInstruction", "rewriteMode", "sourceTitle", "sourceMetadata", "blockContract", "sourceBlocks", "previousContext"], requiredVariables: ["languageInstruction", "rewriteMode", "sourceTitle", "sourceMetadata", "blockContract", "sourceBlocks", "previousContext"] },
   IMAGE_PLAN: { name: "文章配圖規劃", allowedVariables: ["languageInstruction", "title", "paragraphs"], requiredVariables: ["languageInstruction", "title", "paragraphs"] },
   IMAGE_GENERATE: { name: "文章圖片生成", allowedVariables: ["prompt"], requiredVariables: ["prompt"] },
   IMAGE_ALT: { name: "圖片替代文字校對", allowedVariables: ["languageInstruction", "title", "paragraph", "alt"], requiredVariables: ["languageInstruction", "title", "paragraph", "alt"] },

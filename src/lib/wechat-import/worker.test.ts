@@ -4,6 +4,7 @@ import { resetDatabase } from "../../../tests/helpers/database";
 import { createWeChatImport } from "./repository";
 import { processNextWeChatImport } from "./worker";
 import * as transfer from "./r2-transfer";
+import type { ArticleBlock } from "./types";
 
 describe("WeChat import worker", () => {
   beforeEach(resetDatabase);
@@ -23,5 +24,18 @@ describe("WeChat import worker", () => {
     const transferSpy = vi.spyOn(transfer, "transferWeChatImportAssets").mockResolvedValue(true);
     await expect(processNextWeChatImport(prisma)).resolves.toBe(true);
     expect(transferSpy).toHaveBeenCalledWith(prisma, job.id);
+  });
+
+  it("claims a queued rewrite and persists the validated draft", async () => {
+    const user = await prisma.user.create({ data: { username: "wechat-rewrite-worker", displayName: "Rewrite", passwordHash: "test", mustChangePassword: false } });
+    const sourceBlocks: ArticleBlock[] = [{ id: "b-0001", type: "text", html: "<p>原始內文</p>" }];
+    const job = await prisma.weChatImport.create({ data: {
+      userId: user.id, status: "REWRITE_QUEUED", sourceUrl: "https://mp.weixin.qq.com/s/example", normalizedUrl: "https://mp.weixin.qq.com/s/example", targetLocale: "zh-tw", sourceTitle: "原始標題", sourceBlocks, expiresAt: new Date("2026-09-08T00:00:00Z"),
+    } });
+    const rewrite = vi.fn(async () => ({ title: "改寫標題", slug: "rewritten-title", excerpt: "摘要", seoTitle: "改寫標題", seoDescription: "摘要", seoKeywords: "關鍵字", needsVerification: [], blocks: sourceBlocks }));
+
+    await expect(processNextWeChatImport(prisma, { rewrite })).resolves.toBe(true);
+    expect(rewrite).toHaveBeenCalledWith(expect.objectContaining({ sourceTitle: "原始標題", blocks: sourceBlocks }));
+    await expect(prisma.weChatImport.findUniqueOrThrow({ where: { id: job.id } })).resolves.toMatchObject({ status: "REWRITTEN", rewrittenDraft: expect.objectContaining({ title: "改寫標題" }) });
   });
 });

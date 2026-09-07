@@ -4,13 +4,16 @@ import { extractViaBrowser } from "./browser-extractor";
 import { extractViaHttp } from "./http-extractor";
 import { createReport } from "./report";
 import { transferWeChatImportAssets } from "./r2-transfer";
+import { rewriteWeChatArticle } from "./rewrite";
+import { parseStoredBlocks } from "./schema";
 
 const leaseMs = 4 * 60 * 1000;
 type Extracted = Awaited<ReturnType<typeof extractViaHttp>> | Awaited<ReturnType<typeof extractViaBrowser>>;
-type Dependencies = { extractHttp?: (sourceUrl: string) => Promise<Extracted>; extractBrowser?: (sourceUrl: string) => Promise<Extracted> };
+type Dependencies = { extractHttp?: (sourceUrl: string) => Promise<Extracted>; extractBrowser?: (sourceUrl: string) => Promise<Extracted>; rewrite?: typeof rewriteWeChatArticle };
 
 export async function recoverWeChatImportJobs(client: PrismaClient, now = new Date()) {
   await client.weChatImport.updateMany({ where: { status: "FETCHING", leaseExpiresAt: { lt: now } }, data: { status: "FETCH_QUEUED", leaseExpiresAt: null, errorSummary: "擷取工作中斷，已排入安全重試。" } });
+  await client.weChatImport.updateMany({ where: { status: "REWRITING", leaseExpiresAt: { lt: now } }, data: { status: "UNKNOWN", failureStage: "REWRITE", errorCode: "LLM_RESULT_UNKNOWN", errorSummary: "改寫中斷，費用與結果尚未確認；不會自動重送。", leaseExpiresAt: null } });
 }
 
 function sourcePublishedAt(value: string): Date | null {
@@ -19,10 +22,22 @@ function sourcePublishedAt(value: string): Date | null {
 }
 
 export async function processNextWeChatImport(client: PrismaClient, dependencies: Dependencies = {}): Promise<boolean> {
-  const job = await client.weChatImport.findFirst({ where: { status: { in: ["FETCH_QUEUED", "TRANSFER_QUEUED"] } }, orderBy: { createdAt: "asc" } });
+  const job = await client.weChatImport.findFirst({ where: { status: { in: ["FETCH_QUEUED", "REWRITE_QUEUED", "TRANSFER_QUEUED"] } }, orderBy: { createdAt: "asc" } });
   if (!job) return false;
   if (job.status === "TRANSFER_QUEUED") {
     await transferWeChatImportAssets(client, job.id);
+    return true;
+  }
+  if (job.status === "REWRITE_QUEUED") {
+    const claimedRewrite = await client.weChatImport.updateMany({ where: { id: job.id, status: "REWRITE_QUEUED" }, data: { status: "REWRITING", leaseExpiresAt: new Date(Date.now() + leaseMs) } });
+    if (!claimedRewrite.count) return false;
+    try {
+      const blocks = parseStoredBlocks(job.sourceBlocks);
+      const draft = await (dependencies.rewrite || rewriteWeChatArticle)({ mode: job.rewriteMode, locale: job.targetLocale as "zh-tw" | "en" | "ja", sourceTitle: job.sourceTitle || "", sourceMetadata: { accountName: job.sourceAccountName, author: job.sourceAuthor, publishedAt: job.sourcePublishedAt?.toISOString() }, blocks });
+      await client.weChatImport.updateMany({ where: { id: job.id, status: "REWRITING" }, data: { status: "REWRITTEN", rewrittenDraft: draft as never, leaseExpiresAt: null, failureStage: null, errorCode: null, errorSummary: null } });
+    } catch {
+      await client.weChatImport.updateMany({ where: { id: job.id, status: "REWRITING" }, data: { status: "FAILED", failureStage: "REWRITE", errorCode: "LLM_FAILED", errorSummary: "文章改寫失敗，請檢查模型設定後明確重試。", leaseExpiresAt: null } });
+    }
     return true;
   }
   const lease = new Date(Date.now() + leaseMs);
