@@ -4,7 +4,7 @@ import { callDeepSeekStructuredWithUsage } from "@/lib/ai/providers/deepseek";
 import type { ExecuteLLMInput } from "@/lib/ai/execute-llm";
 
 const blocks = [
-  { id: "b-0001", type: "text" as const, html: "<p>內文</p>" },
+  { id: "b-0001", type: "text" as const, html: "<h2>內文標題</h2><p>內文</p>" },
   { id: "b-0002", type: "image" as const, assetId: "asset-1", alt: "圖" },
 ];
 
@@ -25,6 +25,27 @@ describe("WeChat article rewrite", () => {
     await expect(rewriteWeChatArticle({ mode: "FAITHFUL", locale: "zh-tw", sourceTitle: "原標題", sourceMetadata: {}, blocks }, { execute: execute as never })).resolves.toMatchObject({ title: "改寫標題", blocks });
   });
 
+  it("rejects a rewrite without an H2 section", async () => {
+    const execute = async () => ({ title: "標題", slug: "guide", excerpt: "摘要", blocks: [{ id: "b-0001", type: "text" as const, html: "<p>沒有章節標題的正文</p>" }, blocks[1]], seoTitle: "標題", seoDescription: "描述", seoKeywords: "教學", needsVerification: [] });
+    await expect(rewriteWeChatArticle({ mode: "FAITHFUL", locale: "zh-tw", sourceTitle: "原標題", sourceMetadata: {}, blocks }, { execute })).rejects.toThrow(/H2/);
+  });
+
+  it("rejects a long deep SEO rewrite without H3 subsections", async () => {
+    const execute = async () => ({ title: "標題", slug: "guide", excerpt: "摘要", blocks: [{ id: "b-0001", type: "text" as const, html: `<h2>主要章節</h2><p>${"內容".repeat(700)}</p>` }, blocks[1]], seoTitle: "標題", seoDescription: "描述", seoKeywords: "教學", needsVerification: [] });
+    await expect(rewriteWeChatArticle({ mode: "DEEP_SEO", locale: "zh-tw", sourceTitle: "原標題", sourceMetadata: {}, blocks }, { execute })).rejects.toThrow(/H3/);
+  });
+
+  it("rejects an H1 in rewritten content blocks", async () => {
+    const execute = async () => ({ title: "標題", slug: "guide", excerpt: "摘要", blocks: [{ id: "b-0001", type: "text" as const, html: "<h1>重複標題</h1><h2>章節</h2><p>正文</p>" }, blocks[1]], seoTitle: "標題", seoDescription: "描述", seoKeywords: "教學", needsVerification: [] });
+    await expect(rewriteWeChatArticle({ mode: "FAITHFUL", locale: "zh-tw", sourceTitle: "原標題", sourceMetadata: {}, blocks }, { execute })).rejects.toThrow(/H1/);
+  });
+
+  it("keeps only article text HTML tags in rewritten text blocks", async () => {
+    const execute = async () => ({ title: "標題", slug: "guide", excerpt: "摘要", blocks: [{ id: "b-0001", type: "text" as const, html: '<div><h2>章節</h2><p>正文</p><img src="https://example.test/image.png"><iframe src="https://example.test"></iframe></div>' }, blocks[1]], seoTitle: "標題", seoDescription: "描述", seoKeywords: "教學", needsVerification: [] });
+    const draft = await rewriteWeChatArticle({ mode: "FAITHFUL", locale: "zh-tw", sourceTitle: "原標題", sourceMetadata: {}, blocks }, { execute });
+    expect(draft.blocks[0]).toMatchObject({ type: "text", html: "<h2>章節</h2><p>正文</p>" });
+  });
+
   it("converts simplified Chinese model output to Traditional Chinese for zh-tw", async () => {
     const execute = async () => ({ title: "这一次，真不是狼来了", slug: "guide", excerpt: "这是摘要", blocks: [{ id: "b-0001", type: "text" as const, html: "<h2>这是段落</h2>" }, { id: "b-0002", type: "image" as const, assetId: "asset-1", alt: "这是图片" }], seoTitle: "这是 SEO 标题", seoDescription: "这是 SEO 描述", seoKeywords: "这是,测试", needsVerification: ["这是待核实事项"] });
     const draft = await rewriteWeChatArticle({ mode: "FAITHFUL", locale: "zh-tw", sourceTitle: "原標題", sourceMetadata: {}, blocks }, { execute });
@@ -33,7 +54,7 @@ describe("WeChat article rewrite", () => {
   });
 
   it("assigns a unique text block id when deep SEO output collides with an image id", async () => {
-    const execute = async () => ({ title: "標題", slug: "guide", excerpt: "摘要", blocks: [{ id: "b-0002", type: "text" as const, html: "<p>重組段落</p>" }, blocks[1]], seoTitle: "標題", seoDescription: "描述", seoKeywords: "教學", needsVerification: [] });
+    const execute = async () => ({ title: "標題", slug: "guide", excerpt: "摘要", blocks: [{ id: "b-0002", type: "text" as const, html: "<h2>重組段落</h2>" }, blocks[1]], seoTitle: "標題", seoDescription: "描述", seoKeywords: "教學", needsVerification: [] });
     const draft = await rewriteWeChatArticle({ mode: "DEEP_SEO", locale: "zh-tw", sourceTitle: "原標題", sourceMetadata: {}, blocks }, { execute });
     expect(draft.blocks.map((block) => block.id)).toEqual(["b-0003", "b-0002"]);
     expect(draft.blocks[1]).toMatchObject({ type: "image", assetId: "asset-1" });

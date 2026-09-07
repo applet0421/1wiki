@@ -53,6 +53,8 @@
 - 忠實改寫保留 block、圖片與順序，只能在既有文字 block 中補上確有正文支撐的 `h2`／`h3`；深度 SEO 改寫會用 `h2` 建立主章節、必要時以 `h3` 拆分子題，且每個標題必須有後續正文，不得堆砌關鍵字或虛構內容。
 - 匯入精靈的模式選項明確顯示各自使用的 Prompt 與標題結構行為，文章預覽與後續編輯器沿用產生的安全 HTML。
 - 回歸命令：`npx vitest run src/lib/wechat-import/rewrite.test.ts`（6 項通過）與 `npx tsc --noEmit`；測試確認兩種模式送出不同 Prompt key，並帶入各自的 H2／H3 結構契約。
+- Prompt v2 將章節改為必要輸出：每篇至少一個有後續正文的 `h2`，文字內容達 1200 字以上時還必須有 `h3` 子章節；不符合者不會進入審閱結果。
+- 文字 block 禁止 `h1`（文章 title 是唯一 H1），並限制為 `p`、`h2`、`h3`、`strong`、`em`、`ul`、`ol`、`li`、`blockquote`、`code`、`pre`、`br`、`a`。內文圖片仍由獨立 image block 管理，轉存時才產出 `img`。
 
 ## 繁體中文正規化（2026-09-08）
 
