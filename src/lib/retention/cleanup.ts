@@ -26,7 +26,7 @@ export async function runDataRetentionCleanup(client: PrismaClient, settings: Re
     client.searchEngineNotification.deleteMany({ where: { createdAt: { lt: cutoff(now, settings.searchSuccessDays) }, status: "SUCCESS" } }),
     client.searchEngineNotification.deleteMany({ where: { createdAt: { lt: cutoff(now, settings.searchFailureDays) }, status: "FAILED" } }),
     client.imageGeneration.deleteMany({ where: { createdAt: { lt: cutoff(now, settings.imageGenerationDays) }, status: { in: ["READY", "FAILED"] }, imageBytes: null } }),
-    client.publicInvalidation.deleteMany({ where: { createdAt: { lt: cutoff(now, settings.publicInvalidationDays) }, status: "FAILED" } }),
+    client.publicInvalidation.deleteMany({ where: { createdAt: { lt: cutoff(now, settings.publicInvalidationDays) }, status: { in: ["SUCCESS", "FAILED"] } } }),
     client.session.deleteMany({ where: { expiresAt: { lt: now } } }),
     client.databaseBackup.deleteMany({
       where: {

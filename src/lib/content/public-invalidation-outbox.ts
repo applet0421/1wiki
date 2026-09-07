@@ -6,6 +6,6 @@ export async function enqueuePublicInvalidation(client: PrismaClient, input: Pub
   return client.publicInvalidation.create({ data: { paths } });
 }
 
-export async function completePublicInvalidation(client: PrismaClient, id: string) {
-  return client.publicInvalidation.delete({ where: { id } });
+export async function completePublicInvalidation(client: PrismaClient, id: string, completedAt = new Date()) {
+  return client.publicInvalidation.update({ where: { id }, data: { status: "SUCCESS", completedAt } });
 }

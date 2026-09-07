@@ -41,7 +41,7 @@ async function processOne(): Promise<boolean> {
     });
     if (!response.ok) throw new Error(`Next revalidation failed: ${response.status}`);
     await purgeCloudflare(paths);
-    await completePublicInvalidation(prisma, row.id);
+    await completePublicInvalidation(prisma, row.id, new Date());
   } catch (error) {
     const attempts = row.attempts + 1;
     await prisma.publicInvalidation.update({ where: { id: row.id }, data: { status: attempts >= 10 ? "FAILED" : "PENDING", attempts, lastError: error instanceof Error ? error.message : "快取失效失敗", nextAttemptAt: new Date(Date.now() + Math.min(attempts * 60_000, 15 * 60_000)) } });

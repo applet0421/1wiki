@@ -14,4 +14,25 @@ describe("public invalidation dashboard", () => {
     expect(groupBy).toHaveBeenCalledWith(expect.objectContaining({ where: { status: retainedStatuses } }));
     expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { status: retainedStatuses } }));
   });
+
+  it("returns the most recent successful completion time", async () => {
+    const findFirst = vi.fn(async (args: { where?: unknown }) => (args.where as { status?: string } | undefined)?.status === "SUCCESS"
+      ? { completedAt: new Date("2026-09-07T02:03:00.000Z") }
+      : null);
+
+    const dashboard = await getPublicInvalidationDashboard({
+      publicInvalidation: {
+        groupBy: vi.fn(async () => []),
+        findMany: vi.fn(async () => []),
+        findFirst,
+      },
+    } as never);
+
+    expect(findFirst).toHaveBeenCalledWith({
+      where: { status: "SUCCESS", completedAt: { not: null } },
+      orderBy: { completedAt: "desc" },
+      select: { completedAt: true },
+    });
+    expect(dashboard.latestSuccess).toEqual(new Date("2026-09-07T02:03:00.000Z"));
+  });
 });

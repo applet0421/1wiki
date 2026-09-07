@@ -22,7 +22,7 @@ describe("data retention cleanup", () => {
     expect(client.trafficSyncRun.deleteMany).toHaveBeenCalledWith({ where: { startedAt: { lt: new Date("2026-03-10T00:00:00.000Z") }, status: { in: ["SUCCESS", "FAILURE"] } } });
     expect(client.searchEngineNotification.deleteMany).toHaveBeenCalledTimes(2);
     expect(client.imageGeneration.deleteMany).toHaveBeenCalledWith({ where: { createdAt: { lt: new Date("2026-06-08T00:00:00.000Z") }, status: { in: ["READY", "FAILED"] }, imageBytes: null } });
-    expect(client.publicInvalidation.deleteMany).toHaveBeenCalledWith({ where: { createdAt: { lt: new Date("2026-03-10T00:00:00.000Z") }, status: "FAILED" } });
+    expect(client.publicInvalidation.deleteMany).toHaveBeenCalledWith({ where: { createdAt: { lt: new Date("2026-03-10T00:00:00.000Z") }, status: { in: ["SUCCESS", "FAILED"] } } });
     expect(client.session.deleteMany).toHaveBeenCalledWith({ where: { expiresAt: { lt: now } } });
     expect(result.totalDeleted).toBe(8);
   });

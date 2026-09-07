@@ -20,6 +20,7 @@ export default async function CachePage({ searchParams }: { searchParams: Promis
       <div className="metric-card"><span>目前保留紀錄</span><strong>{(dashboard.counts.PENDING || 0) + (dashboard.counts.FAILED || 0)}</strong></div>
       <div className="metric-card"><span>失敗</span><strong>{dashboard.counts.FAILED || 0}</strong></div>
       <div className="metric-card"><span>最早待處理</span><strong>{time(dashboard.oldestPending)}</strong></div>
+      <div className="metric-card"><span>最近成功</span><strong>{time(dashboard.latestSuccess)}</strong></div>
       <div className="metric-card"><span>Cloudflare purge</span><strong>{cloudflareConfigured ? "已設定" : "未設定"}</strong></div>
     </div>
     <div className="panel heading-row"><div><h2>操作</h2><p className="muted">失敗事件會由 cache-invalidator 重試；必要時可全部重新排隊。</p></div><form action={retryPublicInvalidationsAction}><button className="button button-quiet" type="submit">重試失敗事件</button></form></div>
