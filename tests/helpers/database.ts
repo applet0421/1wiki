@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/db/prisma";
 
 export async function resetDatabase() {
+  await prisma.weChatImportAsset.deleteMany();
+  await prisma.weChatImport.deleteMany();
   await prisma.publicInvalidation.deleteMany();
   await prisma.lLMUsage.deleteMany();
   await prisma.lLMModelPrice.deleteMany();

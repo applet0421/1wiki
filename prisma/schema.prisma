@@ -65,6 +65,36 @@ enum DatabaseBackupTrigger {
   MANUAL
 }
 
+enum WeChatImportStatus {
+  FETCH_QUEUED
+  FETCHING
+  FETCHED
+  REWRITE_QUEUED
+  REWRITING
+  REWRITTEN
+  TRANSFER_QUEUED
+  TRANSFERRING
+  TRANSFER_FAILED
+  READY
+  FAILED
+  UNKNOWN
+  ABANDONED
+  EXPIRED
+}
+
+enum WeChatRewriteMode {
+  FAITHFUL
+  DEEP_SEO
+}
+
+enum WeChatAssetStatus {
+  STAGED
+  UPLOADING
+  READY
+  FAILED
+  REMOVED
+}
+
 model User {
   id                    String            @id @default(cuid())
   username              String            @unique
@@ -83,6 +113,7 @@ model User {
   promptVersionsCreated PromptVersion[]
   modelPricesCreated    LLMModelPrice[]
   imageGenerations      ImageGeneration[]
+  weChatImports         WeChatImport[]
 }
 
 model Session {
@@ -147,6 +178,7 @@ model Post {
   authorId            String
   categoryId          String
   bylineId            String?
+  sourceImportId      String?          @unique
   seoTitle            String?          @db.Text
   seoDescription      String?          @db.Text
   seoKeywords         String?          @db.Text
@@ -163,6 +195,7 @@ model Post {
   category            Category         @relation(fields: [categoryId, locale], references: [id, locale], onDelete: Restrict)
 
   byline Author? @relation(fields: [bylineId, locale], references: [id, locale], onDelete: Restrict)
+  sourceImport WeChatImport? @relation(fields: [sourceImportId], references: [id], onDelete: SetNull)
 
   imageGenerations ImageGeneration[]
   trafficTotals     TrafficPageTotal[]
@@ -368,8 +401,76 @@ model DataRetentionSetting {
   imageGenerationDays        Int      @default(90)
   publicInvalidationDays     Int      @default(180)
   databaseBackupFailureDays  Int      @default(30)
+  weChatImportHours          Int      @default(24)
   createdAt                  DateTime @default(now())
   updatedAt                  DateTime @updatedAt
+}
+
+model WeChatImport {
+  id                  String              @id @default(cuid())
+  userId              String
+  status              WeChatImportStatus  @default(FETCH_QUEUED)
+  sourceUrl           String              @db.Text
+  normalizedUrl       String              @db.Text
+  sourceTitle         String?             @db.Text
+  sourceAccountName   String?             @db.Text
+  sourceAuthor        String?             @db.Text
+  sourcePublishedAt   DateTime?
+  sourceCoverUrl      String?             @db.Text
+  sourceContentHtml   String?             @db.Text
+  sourceBlocks        Json?
+  sourceContentHash   String?             @db.VarChar(64)
+  fetchMethod         String?             @db.VarChar(20)
+  targetLocale        String
+  rewriteMode         WeChatRewriteMode   @default(FAITHFUL)
+  rewrittenDraft      Json?
+  editorDraft         Json?
+  failureStage        String?             @db.VarChar(40)
+  errorCode           String?             @db.VarChar(80)
+  errorSummary        String?             @db.VarChar(500)
+  report              Json?
+  leaseExpiresAt      DateTime?
+  expiresAt           DateTime
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  completedAt         DateTime?
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post                Post?
+  assets              WeChatImportAsset[]
+
+  @@index([status, createdAt])
+  @@index([userId, updatedAt])
+  @@index([sourceContentHash])
+  @@index([expiresAt, status])
+}
+
+model WeChatImportAsset {
+  id              String            @id @default(cuid())
+  importId        String
+  position        Int
+  isCover         Boolean           @default(false)
+  originalUrl     String            @db.Text
+  status          WeChatAssetStatus @default(STAGED)
+  mimeType        String            @db.VarChar(100)
+  byteSize        Int
+  width           Int?
+  height          Int?
+  sha256          String            @db.VarChar(64)
+  alt             String            @db.Text
+  imageBytes      Bytes?
+  objectKey       String?           @db.Text
+  publicUrl       String?           @db.Text
+  attempts        Int               @default(0)
+  errorCode       String?           @db.VarChar(80)
+  errorSummary    String?           @db.VarChar(500)
+  leaseExpiresAt  DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  import          WeChatImport      @relation(fields: [importId], references: [id], onDelete: Cascade)
+
+  @@unique([importId, position])
+  @@index([importId, status])
+  @@index([status, updatedAt])
 }
 
 model DatabaseBackup {
