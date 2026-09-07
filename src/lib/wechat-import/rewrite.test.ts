@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { assertImageInvariant, rewriteWeChatArticle } from "./rewrite";
 import { callDeepSeekStructuredWithUsage } from "@/lib/ai/providers/deepseek";
+import type { ExecuteLLMInput } from "@/lib/ai/execute-llm";
 
 const blocks = [
   { id: "b-0001", type: "text" as const, html: "<p>內文</p>" },
@@ -22,6 +23,25 @@ describe("WeChat article rewrite", () => {
   it("keeps faithful blocks in their exact order", async () => {
     const execute = vi.fn(async () => ({ title: "改寫標題", slug: "rewritten-guide", excerpt: "摘要", blocks, seoTitle: "SEO 標題", seoDescription: "SEO 描述", seoKeywords: "微信,教學", needsVerification: [] }));
     await expect(rewriteWeChatArticle({ mode: "FAITHFUL", locale: "zh-tw", sourceTitle: "原標題", sourceMetadata: {}, blocks }, { execute: execute as never })).resolves.toMatchObject({ title: "改寫標題", blocks });
+  });
+
+  it("uses separate prompt keys and heading contracts for each rewrite mode", async () => {
+    const draft = { title: "標題", slug: "guide", excerpt: "摘要", blocks, seoTitle: "標題", seoDescription: "描述", seoKeywords: "教學", needsVerification: [] };
+    const faithfulRequests: ExecuteLLMInput<unknown>[] = [];
+    const seoRequests: ExecuteLLMInput<unknown>[] = [];
+    const faithful = async (request: ExecuteLLMInput<unknown>) => { faithfulRequests.push(request); return draft; };
+    const seo = async (request: ExecuteLLMInput<unknown>) => { seoRequests.push(request); return draft; };
+    await rewriteWeChatArticle({ mode: "FAITHFUL", locale: "zh-tw", sourceTitle: "原標題", sourceMetadata: {}, blocks }, { execute: faithful as never });
+    await rewriteWeChatArticle({ mode: "DEEP_SEO", locale: "zh-tw", sourceTitle: "原標題", sourceMetadata: {}, blocks }, { execute: seo as never });
+    const [faithfulRequest] = faithfulRequests;
+    const [seoRequest] = seoRequests;
+    if (!faithfulRequest || !seoRequest) throw new Error("Expected one request per rewrite mode");
+    expect(faithfulRequest.key).toBe("WECHAT_ARTICLE_REWRITE_FAITHFUL");
+    expect(seoRequest.key).toBe("WECHAT_ARTICLE_REWRITE_DEEP_SEO");
+    expect(faithfulRequest.variables.blockContract).toContain("不新增、刪除或重排區塊");
+    expect(faithfulRequest.variables.blockContract).toContain("h2、h3");
+    expect(seoRequest.variables.blockContract).toContain("以 h2 建立主要章節");
+    expect(seoRequest.variables.blockContract).toContain("h3");
   });
 
   it("provides typed block and SEO constraints to JSON-only providers", async () => {

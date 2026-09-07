@@ -7,6 +7,8 @@ export const promptKeys = [
   "IMAGE_GENERATE",
   "IMAGE_ALT",
   "WECHAT_ARTICLE_REWRITE",
+  "WECHAT_ARTICLE_REWRITE_FAITHFUL",
+  "WECHAT_ARTICLE_REWRITE_DEEP_SEO",
 ] as const;
 
 export type PromptKey = (typeof promptKeys)[number];
@@ -18,6 +20,8 @@ export type PromptMetadata = {
 };
 
 export const promptMetadata: Record<PromptKey, PromptMetadata> = {
+  WECHAT_ARTICLE_REWRITE_FAITHFUL: { name: "微信忠實改寫", allowedVariables: ["languageInstruction", "sourceTitle", "sourceMetadata", "blockContract", "sourceBlocks", "previousContext"], requiredVariables: ["languageInstruction", "sourceTitle", "sourceMetadata", "blockContract", "sourceBlocks", "previousContext"] },
+  WECHAT_ARTICLE_REWRITE_DEEP_SEO: { name: "微信深度 SEO 改寫", allowedVariables: ["languageInstruction", "sourceTitle", "sourceMetadata", "blockContract", "sourceBlocks", "previousContext"], requiredVariables: ["languageInstruction", "sourceTitle", "sourceMetadata", "blockContract", "sourceBlocks", "previousContext"] },
   WECHAT_ARTICLE_REWRITE: { name: "微信文章改寫", allowedVariables: ["languageInstruction", "rewriteMode", "sourceTitle", "sourceMetadata", "blockContract", "sourceBlocks", "previousContext"], requiredVariables: ["languageInstruction", "rewriteMode", "sourceTitle", "sourceMetadata", "blockContract", "sourceBlocks", "previousContext"] },
   IMAGE_PLAN: { name: "文章配圖規劃", allowedVariables: ["languageInstruction", "title", "paragraphs"], requiredVariables: ["languageInstruction", "title", "paragraphs"] },
   IMAGE_GENERATE: { name: "文章圖片生成", allowedVariables: ["prompt"], requiredVariables: ["prompt"] },

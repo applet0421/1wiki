@@ -46,3 +46,10 @@
 - Worker 現在區分模型驗證、限流、逾時、輸出格式等錯誤，不再全部顯示「檢查模型設定」。未加入自動付費重試。
 - 回歸命令：`npx vitest run src/lib/wechat-import/rewrite.test.ts src/lib/wechat-import/worker.test.ts src/lib/wechat-import/schema.test.ts`，12 項通過。測試使用獨立 `onewiki_test` 資料庫。
 - 未完成項目：實際模型草稿仍含簡體用字，需繁體校正及內容人工審核；本次未確認 R2 轉存、編輯器或發佈流程，亦未實測其他模型供應商。
+
+## 改寫模式與文章結構（2026-09-08）
+
+- 微信匯入依模式改用兩份獨立、可在 Prompt 管理維護的定義：`WECHAT_ARTICLE_REWRITE_FAITHFUL`（微信忠實改寫）與 `WECHAT_ARTICLE_REWRITE_DEEP_SEO`（微信深度 SEO 改寫）。原本的共用定義改標示為舊版，僅保留既有用量與版本紀錄。
+- 忠實改寫保留 block、圖片與順序，只能在既有文字 block 中補上確有正文支撐的 `h2`／`h3`；深度 SEO 改寫會用 `h2` 建立主章節、必要時以 `h3` 拆分子題，且每個標題必須有後續正文，不得堆砌關鍵字或虛構內容。
+- 匯入精靈的模式選項明確顯示各自使用的 Prompt 與標題結構行為，文章預覽與後續編輯器沿用產生的安全 HTML。
+- 回歸命令：`npx vitest run src/lib/wechat-import/rewrite.test.ts`（6 項通過）與 `npx tsc --noEmit`；測試確認兩種模式送出不同 Prompt key，並帶入各自的 H2／H3 結構契約。
