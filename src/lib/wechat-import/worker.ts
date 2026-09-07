@@ -50,6 +50,8 @@ export async function processNextWeChatImport(client: PrismaClient, dependencies
     if (!result.complete) result = await (dependencies.extractBrowser || extractViaBrowser)(job.normalizedUrl);
     if (!result.complete) throw new Error("CONTENT_INCOMPLETE");
     await client.$transaction(async (tx) => {
+      const stillClaimed = await tx.weChatImport.count({ where: { id: job.id, status: "FETCHING" } });
+      if (!stillClaimed) throw new Error("IMPORT_ABANDONED");
       await tx.weChatImportAsset.deleteMany({ where: { importId: job.id } });
       const assets = await Promise.all(result.assets.map((asset) => tx.weChatImportAsset.create({ data: { importId: job.id, position: asset.isCover ? -1 : asset.position, isCover: asset.isCover, originalUrl: asset.originalUrl, mimeType: asset.mimeType, byteSize: asset.byteSize, width: asset.width, height: asset.height, sha256: asset.sha256, alt: asset.alt, imageBytes: Uint8Array.from(asset.imageBytes) } })));
       const assetIds = new Map(assets.filter((asset) => !asset.isCover).map((asset) => [asset.position, asset.id]));

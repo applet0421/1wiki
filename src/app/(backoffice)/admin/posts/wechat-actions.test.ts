@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/db/prisma";
 import { resetDatabase } from "../../../../../tests/helpers/database";
 import { getCurrentUser } from "@/lib/auth/session";
-import { createWeChatImportAction, queueWeChatRewriteAction, queueWeChatTransferAction } from "./wechat-actions";
+import { abandonWeChatImportAction, createWeChatImportAction, queueWeChatRetryAction, queueWeChatRewriteAction, queueWeChatTransferAction } from "./wechat-actions";
 
 vi.mock("@/lib/auth/session", () => ({ getCurrentUser: vi.fn() }));
 
@@ -34,5 +34,15 @@ describe("WeChat import actions", () => {
     vi.mocked(getCurrentUser).mockResolvedValue(other);
 
     await expect(queueWeChatRewriteAction(imported.id, "FAITHFUL")).resolves.toEqual({ ok: false, error: "找不到可操作的匯入工作。" });
+  });
+
+  it("retries only the failed stage and immediately scrubs an abandoned payload", async () => {
+    const user = await prisma.user.create({ data: { username: "wechat-retry", displayName: "Retry", passwordHash: "test", mustChangePassword: false } });
+    vi.mocked(getCurrentUser).mockResolvedValue(user);
+    const imported = await prisma.weChatImport.create({ data: { userId: user.id, status: "TRANSFER_FAILED", sourceUrl: "https://mp.weixin.qq.com/s/example", normalizedUrl: "https://mp.weixin.qq.com/s/example", targetLocale: "zh-tw", sourceContentHtml: "<p>敏感來源</p>", expiresAt: new Date("2026-09-08T00:00:00Z"), assets: { create: { position: 0, originalUrl: "https://mmbiz.qpic.cn/a", mimeType: "image/png", byteSize: 3, sha256: "b".repeat(64), alt: "圖", imageBytes: new Uint8Array([1, 2, 3]) } } } });
+    await expect(queueWeChatRetryAction(imported.id)).resolves.toEqual({ ok: true });
+    await expect(prisma.weChatImport.findUniqueOrThrow({ where: { id: imported.id } })).resolves.toMatchObject({ status: "TRANSFER_QUEUED" });
+    await expect(abandonWeChatImportAction(imported.id)).resolves.toEqual({ ok: true });
+    await expect(prisma.weChatImport.findUniqueOrThrow({ where: { id: imported.id }, include: { assets: true } })).resolves.toMatchObject({ status: "ABANDONED", sourceContentHtml: null, assets: [{ imageBytes: null, originalUrl: "" }] });
   });
 });

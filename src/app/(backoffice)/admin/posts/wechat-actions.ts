@@ -2,6 +2,7 @@
 
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
+import { Prisma } from "@prisma/client";
 import { isLocale } from "@/lib/i18n/config";
 import { createWeChatImport } from "@/lib/wechat-import/repository";
 import type { WeChatRewriteMode } from "@/lib/wechat-import/types";
@@ -36,4 +37,27 @@ export async function queueWeChatTransferAction(importId: string) {
   if (!userId) return { ok: false as const, error: "請先登入後台。" };
   const updated = await prisma.weChatImport.updateMany({ where: { id: importId, userId, status: "REWRITTEN", expiresAt: { gt: new Date() } }, data: { status: "TRANSFER_QUEUED", failureStage: null, errorCode: null, errorSummary: null } });
   return updated.count ? { ok: true as const } : { ok: false as const, error: "找不到可操作的匯入工作。" };
+}
+
+export async function queueWeChatRetryAction(importId: string) {
+  const userId = await currentUserId();
+  if (!userId) return { ok: false as const, error: "請先登入後台。" };
+  const job = await prisma.weChatImport.findFirst({ where: { id: importId, userId, expiresAt: { gt: new Date() }, post: null }, select: { status: true, failureStage: true } });
+  if (!job) return { ok: false as const, error: "找不到可操作的匯入工作。" };
+  const target = job.status === "TRANSFER_FAILED" ? "TRANSFER_QUEUED" : job.status === "FAILED" && job.failureStage === "FETCH" ? "FETCH_QUEUED" : (job.status === "FAILED" || job.status === "UNKNOWN") && job.failureStage === "REWRITE" ? "REWRITE_QUEUED" : null;
+  if (!target) return { ok: false as const, error: "此工作目前不可重試。" };
+  const updated = await prisma.weChatImport.updateMany({ where: { id: importId, userId, status: job.status }, data: { status: target, failureStage: null, errorCode: null, errorSummary: null, leaseExpiresAt: null } });
+  return updated.count ? { ok: true as const } : { ok: false as const, error: "工作狀態已變更，請重新整理。" };
+}
+
+export async function abandonWeChatImportAction(importId: string) {
+  const userId = await currentUserId();
+  if (!userId) return { ok: false as const, error: "請先登入後台。" };
+  const abandoned = await prisma.weChatImport.updateMany({ where: { id: importId, userId, post: null, status: { in: ["FETCH_QUEUED", "FETCHING", "FETCHED", "REWRITE_QUEUED", "REWRITING", "REWRITTEN", "TRANSFER_QUEUED", "TRANSFERRING", "TRANSFER_FAILED", "FAILED", "UNKNOWN"] } }, data: { status: "ABANDONED", leaseExpiresAt: null } });
+  if (!abandoned.count) return { ok: false as const, error: "找不到可放棄的匯入工作。" };
+  await prisma.$transaction([
+    prisma.weChatImportAsset.updateMany({ where: { importId }, data: { imageBytes: null, originalUrl: "" } }),
+    prisma.weChatImport.update({ where: { id: importId }, data: { sourceUrl: "https://mp.weixin.qq.com/", normalizedUrl: "https://mp.weixin.qq.com/", sourceCoverUrl: null, sourceContentHtml: null, sourceBlocks: Prisma.DbNull, rewrittenDraft: Prisma.DbNull, editorDraft: Prisma.DbNull } }),
+  ]);
+  return { ok: true as const };
 }

@@ -34,7 +34,8 @@ export async function transferWeChatImportAssets(client: PrismaClient, importId:
       const publicUrl = await upload(key, Buffer.from(asset.imageBytes), asset.mimeType);
       // This update is deliberately after the remote write: retrying an interrupted upload
       // reuses the deterministic object key, while a confirmed upload immediately frees DB space.
-      await client.weChatImportAsset.update({ where: { id: asset.id }, data: { status: "READY", objectKey: key, publicUrl, imageBytes: null, leaseExpiresAt: null, errorCode: null, errorSummary: null } });
+      const updated = await client.weChatImportAsset.updateMany({ where: { id: asset.id, import: { is: { status: "TRANSFERRING" } } }, data: { status: "READY", objectKey: key, publicUrl, imageBytes: null, leaseExpiresAt: null, errorCode: null, errorSummary: null } });
+      if (!updated.count) throw new Error("IMPORT_ABANDONED");
     }
     const [imported, readyAssets] = await Promise.all([
       client.weChatImport.findUniqueOrThrow({ where: { id: importId }, select: { rewrittenDraft: true } }),
@@ -44,7 +45,8 @@ export async function transferWeChatImportAssets(client: PrismaClient, importId:
     const publicUrls = new Map(readyAssets.flatMap((asset) => asset.publicUrl ? [[asset.id, asset.publicUrl] as const] : []));
     const coverImage = readyAssets.find((asset) => asset.isCover)?.publicUrl || "";
     const editorDraft: WeChatEditorDraft = { ...rewritten, sourceImportId: importId, coverImage, contentHtml: buildContentHtml(rewritten.blocks, publicUrls) };
-    await client.weChatImport.update({ where: { id: importId }, data: { status: "READY", editorDraft, completedAt: new Date(), leaseExpiresAt: null } });
+    const completed = await client.weChatImport.updateMany({ where: { id: importId, status: "TRANSFERRING" }, data: { status: "READY", editorDraft, completedAt: new Date(), leaseExpiresAt: null } });
+    if (!completed.count) return false;
     return true;
   } catch {
     await client.weChatImport.updateMany({ where: { id: importId, status: "TRANSFERRING" }, data: { status: "TRANSFER_FAILED", failureStage: "TRANSFER", errorCode: "R2_UPLOAD_FAILED", errorSummary: "圖片轉存失敗，暫存資料已保留，可重試。", leaseExpiresAt: null } });
