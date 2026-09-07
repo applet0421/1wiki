@@ -18,6 +18,13 @@ describe("WeChat import worker", () => {
     await expect(prisma.weChatImport.findUniqueOrThrow({ where: { id: job.id } })).resolves.toMatchObject({ status: "FETCHED", sourceTitle: "標題", fetchMethod: "HTTP" });
   });
 
+  it("reports a verification-gated source without attempting to bypass it", async () => {
+    const user = await prisma.user.create({ data: { username: "wechat-verified", displayName: "Verified", passwordHash: "test", mustChangePassword: false } });
+    const job = (await createWeChatImport(prisma, user.id, { sourceUrl: "https://mp.weixin.qq.com/s/example", targetLocale: "zh-tw" })).import;
+    await expect(processNextWeChatImport(prisma, { extractHttp: async () => { throw new Error("SOURCE_VERIFICATION_REQUIRED"); } })).resolves.toBe(true);
+    await expect(prisma.weChatImport.findUniqueOrThrow({ where: { id: job.id } })).resolves.toMatchObject({ status: "FAILED", errorCode: "SOURCE_VERIFICATION_REQUIRED", errorSummary: expect.stringContaining("不會登入或繞過驗證") });
+  });
+
   it("hands a confirmed rewrite to the R2 transfer stage", async () => {
     const user = await prisma.user.create({ data: { username: "wechat-transfer-worker", displayName: "Transfer", passwordHash: "test", mustChangePassword: false } });
     const job = await prisma.weChatImport.create({ data: { userId: user.id, status: "TRANSFER_QUEUED", sourceUrl: "https://mp.weixin.qq.com/s/example", normalizedUrl: "https://mp.weixin.qq.com/s/example", targetLocale: "zh-tw", expiresAt: new Date("2026-09-08T00:00:00Z") } });

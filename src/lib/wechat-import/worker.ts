@@ -63,7 +63,8 @@ export async function processNextWeChatImport(client: PrismaClient, dependencies
   } catch (error) {
     const message = error instanceof Error ? error.message : "來源擷取失敗";
     const code = /^[A-Z_]+$/u.test(message) ? message : "CONTENT_INCOMPLETE";
-    await client.weChatImport.updateMany({ where: { id: job.id, status: "FETCHING" }, data: { status: "FAILED", failureStage: "FETCH", errorCode: code, errorSummary: "無法完成公開文章擷取，請確認連結仍可公開瀏覽後重試。", leaseExpiresAt: null, report: createReport("fetch", { status: "failure" }) as never } });
+    const errorSummary = code === "SOURCE_VERIFICATION_REQUIRED" ? "來源要求微信驗證；系統不會登入或繞過驗證，因此無法自動擷取。" : code === "SOURCE_LOGIN_REQUIRED" ? "來源要求登入；系統不會登入，因此無法自動擷取。" : "無法完成公開文章擷取，請確認連結仍可公開瀏覽後重試。";
+    await client.weChatImport.updateMany({ where: { id: job.id, status: "FETCHING" }, data: { status: "FAILED", failureStage: "FETCH", errorCode: code, errorSummary, leaseExpiresAt: null, report: createReport("fetch", { status: "failure" }) as never } });
   }
   return true;
 }
