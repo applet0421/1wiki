@@ -1,0 +1,24 @@
+import { beforeEach, expect, it, vi } from "vitest";
+import { prisma } from "@/lib/db/prisma";
+import { getCurrentUser } from "@/lib/auth/session";
+import { resetDatabase } from "../../../../../../tests/helpers/database";
+import { GET } from "./route";
+vi.mock("@/lib/auth/session", () => ({ getCurrentUser: vi.fn() }));
+beforeEach(async () => { await resetDatabase(); vi.clearAllMocks(); });
+it("serves only live, owned image bytes without caching", async () => {
+  const user = await prisma.user.create({ data: { username: "asset-owner", displayName: "Owner", passwordHash: "test", mustChangePassword: false } });
+  const job = await prisma.weChatImport.create({ data: { userId: user.id, sourceUrl: "https://mp.weixin.qq.com/s/example", normalizedUrl: "https://mp.weixin.qq.com/s/example", targetLocale: "zh-tw", expiresAt: new Date(Date.now()+1800000), assets: { create: { position: 0, originalUrl: "https://mmbiz.qpic.cn/a", mimeType: "image/png", byteSize: 3, sha256: "a".repeat(64), imageBytes: new Uint8Array([1,2,3]), alt: "" } } }, include: { assets: true } });
+  const ctx = { params: Promise.resolve({ id: job.assets[0].id }) };
+  const req = new Request("http://localhost/api/admin/wechat-assets/image");
+  vi.mocked(getCurrentUser).mockResolvedValue(null);
+  expect((await GET(req, ctx)).status).toBe(401);
+  vi.mocked(getCurrentUser).mockResolvedValue({ ...user, id: "someone-else" });
+  expect((await GET(req, ctx)).status).toBe(404);
+  vi.mocked(getCurrentUser).mockResolvedValue(user);
+  const response = await GET(req, ctx);
+  expect(response.status).toBe(200);
+  expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+  expect(new Uint8Array(await response.arrayBuffer())).toEqual(new Uint8Array([1,2,3]));
+  await prisma.weChatImport.update({ where: { id: job.id }, data: { createdAt: new Date(Date.now()-1800001) } });
+  expect((await GET(req, ctx)).status).toBe(404);
+});

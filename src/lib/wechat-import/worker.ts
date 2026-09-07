@@ -7,6 +7,7 @@ import { createReport } from "./report";
 import { transferWeChatImportAssets } from "./r2-transfer";
 import { rewriteWeChatArticle } from "./rewrite";
 import { parseStoredBlocks } from "./schema";
+import { WECHAT_STAGING_TTL_MS } from "./retention";
 
 const leaseMs = 4 * 60 * 1000;
 type Extracted = Awaited<ReturnType<typeof extractViaHttp>> | Awaited<ReturnType<typeof extractViaBrowser>>;
@@ -23,7 +24,8 @@ function sourcePublishedAt(value: string): Date | null {
 }
 
 export async function processNextWeChatImport(client: PrismaClient, dependencies: Dependencies = {}): Promise<boolean> {
-  const job = await client.weChatImport.findFirst({ where: { status: { in: ["FETCH_QUEUED", "REWRITE_QUEUED", "TRANSFER_QUEUED"] } }, orderBy: { createdAt: "asc" } });
+  const now = new Date();
+  const job = await client.weChatImport.findFirst({ where: { status: { in: ["FETCH_QUEUED", "REWRITE_QUEUED", "TRANSFER_QUEUED"] }, expiresAt: { gt: now }, createdAt: { gt: new Date(now.getTime() - WECHAT_STAGING_TTL_MS) } }, orderBy: { createdAt: "asc" } });
   if (!job) return false;
   if (job.status === "TRANSFER_QUEUED") {
     await transferWeChatImportAssets(client, job.id);
@@ -34,7 +36,9 @@ export async function processNextWeChatImport(client: PrismaClient, dependencies
     if (!claimedRewrite.count) return false;
     try {
       const blocks = parseStoredBlocks(job.sourceBlocks);
-      const draft = await (dependencies.rewrite || rewriteWeChatArticle)({ mode: job.rewriteMode, locale: job.targetLocale as "zh-tw" | "en" | "ja", sourceTitle: job.sourceTitle || "", sourceMetadata: { accountName: job.sourceAccountName, author: job.sourceAuthor, publishedAt: job.sourcePublishedAt?.toISOString() }, blocks });
+      const report = job.report && typeof job.report === "object" && !Array.isArray(job.report) ? job.report : {};
+      const instructions = typeof report.rewriteInstructions === "string" ? report.rewriteInstructions.slice(0, 2000) : "";
+      const draft = await (dependencies.rewrite || rewriteWeChatArticle)({ mode: job.rewriteMode, locale: job.targetLocale as "zh-tw" | "en" | "ja", sourceTitle: job.sourceTitle || "", sourceMetadata: { accountName: job.sourceAccountName, author: job.sourceAuthor, publishedAt: job.sourcePublishedAt?.toISOString() }, blocks, instructions });
       await client.weChatImport.updateMany({ where: { id: job.id, status: "REWRITING" }, data: { status: "REWRITTEN", rewrittenDraft: draft as never, leaseExpiresAt: null, failureStage: null, errorCode: null, errorSummary: null } });
     } catch (error) {
       const errorCode = error instanceof AIProviderError ? `LLM_${error.category.toUpperCase()}` : "LLM_FAILED";

@@ -15,7 +15,7 @@ export async function createWeChatImport(client: PrismaClient, userId: string, i
 export function getWeChatImportForUser(client: PrismaClient, importId: string, userId: string) {
   return client.weChatImport.findFirst({
     where: { id: importId, userId },
-    select: { id: true, status: true, sourceUrl: true, normalizedUrl: true, sourceTitle: true, sourceAccountName: true, sourceAuthor: true, sourcePublishedAt: true, sourceContentHtml: true, sourceBlocks: true, fetchMethod: true, targetLocale: true, rewriteMode: true, rewrittenDraft: true, editorDraft: true, failureStage: true, errorCode: true, errorSummary: true, report: true, expiresAt: true, completedAt: true, assets: { select: { id: true, position: true, isCover: true, status: true, mimeType: true, byteSize: true, width: true, height: true, alt: true, publicUrl: true, errorCode: true, errorSummary: true } }, },
+    select: { id: true, status: true, createdAt: true, updatedAt: true, sourceUrl: true, normalizedUrl: true, sourceTitle: true, sourceAccountName: true, sourceAuthor: true, sourcePublishedAt: true, sourceContentHtml: true, sourceBlocks: true, fetchMethod: true, targetLocale: true, rewriteMode: true, rewrittenDraft: true, editorDraft: true, failureStage: true, errorCode: true, errorSummary: true, report: true, expiresAt: true, completedAt: true, assets: { orderBy: { position: "asc" }, select: { id: true, position: true, isCover: true, status: true, mimeType: true, byteSize: true, width: true, height: true, alt: true, publicUrl: true, errorCode: true, errorSummary: true } }, },
     orderBy: { createdAt: "desc" },
   });
 }

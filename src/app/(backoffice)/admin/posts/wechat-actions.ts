@@ -6,6 +6,13 @@ import { Prisma } from "@prisma/client";
 import { isLocale } from "@/lib/i18n/config";
 import { createWeChatImport } from "@/lib/wechat-import/repository";
 import type { WeChatRewriteMode } from "@/lib/wechat-import/types";
+import { WECHAT_STAGING_TTL_MS } from "@/lib/wechat-import/retention";
+import { parseRewriteDraft } from "@/lib/wechat-import/schema";
+import { z } from "zod";
+
+function liveWindow(now = new Date()) { return { expiresAt: { gt: now }, createdAt: { gt: new Date(now.getTime() - WECHAT_STAGING_TTL_MS) } }; }
+const rewriteSettingsSchema = z.object({ targetLocale: z.enum(["zh-tw", "en", "ja"]), instructions: z.string().trim().max(2000) }).strict();
+const reviewSchema = z.object({ title: z.string(), excerpt: z.string(), slug: z.string(), seoTitle: z.string(), seoDescription: z.string(), seoKeywords: z.string(), coverAssetId: z.string().max(128), revision: z.string().datetime() }).strict();
 
 async function currentUserId(): Promise<string | null> {
   const user = await getCurrentUser();
@@ -24,29 +31,53 @@ export async function createWeChatImportAction(input: { sourceUrl: string; targe
   }
 }
 
-export async function queueWeChatRewriteAction(importId: string, mode: WeChatRewriteMode) {
+export async function queueWeChatRewriteAction(importId: string, mode: WeChatRewriteMode, settings?: { targetLocale: string; instructions: string }) {
   const userId = await currentUserId();
   if (!userId) return { ok: false as const, error: "請先登入後台。" };
   if (mode !== "FAITHFUL" && mode !== "DEEP_SEO") return { ok: false as const, error: "改寫模式無效。" };
-  const updated = await prisma.weChatImport.updateMany({ where: { id: importId, userId, status: "FETCHED", expiresAt: { gt: new Date() } }, data: { status: "REWRITE_QUEUED", rewriteMode: mode, failureStage: null, errorCode: null, errorSummary: null } });
+  const parsed = settings === undefined ? null : rewriteSettingsSchema.safeParse(settings);
+  if (parsed && !parsed.success) return { ok: false as const, error: "請確認目標語言，補充要求不可超過 2000 字。" };
+  const job = await prisma.weChatImport.findFirst({ where: { id: importId, userId, post: null, status: { in: ["FETCHED", "REWRITTEN"] }, ...liveWindow() }, select: { report: true, status: true, updatedAt: true } });
+  if (!job) return { ok: false as const, error: "找不到可操作的匯入工作。" };
+  const report = job.report && typeof job.report === "object" && !Array.isArray(job.report) ? job.report : {};
+  const updated = await prisma.weChatImport.updateMany({ where: { id: importId, userId, status: job.status, updatedAt: job.updatedAt, ...liveWindow() }, data: { status: "REWRITE_QUEUED", rewriteMode: mode, ...(parsed?.success ? { targetLocale: parsed.data.targetLocale, report: { ...report, rewriteInstructions: parsed.data.instructions } } : {}), failureStage: null, errorCode: null, errorSummary: null } });
   return updated.count ? { ok: true as const } : { ok: false as const, error: "找不到可操作的匯入工作。" };
 }
 
-export async function queueWeChatTransferAction(importId: string) {
+export async function queueWeChatTransferAction(importId: string, review?: z.infer<typeof reviewSchema>) {
   const userId = await currentUserId();
   if (!userId) return { ok: false as const, error: "請先登入後台。" };
-  const updated = await prisma.weChatImport.updateMany({ where: { id: importId, userId, status: "REWRITTEN", expiresAt: { gt: new Date() } }, data: { status: "TRANSFER_QUEUED", failureStage: null, errorCode: null, errorSummary: null } });
+  if (review !== undefined) {
+    const parsed = reviewSchema.safeParse(review);
+    if (!parsed.success) return { ok: false as const, error: "審閱欄位格式不正確，請重新確認。" };
+    try {
+      await prisma.$transaction(async (tx) => {
+        const job = await tx.weChatImport.findFirst({ where: { id: importId, userId, post: null, status: "REWRITTEN", updatedAt: new Date(parsed.data.revision), ...liveWindow() }, select: { rewrittenDraft: true, updatedAt: true } });
+        if (!job) throw new Error("STALE");
+        const { coverAssetId, title, excerpt, slug, seoTitle, seoDescription, seoKeywords } = parsed.data;
+        const fields = { title, excerpt, slug, seoTitle, seoDescription, seoKeywords };
+        const draft = parseRewriteDraft({ ...parseRewriteDraft(job.rewrittenDraft), ...fields });
+        if (coverAssetId && !await tx.weChatImportAsset.count({ where: { id: coverAssetId, importId, status: { in: ["STAGED", "READY"] } } })) throw new Error("COVER");
+        const updated = await tx.weChatImport.updateMany({ where: { id: importId, userId, status: "REWRITTEN", updatedAt: job.updatedAt, ...liveWindow() }, data: { status: "TRANSFER_QUEUED", rewrittenDraft: draft as never, failureStage: null, errorCode: null, errorSummary: null } });
+        if (!updated.count) throw new Error("STALE");
+        await tx.weChatImportAsset.updateMany({ where: { importId }, data: { isCover: false } });
+        if (coverAssetId) await tx.weChatImportAsset.updateMany({ where: { importId, id: coverAssetId }, data: { isCover: true } });
+      });
+      return { ok: true as const };
+    } catch { return { ok: false as const, error: "草稿已變更、已到期，或欄位／封面無效；請重新整理後確認。" }; }
+  }
+  const updated = await prisma.weChatImport.updateMany({ where: { id: importId, userId, post: null, status: "REWRITTEN", ...liveWindow() }, data: { status: "TRANSFER_QUEUED", failureStage: null, errorCode: null, errorSummary: null } });
   return updated.count ? { ok: true as const } : { ok: false as const, error: "找不到可操作的匯入工作。" };
 }
 
 export async function queueWeChatRetryAction(importId: string) {
   const userId = await currentUserId();
   if (!userId) return { ok: false as const, error: "請先登入後台。" };
-  const job = await prisma.weChatImport.findFirst({ where: { id: importId, userId, expiresAt: { gt: new Date() }, post: null }, select: { status: true, failureStage: true } });
+  const job = await prisma.weChatImport.findFirst({ where: { id: importId, userId, ...liveWindow(), post: null }, select: { status: true, failureStage: true } });
   if (!job) return { ok: false as const, error: "找不到可操作的匯入工作。" };
   const target = job.status === "TRANSFER_FAILED" ? "TRANSFER_QUEUED" : job.status === "FAILED" && job.failureStage === "FETCH" ? "FETCH_QUEUED" : (job.status === "FAILED" || job.status === "UNKNOWN") && job.failureStage === "REWRITE" ? "REWRITE_QUEUED" : null;
   if (!target) return { ok: false as const, error: "此工作目前不可重試。" };
-  const updated = await prisma.weChatImport.updateMany({ where: { id: importId, userId, status: job.status }, data: { status: target, failureStage: null, errorCode: null, errorSummary: null, leaseExpiresAt: null } });
+  const updated = await prisma.weChatImport.updateMany({ where: { id: importId, userId, status: job.status, ...liveWindow() }, data: { status: target, failureStage: null, errorCode: null, errorSummary: null, leaseExpiresAt: null } });
   return updated.count ? { ok: true as const } : { ok: false as const, error: "工作狀態已變更，請重新整理。" };
 }
 

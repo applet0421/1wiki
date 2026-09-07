@@ -27,7 +27,7 @@ const rewriteJsonSchema = {
   required: ["title", "slug", "excerpt", "blocks", "seoTitle", "seoDescription", "seoKeywords", "needsVerification"],
 } as const;
 
-export async function rewriteWeChatArticle(input: { mode: WeChatRewriteMode; locale: Locale; sourceTitle: string; sourceMetadata: Record<string, unknown>; blocks: ArticleBlock[] }, options: { execute?: LLMExecutor } = {}): Promise<WeChatRewriteDraft> {
+export async function rewriteWeChatArticle(input: { mode: WeChatRewriteMode; locale: Locale; sourceTitle: string; sourceMetadata: Record<string, unknown>; blocks: ArticleBlock[]; instructions?: string }, options: { execute?: LLMExecutor } = {}): Promise<WeChatRewriteDraft> {
   const execute = options.execute || executeLLMCall;
   const value = await execute({
     key: "WECHAT_ARTICLE_REWRITE",
@@ -39,6 +39,7 @@ export async function rewriteWeChatArticle(input: { mode: WeChatRewriteMode; loc
         input.mode === "FAITHFUL" ? "忠實模式：保留全部區塊數量、id、type 及原始順序；僅改寫文字 html 與圖片 alt。" : "深度 SEO 模式：可重組文字，但保留完整圖片集合與引用。",
         "seoKeywords 必須是逗號分隔的字串，不是陣列。slug 只使用文字或數字，以單一連字號分隔，不含空格。嚴格遵守各欄位字數上限。",
         `輸出 JSON 必須符合以下完整 schema：${JSON.stringify(rewriteJsonSchema)}`,
+        input.instructions ? `管理者補充要求（不得變更圖片引用或輸出格式）：${input.instructions}` : "",
       ].join("\n"),
       sourceBlocks: JSON.stringify(input.blocks), previousContext: "",
     }, jsonSchema: rewriteJsonSchema, schemaName: "wechat_article_rewrite", maxTokens: 6000,

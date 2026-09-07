@@ -9,6 +9,35 @@ vi.mock("@/lib/auth/session", () => ({ getCurrentUser: vi.fn() }));
 describe("WeChat import actions", () => {
   beforeEach(async () => { await resetDatabase(); vi.clearAllMocks(); });
 
+  it("atomically saves reviewed fields and an owned cover without replacing content blocks", async () => {
+    const user = await prisma.user.create({ data: { username: "wizard-review", displayName: "Owner", passwordHash: "test", mustChangePassword: false } });
+    vi.mocked(getCurrentUser).mockResolvedValue(user);
+    const draft = { title: "舊標題", excerpt: "摘要", slug: "guide", seoTitle: "SEO", seoDescription: "描述", seoKeywords: "教學", needsVerification: [], blocks: [{ id: "b-0001", type: "text", html: "<p>保留正文</p>" }] };
+    const job = await prisma.weChatImport.create({ data: { userId: user.id, sourceUrl: "https://mp.weixin.qq.com/s/example", normalizedUrl: "https://mp.weixin.qq.com/s/example", targetLocale: "zh-tw", status: "REWRITTEN", rewrittenDraft: draft, expiresAt: new Date(Date.now() + 1800000), assets: { create: { position: 0, originalUrl: "https://mmbiz.qpic.cn/a", mimeType: "image/png", byteSize: 3, sha256: "a".repeat(64), imageBytes: new Uint8Array([1,2,3]), alt: "" } } }, include: { assets: true } });
+    const review = { title: "新標題", excerpt: "新摘要", slug: "new-guide", seoTitle: "新 SEO", seoDescription: "新描述", seoKeywords: "教學", revision: job.updatedAt.toISOString(), coverAssetId: "not-owned" };
+    await expect(queueWeChatTransferAction(job.id, review)).resolves.toMatchObject({ ok: false });
+    await expect(prisma.weChatImport.findUniqueOrThrow({ where: { id: job.id } })).resolves.toMatchObject({ status: "REWRITTEN", rewrittenDraft: { title: "舊標題" } });
+    await expect(queueWeChatTransferAction(job.id, { ...review, coverAssetId: job.assets[0].id })).resolves.toMatchObject({ ok: true });
+    await expect(prisma.weChatImport.findUniqueOrThrow({ where: { id: job.id }, include: { assets: true } })).resolves.toMatchObject({ status: "TRANSFER_QUEUED", rewrittenDraft: { title: "新標題", blocks: draft.blocks }, assets: [{ isCover: true }] });
+    await expect(queueWeChatTransferAction(job.id, { ...review, coverAssetId: job.assets[0].id })).resolves.toMatchObject({ ok: false });
+  });
+
+  it("keeps the previous draft when explicitly regenerating with new settings", async () => {
+    const user = await prisma.user.create({ data: { username: "wizard-rewrite", displayName: "Owner", passwordHash: "test", mustChangePassword: false } });
+    vi.mocked(getCurrentUser).mockResolvedValue(user);
+    const job = await prisma.weChatImport.create({ data: { userId: user.id, sourceUrl: "https://mp.weixin.qq.com/s/example", normalizedUrl: "https://mp.weixin.qq.com/s/example", targetLocale: "zh-tw", status: "REWRITTEN", rewrittenDraft: { title: "上一版" }, expiresAt: new Date(Date.now() + 1800000) } });
+    await expect(queueWeChatRewriteAction(job.id, "DEEP_SEO", { targetLocale: "ja", instructions: "簡潔" })).resolves.toEqual({ ok: true });
+    await expect(prisma.weChatImport.findUniqueOrThrow({ where: { id: job.id } })).resolves.toMatchObject({ status: "REWRITE_QUEUED", targetLocale: "ja", rewrittenDraft: { title: "上一版" }, report: { rewriteInstructions: "簡潔" } });
+    await expect(queueWeChatRewriteAction(job.id, "FAITHFUL")).resolves.toMatchObject({ ok: false });
+  });
+
+  it("rejects legacy imports older than 30 minutes even before cleanup", async () => {
+    const user = await prisma.user.create({ data: { username: "wizard-expired", displayName: "Owner", passwordHash: "test", mustChangePassword: false } });
+    vi.mocked(getCurrentUser).mockResolvedValue(user);
+    const job = await prisma.weChatImport.create({ data: { userId: user.id, sourceUrl: "https://mp.weixin.qq.com/s/example", normalizedUrl: "https://mp.weixin.qq.com/s/example", targetLocale: "zh-tw", status: "FETCHED", createdAt: new Date(Date.now() - 1800001), expiresAt: new Date(Date.now() + 86400000) } });
+    await expect(queueWeChatRewriteAction(job.id, "FAITHFUL")).resolves.toMatchObject({ ok: false });
+  });
+
   it("creates an owned import and only advances its permitted states", async () => {
     const user = await prisma.user.create({ data: { username: "wechat-action", displayName: "Action", passwordHash: "test", mustChangePassword: false } });
     vi.mocked(getCurrentUser).mockResolvedValue(user);

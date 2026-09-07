@@ -10,6 +10,14 @@ import { AIProviderError } from "@/lib/ai/errors";
 describe("WeChat import worker", () => {
   beforeEach(resetDatabase);
 
+  it("does not start a queued model call after its staging deadline", async () => {
+    const user = await prisma.user.create({ data: { username: "wechat-expired-queue", displayName: "Worker", passwordHash: "test", mustChangePassword: false } });
+    await prisma.weChatImport.create({ data: { userId: user.id, status: "REWRITE_QUEUED", sourceUrl: "https://mp.weixin.qq.com/s/example", normalizedUrl: "https://mp.weixin.qq.com/s/example", targetLocale: "zh-tw", sourceBlocks: [{ id: "b-0001", type: "text", html: "<p>內文</p>" }], createdAt: new Date(Date.now() - 1800001), expiresAt: new Date(Date.now() + 86400000) } });
+    const rewrite = vi.fn();
+    await expect(processNextWeChatImport(prisma, { rewrite })).resolves.toBe(false);
+    expect(rewrite).not.toHaveBeenCalled();
+  });
+
   it("distinguishes invalid model output from configuration failures", async () => {
     const user = await prisma.user.create({ data: { username: "wechat-invalid", displayName: "Worker", passwordHash: "test", mustChangePassword: false } });
     const job = await prisma.weChatImport.create({ data: { userId: user.id, status: "REWRITE_QUEUED", sourceUrl: "https://mp.weixin.qq.com/s/example", normalizedUrl: "https://mp.weixin.qq.com/s/example", targetLocale: "zh-tw", sourceBlocks: [{ id: "b-0001", type: "text", html: "<p>內文</p>" }], expiresAt: new Date(Date.now() + 86400000) } });
