@@ -1,27 +1,29 @@
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
-import { getSiteUrl, siteConfig } from "@/lib/config/site";
+import { getSiteUrl } from "@/lib/config/site";
 import { getLocaleConfig, isLocale, supportedLocales } from "@/lib/i18n/config";
-import { getDictionary } from "@/lib/i18n/dictionaries";
+import { prisma } from "@/lib/db/prisma";
+import { resolveBrandSeo } from "@/lib/brand-seo/repository";
 import "../globals.css";
 
 export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) return {};
-  const dictionary = getDictionary(locale);
   const config = getLocaleConfig(locale);
+  const brand = await resolveBrandSeo(prisma);
+  const seo = brand.locales[locale];
   return {
     metadataBase: new URL(getSiteUrl()),
-    title: { default: dictionary.site.name, template: `%s｜${siteConfig.shortName}` },
-    description: dictionary.site.description,
+    title: { default: seo.homeTitle, template: `%s｜${brand.siteName}` },
+    description: seo.homeDescription,
     manifest: "/manifest.webmanifest",
     icons: { icon: [
       { url: "/favicon.ico", sizes: "48x48", type: "image/x-icon" },
-      { url: "/icon-48.png", sizes: "48x48", type: "image/png" },
+      { url: brand.assets.icon48, sizes: "48x48", type: "image/png" },
       { url: "/icon.svg", sizes: "any", type: "image/svg+xml" },
     ] },
-    openGraph: { type: "website", locale: config.openGraphLocale, siteName: siteConfig.shortName, title: dictionary.site.name, description: dictionary.site.description, images: ["/og-default.svg"] },
+    openGraph: { type: "website", locale: config.openGraphLocale, siteName: brand.siteName, title: seo.ogTitle, description: seo.ogDescription, images: [brand.assets.defaultOg] },
   };
 }
 
