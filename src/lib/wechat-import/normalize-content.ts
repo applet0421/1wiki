@@ -22,9 +22,21 @@ export function normalizeWeChatContent(parsed: ParsedWeChatArticle): NormalizedW
   const sanitizedFragments: string[] = [];
   let imagePosition = 0;
 
-  $.root().contents().each((_index, node) => {
+  const rootNodes = $.root().contents().toArray();
+  const visit = (node: (typeof rootNodes)[number]) => {
+    if (node.type === "text") {
+      if (!$(node).text().trim()) return;
+      const html = sanitizeArticleHtml(`<p>${$.html(node)}</p>`);
+      blocks.push({ id: blockId(blocks.length), type: "text", html });
+      sanitizedFragments.push(html);
+      return;
+    }
     if (node.type !== "tag") return;
     const element = $(node);
+    if (node.tagName !== "img" && element.find("img").length) {
+      element.contents().each((_index, child) => { visit(child); });
+      return;
+    }
     if (node.tagName === "img") {
       if (isTrackingImage(node)) return;
       const url = element.attr("data-src") || element.attr("src");
@@ -48,7 +60,8 @@ export function normalizeWeChatContent(parsed: ParsedWeChatArticle): NormalizedW
     if (!sanitized || !element.text().trim()) return;
     blocks.push({ id: blockId(blocks.length), type: "text", html: sanitized });
     sanitizedFragments.push(sanitized);
-  });
+  };
+  $.root().contents().each((_index, node) => { visit(node); });
 
   return { sanitizedHtml: sanitizedFragments.join(""), blocks, imageRequests, warnings: [] };
 }

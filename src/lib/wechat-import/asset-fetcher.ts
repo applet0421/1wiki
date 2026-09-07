@@ -20,14 +20,14 @@ function mimeFromMagic(bytes: Buffer): string | null {
 
 export async function fetchWeChatAssets(requests: AssetRequest[], options: { request?: typeof safeHttpsGet } = {}): Promise<{ assets: StagedAsset[]; failures: AssetFailure[]; complete: boolean }> {
   if (requests.length > MAX_ASSETS) return { assets: [], failures: [{ position: -1, isCover: false, code: "ASSET_LIMIT_EXCEEDED", detail: "圖片數量超過上限" }], complete: false };
-  const request = options.request || ((url: string | URL) => safeHttpsGet(url, { maxBytes: MAX_SINGLE_BYTES, validateUrl: (candidate) => assertAllowedWeChatImageUrl(candidate) }));
+  const request = options.request || safeHttpsGet;
   const assets: StagedAsset[] = [];
   const failures: AssetFailure[] = [];
   let totalBytes = 0;
 
   for (const item of requests) {
     try {
-      const response = await request(assertAllowedWeChatImageUrl(item.url));
+      const response = await request(assertAllowedWeChatImageUrl(item.url), { maxBytes: MAX_SINGLE_BYTES, validateUrl: (candidate) => assertAllowedWeChatImageUrl(candidate) });
       if (response.status < 200 || response.status >= 300) throw new Error(`HTTP ${response.status}`);
       if (response.body.length > MAX_SINGLE_BYTES || totalBytes + response.body.length > MAX_TOTAL_BYTES) {
         failures.push({ position: item.position, isCover: item.isCover, code: "ASSET_LIMIT_EXCEEDED", detail: "圖片大小超過上限" });
