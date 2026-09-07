@@ -4,6 +4,7 @@ const choices = [
   { title: "新增文章", description: "手動填寫文章資料，建立一篇新的文章。", href: "/admin/posts/new", action: "手動新增文章" },
   { title: "AI 選題", description: "貼上參考內容，分析主題並生成文章草稿。", href: "/admin/posts/generate", action: "開始 AI 選題" },
   { title: "AI 改寫文章", description: "提供既有文章，讓 AI 協助改寫與整理內容。", href: "/admin/posts/rewrite", action: "開始 AI 改寫" },
+  { title: "微信公眾號改寫", description: "擷取公開文章並保留圖片，在預覽後改寫成可編輯草稿。", href: "/admin/posts/wechat", action: "匯入微信文章" },
 ];
 
 export default function ArticleCreationPage() {

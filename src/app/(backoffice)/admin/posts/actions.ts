@@ -37,6 +37,11 @@ export async function savePostAction(formData: FormData) {
   const excerpt = field(formData, "excerpt");
   const rawContentHtml = field(formData, "contentHtml");
   const isPublishing = field(formData, "intent") === "publish";
+  const sourceImportId = field(formData, "sourceImportId") || null;
+  if (sourceImportId) {
+    const imported = await prisma.weChatImport.findFirst({ where: { id: sourceImportId, userId: user.id, status: "READY" }, select: { id: true } });
+    if (!imported) redirect(`${id ? `/admin/posts/${id}` : "/admin/posts/new"}?error=${encodeURIComponent("匯入工作不可用或不屬於目前帳號")}`);
+  }
   const previous = id ? await prisma.post.findUnique({ where: { id }, select: { status: true, locale: true, slug: true } }) : null;
   const contentHtml = isPublishing ? completeImageAlt(rawContentHtml, title) : rawContentHtml;
   const seo = isPublishing ? completeSeo({ title, excerpt, contentHtml, seoTitle: field(formData, "seoTitle"), seoDescription: field(formData, "seoDescription"), seoKeywords: field(formData, "seoKeywords") }) : { seoTitle: field(formData, "seoTitle"), seoDescription: field(formData, "seoDescription"), seoKeywords: field(formData, "seoKeywords") };
@@ -46,7 +51,7 @@ export async function savePostAction(formData: FormData) {
       id, locale: localeSchema.parse(field(formData, "locale")), title, slug: field(formData, "slug"), excerpt,
       contentHtml, coverImage: field(formData, "coverImage"),
       status: field(formData, "intent") === "publish" ? "PUBLISHED" : "DRAFT",
-      bylineId: field(formData, "bylineId") || null, categoryId: field(formData, "categoryId"), ...seo, canonicalUrl: field(formData, "canonicalUrl"),
+      bylineId: field(formData, "bylineId") || null, sourceImportId, categoryId: field(formData, "categoryId"), ...seo, canonicalUrl: field(formData, "canonicalUrl"),
     });
     const event = classifySearchEvent(previous?.status || "DRAFT", isPublishing ? "PUBLISHED" : "DRAFT");
     if (event && saved && (!saved.canonicalUrl || saved.canonicalUrl.startsWith(getSiteUrl()))) {

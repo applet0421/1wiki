@@ -12,7 +12,7 @@ import { SeoFields } from "./seo-fields";
 import { TitleSlugFields } from "./title-slug-fields";
 import { defaultLocale, getLocaleConfig, supportedLocales, type Locale } from "@/lib/i18n/config";
 
-type EditablePost = { id: string; locale: string; status: "DRAFT" | "PUBLISHED"; title: string; slug: string; excerpt: string; contentHtml: string; coverImage: string | null; categoryId: string; bylineId?: string | null; seoTitle: string | null; seoDescription: string | null; seoKeywords: string | null; canonicalUrl: string | null; aiContentType?: "TROUBLESHOOTING" | "HOW_TO" | null; primaryKeyword?: string | null; searchIntent?: string | null; aiSourceSupport?: "STRONG" | "MEDIUM" | null; aiNeedsVerification?: unknown };
+type EditablePost = { id: string; locale: string; status: "DRAFT" | "PUBLISHED"; title: string; slug: string; excerpt: string; contentHtml: string; coverImage: string | null; categoryId: string; bylineId?: string | null; sourceImportId?: string | null; seoTitle: string | null; seoDescription: string | null; seoKeywords: string | null; canonicalUrl: string | null; aiContentType?: "TROUBLESHOOTING" | "HOW_TO" | null; primaryKeyword?: string | null; searchIntent?: string | null; aiSourceSupport?: "STRONG" | "MEDIUM" | null; aiNeedsVerification?: unknown };
 
 function verificationNotes(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
@@ -56,7 +56,7 @@ function CoverImageField({ initialValue }: { initialValue: string }) {
   </>;
 }
 
-export function PostEditor({ categories, authors = [], post, error, provider = "deepseek", initialGenerated, showAIGenerator = true, locale = defaultLocale }: { categories: CategoryOption[]; authors?: AuthorOption[]; post?: EditablePost; error?: string; provider?: string; initialGenerated?: GeneratedArticle; showAIGenerator?: boolean; locale?: Locale }) {
+export function PostEditor({ categories, authors = [], post, error, provider = "deepseek", initialGenerated, initialCoverImage, sourceImportId, showAIGenerator = true, locale = defaultLocale }: { categories: CategoryOption[]; authors?: AuthorOption[]; post?: EditablePost; error?: string; provider?: string; initialGenerated?: GeneratedArticle; initialCoverImage?: string; sourceImportId?: string; showAIGenerator?: boolean; locale?: Locale }) {
   const initialLocale = (post?.locale as Locale | undefined) ?? locale;
   const [selectedLocale, setSelectedLocale] = useState<Locale>(initialLocale);
   const [selectedAuthor, setSelectedAuthor] = useState(
@@ -71,7 +71,7 @@ export function PostEditor({ categories, authors = [], post, error, provider = "
     slug: generated.slug,
     excerpt: generated.excerpt,
     contentHtml: generated.contentHtml,
-    coverImage: post?.coverImage || null,
+    coverImage: post?.coverImage || initialCoverImage || null,
     categoryId: post?.categoryId || "",
     seoTitle: generated.seoTitle,
     seoDescription: generated.seoDescription,
@@ -81,7 +81,7 @@ export function PostEditor({ categories, authors = [], post, error, provider = "
   const notes = verificationNotes(post?.aiNeedsVerification);
   const localeLocked = post?.status === "PUBLISHED";
   return <form action={savePostAction} className="admin-grid">
-    {post ? <input type="hidden" name="id" value={post.id} /> : null}{error ? <p className="form-error" role="alert">{error}</p> : null}
+    {post ? <input type="hidden" name="id" value={post.id} /> : null}{sourceImportId ? <input type="hidden" name="sourceImportId" value={sourceImportId} /> : null}{error ? <p className="form-error" role="alert">{error}</p> : null}
     {post?.aiContentType ? <section className="panel ai-review" role="region" aria-label="AI 審核資訊">
       <div><p className="eyebrow">AI 審核資訊</p><h2>{post.aiContentType === "TROUBLESHOOTING" ? "Troubleshooting" : "How-to"} · {post.aiSourceSupport === "STRONG" ? "Strong" : "Medium"}</h2></div>
       <dl><div><dt>主要關鍵字</dt><dd>{post.primaryKeyword}</dd></div><div><dt>搜尋意圖</dt><dd>{post.searchIntent}</dd></div></dl>

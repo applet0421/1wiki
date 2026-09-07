@@ -84,6 +84,7 @@ async function savePostInTransaction(
   const current = input.id ? await client.post.findUnique({ where: { id: input.id } }) : null;
   if (input.id && !current) throw new Error("找不到指定文章");
   const bylineId = input.bylineId === undefined ? current?.bylineId ?? null : input.bylineId;
+  const sourceImportId = input.sourceImportId === undefined ? current?.sourceImportId ?? null : input.sourceImportId;
   if (bylineId) {
     // Keep archive/update operations from racing a new article assignment.
     await client.$queryRaw`SELECT "id" FROM "Author" WHERE "id" = ${bylineId} FOR SHARE`;
@@ -95,6 +96,7 @@ async function savePostInTransaction(
 
   const data = {
     bylineId,
+    sourceImportId,
     locale: input.locale,
     title: input.title,
     slug: input.slug,

@@ -20,6 +20,7 @@ describe("Prompt and LLM usage schema", () => {
       "IMAGE_GENERATE",
       "IMAGE_PLAN",
       "SOURCE_ANALYZE",
+      "WECHAT_ARTICLE_REWRITE",
     ]);
     expect(definitions.every((item) => item.activeVersionNumber === 1)).toBe(true);
     expect(definitions.every((item) => item.versions.length === 1)).toBe(true);

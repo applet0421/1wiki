@@ -40,6 +40,7 @@ export const postInputSchema = z.object({
   status: z.enum(["DRAFT", "PUBLISHED"]),
   categoryId: z.string().cuid("請選擇有效分類"),
   bylineId: z.string().cuid("請選擇有效作者").nullable().optional(),
+  sourceImportId: z.string().cuid("匯入工作格式不正確").nullable().optional(),
   seoTitle: z.string().trim().max(70).default(""),
   seoDescription: z.string().trim().max(170).default(""),
   seoKeywords: z.string().trim().max(500).default(""),
