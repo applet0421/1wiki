@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { buildArticleJsonLd, buildBreadcrumbJsonLd, buildWebsiteJsonLd } from "./structured-data";
+import { buildArticleJsonLd, buildBreadcrumbJsonLd, buildOrganizationJsonLd, buildWebsiteJsonLd } from "./structured-data";
+
+const brand = { siteName: "1Wiki Help", alternateNames: ["Help Center"], logoUrl: "https://1wiki.example/brand/logo" };
 
 describe("structured data", () => {
   it("builds an Article object with author and publication dates", () => {
@@ -12,13 +14,17 @@ describe("structured data", () => {
   });
 
   it("builds the approved Website identity", () => {
-    expect(buildWebsiteJsonLd("https://1wiki.example", "ja")).toMatchObject({
+    expect(buildWebsiteJsonLd("https://1wiki.example", "ja", brand)).toMatchObject({
       "@type": "WebSite",
-      name: "1Wiki",
-      alternateName: ["1wiki.example"],
+      name: "1Wiki Help",
+      alternateName: ["Help Center"],
       inLanguage: "ja",
       url: "https://1wiki.example",
     });
+  });
+
+  it("builds Organization identity from the shared brand", () => {
+    expect(buildOrganizationJsonLd("https://1wiki.example", brand)).toMatchObject({ name: "1Wiki Help", logo: "https://1wiki.example/brand/logo" });
   });
 
   it("does not expose internal AI review metadata", () => {

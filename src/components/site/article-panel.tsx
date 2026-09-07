@@ -13,6 +13,7 @@ import { getCategoryHref } from "@/lib/content/category-tree";
 import { buildArticleJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo/structured-data";
 import { getLocaleConfig, type Locale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import { resolveBrandSeo } from "@/lib/brand-seo/repository";
 
 type ArticlePost = NonNullable<Awaited<ReturnType<typeof getPublishedPostBySlug>>>;
 
@@ -24,6 +25,7 @@ export async function ArticlePanel({ post, locale, initial = false }: { post: Ar
   const context = { pathname, published: true };
   const hasLiveSlot = (["article_after_intro", "article_mid", "article_end", "sidebar_desktop", "sidebar_desktop_sticky"] as const).some((placement) => getAdSlotConfig(placement, adEnvironment, context)?.mode === "live");
   const clientId = hasLiveSlot ? getLiveAdsenseClientId(adEnvironment, pathname) : null;
+  const brand = await resolveBrandSeo(prisma);
   const ancestors = [
     ...(post.category.parent?.parent ? [post.category.parent.parent] : []),
     ...(post.category.parent ? [post.category.parent] : []),
@@ -49,7 +51,7 @@ export async function ArticlePanel({ post, locale, initial = false }: { post: Ar
     })),
     { name: post.title, href: pathname },
   ];
-  return <><AdsenseScript clientId={clientId} /><section className="article-layout" aria-label={post.title}><article className="article-page">{initial ? <><JsonLd value={buildArticleJsonLd(post, getSiteUrl(), locale)} /><JsonLd value={buildBreadcrumbJsonLd(breadcrumbItems, getSiteUrl())} /></> : null}<CategoryBreadcrumbs ancestors={ancestors} current={post.category} locale={locale} /><header className="article-header"><p className="eyebrow">{post.category.name}</p>{initial ? <h1>{post.title}</h1> : <h2 className="article-title"><Link href={pathname}>{post.title}</Link></h2>}<p className="article-excerpt">{post.excerpt}</p><div className="article-meta"><AuthorByline byline={post.byline} fallback={post.author.displayName} locale={locale} /><time dateTime={post.publishedAt?.toISOString()}>{post.publishedAt ? new Intl.DateTimeFormat(dateLocale, { dateStyle: "long" }).format(post.publishedAt) : ""}</time>{post.updatedAt > (post.publishedAt || post.createdAt) ? <span>{dictionary.article.updated} {new Intl.DateTimeFormat(dateLocale, { dateStyle: "medium" }).format(post.updatedAt)}</span> : null}</div></header><ArticleBody html={post.contentHtml} pathname={pathname} adEnvironment={adEnvironment} />{relatedPosts.length > 0 ? <aside className="related-box" aria-label={dictionary.article.relatedTitle}>
+  return <><AdsenseScript clientId={clientId} /><section className="article-layout" aria-label={post.title}><article className="article-page">{initial ? <><JsonLd value={buildArticleJsonLd(post, getSiteUrl(), locale, { siteName: brand.siteName, alternateNames: brand.alternateNames, logoUrl: `${getSiteUrl()}${brand.assets.logo}` })} /><JsonLd value={buildBreadcrumbJsonLd(breadcrumbItems, getSiteUrl())} /></> : null}<CategoryBreadcrumbs ancestors={ancestors} current={post.category} locale={locale} /><header className="article-header"><p className="eyebrow">{post.category.name}</p>{initial ? <h1>{post.title}</h1> : <h2 className="article-title"><Link href={pathname}>{post.title}</Link></h2>}<p className="article-excerpt">{post.excerpt}</p><div className="article-meta"><AuthorByline byline={post.byline} fallback={post.author.displayName} locale={locale} /><time dateTime={post.publishedAt?.toISOString()}>{post.publishedAt ? new Intl.DateTimeFormat(dateLocale, { dateStyle: "long" }).format(post.publishedAt) : ""}</time>{post.updatedAt > (post.publishedAt || post.createdAt) ? <span>{dictionary.article.updated} {new Intl.DateTimeFormat(dateLocale, { dateStyle: "medium" }).format(post.updatedAt)}</span> : null}</div></header><ArticleBody html={post.contentHtml} pathname={pathname} adEnvironment={adEnvironment} />{relatedPosts.length > 0 ? <aside className="related-box" aria-label={dictionary.article.relatedTitle}>
   <h2>{dictionary.article.relatedTitle}</h2>
   <ul className="related-articles">
     {relatedPosts.map((related) => <li key={related.id}>
