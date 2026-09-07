@@ -1,6 +1,35 @@
 # 本機驗證紀錄
 
-最後更新：2026-09-06
+最後更新：2026-09-07
+
+## 2026-09-07 Google 品牌搜尋外觀
+
+- `src/lib/seo/structured-data.test.ts`：驗證 `WebSite` 使用精簡品牌名、根網址與網域備援名稱。
+- `src/app/[locale]/layout.test.ts`、`src/app/manifest.test.ts`：驗證品牌式摘要及 ICO／PNG／SVG 圖示宣告。
+- `src/app/favicon-assets.test.ts`：驗證 PNG 尺寸與 ICO 檔頭、48px 尺寸。
+- `src/components/site/header.test.tsx`：驗證含子分類的頂層分類在展開前已有直接連結，原有逐層展開與鍵盤操作仍通過。
+
+執行命令與結果：
+
+```sh
+DATABASE_URL=postgresql://eirikr@127.0.0.1:5432/onewiki_test \
+DIRECT_URL=postgresql://eirikr@127.0.0.1:5432/onewiki_test npx prisma migrate deploy
+DATABASE_URL=postgresql://eirikr@127.0.0.1:5432/onewiki_test \
+DIRECT_URL=postgresql://eirikr@127.0.0.1:5432/onewiki_test npm test
+DATABASE_URL=postgresql://eirikr@127.0.0.1:5432/onewiki_test \
+DIRECT_URL=postgresql://eirikr@127.0.0.1:5432/onewiki_test \
+NEXT_PUBLIC_SITE_URL=http://localhost:3000 npm run build
+npx eslint <本次變更的 TypeScript／TSX 檔案>
+git diff --check
+```
+
+- 測試資料庫：補套 6 個既有 migration，19 個 migration 全部已套用。
+- Vitest：120 個測試檔、371 項測試通過；另有既有 `pg` deprecation warning。
+- Next.js production build／TypeScript：通過。
+- 本次變更檔案 ESLint：通過。
+- `git diff --check`：通過。
+- 完整 `npm run lint`：未通過；既有 `src/lib/wechat-import/browser-extractor.ts` 有 1 個 `no-explicit-any` error，`src/lib/retention/cleanup.ts` 有 1 個 unused-variable warning，兩檔皆非本次變更。
+- 尚未部署正式站、要求 Google 重抓或驗證實際 SERP 更新。
 
 ## 2026-09-06 累計流量資料簡化
 

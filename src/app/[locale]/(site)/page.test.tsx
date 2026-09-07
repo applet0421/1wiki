@@ -42,7 +42,7 @@ describe("HomePage", () => {
     render(await HomePage({ params: Promise.resolve({ locale: "zh-tw" }) }));
 
     expect(screen.getByRole("heading", { name: "把複雜的科技問題，變成做得到的步驟。" })).toBeInTheDocument();
-    expect(screen.getByText("從 AI、軟體到社群與 3C，1Wiki 用繁體中文整理清楚背景、步驟與常見解法，讓你少走一點彎路。")).toBeInTheDocument();
+    expect(screen.getByText("1Wiki 提供 AI、LINE、軟體與 3C 疑難解答，以清楚步驟協助你完成設定、排除錯誤並安全使用常見科技服務。")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "先選一個你想解決的主題" })).toBeInTheDocument();
     expect(screen.getByTestId("latest-answers")).toHaveClass("article-list");
     expect(screen.getAllByRole("article")).toHaveLength(2);

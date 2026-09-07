@@ -247,8 +247,8 @@ td small { display: block; color: #a45a00; margin-top: .3rem; }
 .nav-shell { display: flex; min-height: 68px; align-items: center; gap: 2rem; }
 .nav-shell .primary-navigation { display: flex; gap: 1.4rem; margin-left: auto; font-size: .92rem; font-weight: 750; }
 .nav-shell .primary-navigation a:hover, .nav-category-trigger:hover, .admin-link:hover { color: var(--brand); }
-.nav-category-menu { position: relative; }
-.nav-category-trigger { display: inline-flex; align-items: center; gap: .2rem; border: 0; background: transparent; color: var(--foreground); font: inherit; font-weight: inherit; cursor: pointer; }
+.nav-category-menu { position: relative; display: inline-flex; align-items: center; gap: .2rem; }
+.nav-category-trigger { display: inline-flex; align-items: center; border: 0; background: transparent; padding: .25rem; color: var(--foreground); font: inherit; font-weight: inherit; cursor: pointer; }
 .nav-category-trigger:focus-visible { outline: 3px solid rgb(39 100 231 / 18%); outline-offset: 3px; }
 .nav-category-trigger svg { transition: transform .16s ease; }
 .nav-category-trigger[aria-expanded="true"] svg { transform: rotate(180deg); }

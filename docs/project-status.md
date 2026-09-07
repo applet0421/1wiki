@@ -1,6 +1,6 @@
 # 目前工作狀態
 
-最後更新：2026-09-06
+最後更新：2026-09-07
 
 本文件以 `main` 最新程式與文件為基準。GCP VM、ISR、Cloudflare purge 與 `/admin/cache` 已完成本機實作與驗證，但不代表正式環境已部署；正式 VM migration、外部 Cloudflare 設定與 DNS 切換仍須另行執行。
 
@@ -18,6 +18,7 @@
 | 文章卡片封面與 YouTube Shorts | 已提交於 `5339e2e` | [編輯與媒體](article-editing.md) |
 | 封面 R2 上傳、發布時正文首圖補封面 | 已提交於 `d5f0074`；完整儲存／上傳整合驗證待執行 | [編輯與媒體](article-editing.md) |
 | Bing IndexNow 通知佇列、OWNER 後台、處理 API | 已提交部分實作於 `d5f0074`；尚未達可發布條件 | [搜尋引擎通知](search-engine-submission.md) |
+| Google 品牌搜尋外觀 | 已補 48×48 ICO／PNG、精簡 `WebSite` 品牌資料、品牌式首頁摘要及可直接爬取的頂層分類連結；待部署、重抓與 Search Console 觀察 | [搜尋引擎通知](search-engine-submission.md) |
 
 ## 搜尋引擎功能待完成
 
@@ -34,8 +35,8 @@
 
 發布前先完成適用的隔離資料庫回歸、型別檢查與 production build，確認 migration 與環境設定，再依 README 的發布政策取得確認。搜尋引擎功能應先完成上列缺口再啟用排程。
 
-## 2026-09-06 最新驗證
+## 2026-09-07 最新驗證
 
-[測試紀錄](test-log.md) 記錄 90 個測試檔／310 項測試通過、TypeScript 通過、Lint 通過、production build 通過；Coolify Compose 結構與差異檢查亦已通過。測試使用本機隔離 PostgreSQL；尚未執行正式 VM、Coolify 安裝／部署、Cloudflare 外部 purge、R2／Gemini 付費整合與瀏覽器實機效能測試。
+[測試紀錄](test-log.md) 記錄 120 個測試檔／371 項測試通過、本次 SEO 變更檔案 ESLint 通過、TypeScript／production build 通過及 `git diff --check` 通過。完整 ESLint 仍被既有 WeChat 程式的 1 個 error／1 個 warning 阻擋。測試使用本機隔離 PostgreSQL；尚未部署品牌搜尋改動，也未要求 Google 重抓或驗證 SERP 外觀。
 
 本次相關文件同步不涉及 Meta Creator Marketplace Phase 1；本儲存庫未找到該功能的 PRD、測試紀錄或 API 能力文件。

@@ -28,6 +28,7 @@ describe("SiteHeader", () => {
       },
     ]} />);
 
+    expect(screen.getByRole("link", { name: "AI" })).toHaveAttribute("href", "/zh-tw/category/ai");
     const trigger = screen.getByRole("button", { name: "AI" });
     expect(trigger).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByRole("link", { name: "ChatGPT" })).not.toBeInTheDocument();

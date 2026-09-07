@@ -1,12 +1,12 @@
 import { siteConfig } from "@/lib/config/site";
 import { getLocaleConfig, type Locale } from "@/lib/i18n/config";
-import { getDictionary } from "@/lib/i18n/dictionaries";
 import { resolveArticleImage } from "./image";
 
 type ArticlePost = { title: string; slug: string; excerpt: string; contentHtml?: string; coverImage: string | null; publishedAt: Date | null; updatedAt: Date; author: { displayName: string }; byline?: { name: string; slug: string } | null };
 
 export function buildWebsiteJsonLd(siteUrl: string, locale: Locale) {
-  return { "@context": "https://schema.org", "@type": "WebSite", name: getDictionary(locale).site.name, alternateName: siteConfig.shortName, url: `${siteUrl}/${locale}`, inLanguage: getLocaleConfig(locale).htmlLang };
+  const hostname = new URL(siteUrl).hostname.replace(/^www\./u, "");
+  return { "@context": "https://schema.org", "@type": "WebSite", name: siteConfig.shortName, alternateName: [hostname], url: siteUrl, inLanguage: getLocaleConfig(locale).htmlLang };
 }
 
 export function buildOrganizationJsonLd(siteUrl: string) {

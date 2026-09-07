@@ -12,7 +12,13 @@ describe("structured data", () => {
   });
 
   it("builds the approved Website identity", () => {
-    expect(buildWebsiteJsonLd("https://1wiki.example", "ja")).toMatchObject({ "@type": "WebSite", inLanguage: "ja", url: "https://1wiki.example/ja" });
+    expect(buildWebsiteJsonLd("https://1wiki.example", "ja")).toMatchObject({
+      "@type": "WebSite",
+      name: "1Wiki",
+      alternateName: ["1wiki.example"],
+      inLanguage: "ja",
+      url: "https://1wiki.example",
+    });
   });
 
   it("does not expose internal AI review metadata", () => {

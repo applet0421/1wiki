@@ -3,13 +3,13 @@ import type { Locale } from "./config";
 const zhTwDictionary = {
   site: {
     name: "1Wiki｜AI、軟體、3C 使用教學與疑難解答",
-    description: "用清楚、可操作的步驟，解決 AI、軟體、社群與 3C 的日常問題。",
+    description: "1Wiki 提供 AI、LINE、軟體與 3C 疑難解答，以清楚步驟協助你完成設定、排除錯誤並安全使用常見科技服務。",
   },
   navigation: { primary: "主要導覽", language: "選擇語言", admin: "後台", allCategory: "全部" },
   home: {
     eyebrow: "遇到科技問題，先從這裡找答案",
     title: "把複雜的科技問題，變成做得到的步驟。",
-    intro: "從 AI、軟體到社群與 3C，1Wiki 用繁體中文整理清楚背景、步驟與常見解法，讓你少走一點彎路。",
+    intro: "1Wiki 提供 AI、LINE、軟體與 3C 疑難解答，以清楚步驟協助你完成設定、排除錯誤並安全使用常見科技服務。",
     exploreEyebrow: "探索主題",
     exploreTitle: "先選一個你想解決的主題",
     latestEyebrow: "最新解答",

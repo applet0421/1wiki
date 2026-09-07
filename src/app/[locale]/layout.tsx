@@ -16,7 +16,11 @@ export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Pr
     title: { default: dictionary.site.name, template: `%s｜${siteConfig.shortName}` },
     description: dictionary.site.description,
     manifest: "/manifest.webmanifest",
-    icons: { icon: "/icon.svg" },
+    icons: { icon: [
+      { url: "/favicon.ico", sizes: "48x48", type: "image/x-icon" },
+      { url: "/icon-48.png", sizes: "48x48", type: "image/png" },
+      { url: "/icon.svg", sizes: "any", type: "image/svg+xml" },
+    ] },
     openGraph: { type: "website", locale: config.openGraphLocale, siteName: siteConfig.shortName, title: dictionary.site.name, description: dictionary.site.description, images: ["/og-default.svg"] },
   };
 }
