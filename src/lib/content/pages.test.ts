@@ -42,7 +42,7 @@ describe("site page repository", () => {
 
     expect(published.publishedAt?.toISOString()).toBe(publishedAt.toISOString());
     expect(draftAgain.publishedAt?.toISOString()).toBe(publishedAt.toISOString());
-    await expect(getPublishedSitePage(prisma, "zh-tw", "about")).resolves.toMatchObject({ id: draft.id, status: "PUBLISHED" });
+    await expect(getPublishedSitePage(prisma, "zh-tw", "about")).resolves.toBeNull();
   });
 
   it("deletes a page", async () => {
@@ -55,7 +55,7 @@ describe("site page repository", () => {
     const category = await prisma.category.create({ data: { locale: "zh-tw", name: "AI", slug: "ai" } });
     const mounted = await saveSitePage(prisma, input({ categoryId: category.id, status: "PUBLISHED" }));
     await saveSitePage(prisma, input({ title: "未發布", slug: "draft", categoryId: category.id }));
-    await expect(getPublishedCategoryPages(prisma, "zh-tw", category.id)).resolves.toMatchObject([{ id: mounted.id, categoryId: category.id }]);
+    await expect(getPublishedCategoryPages(prisma, "zh-tw", category.id)).resolves.toMatchObject([{ id: mounted.id, title: "關於 1Wiki", slug: "about", excerpt: "認識 1Wiki。" }]);
     await expect(saveSitePage(prisma, input({ locale: "en", title: "About", slug: "about", categoryId: category.id }))).rejects.toThrow("分類語系必須與頁面一致");
   });
 });

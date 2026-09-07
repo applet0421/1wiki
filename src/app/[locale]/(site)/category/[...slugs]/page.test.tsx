@@ -16,6 +16,7 @@ const data = {
   ancestors: [{ id: "root", name: "AI", slug: "ai" }],
   children: [],
   posts: [],
+  sitePages: [],
 };
 
 describe("hierarchical category route", () => {
