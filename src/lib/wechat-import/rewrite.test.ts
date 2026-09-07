@@ -25,6 +25,13 @@ describe("WeChat article rewrite", () => {
     await expect(rewriteWeChatArticle({ mode: "FAITHFUL", locale: "zh-tw", sourceTitle: "原標題", sourceMetadata: {}, blocks }, { execute: execute as never })).resolves.toMatchObject({ title: "改寫標題", blocks });
   });
 
+  it("converts simplified Chinese model output to Traditional Chinese for zh-tw", async () => {
+    const execute = async () => ({ title: "这一次，真不是狼来了", slug: "guide", excerpt: "这是摘要", blocks: [{ id: "b-0001", type: "text" as const, html: "<h2>这是段落</h2>" }, { id: "b-0002", type: "image" as const, assetId: "asset-1", alt: "这是图片" }], seoTitle: "这是 SEO 标题", seoDescription: "这是 SEO 描述", seoKeywords: "这是,测试", needsVerification: ["这是待核实事项"] });
+    const draft = await rewriteWeChatArticle({ mode: "FAITHFUL", locale: "zh-tw", sourceTitle: "原標題", sourceMetadata: {}, blocks }, { execute });
+    expect(draft).toMatchObject({ title: "這一次，真不是狼來了", excerpt: "這是摘要", seoTitle: "這是 SEO 標題", seoDescription: "這是 SEO 描述", seoKeywords: "這是,測試", needsVerification: ["這是待核實事項"] });
+    expect(draft.blocks).toEqual([{ id: "b-0001", type: "text", html: "<h2>這是段落</h2>" }, { id: "b-0002", type: "image", assetId: "asset-1", alt: "這是圖片" }]);
+  });
+
   it("assigns a unique text block id when deep SEO output collides with an image id", async () => {
     const execute = async () => ({ title: "標題", slug: "guide", excerpt: "摘要", blocks: [{ id: "b-0002", type: "text" as const, html: "<p>重組段落</p>" }, blocks[1]], seoTitle: "標題", seoDescription: "描述", seoKeywords: "教學", needsVerification: [] });
     const draft = await rewriteWeChatArticle({ mode: "DEEP_SEO", locale: "zh-tw", sourceTitle: "原標題", sourceMetadata: {}, blocks }, { execute });

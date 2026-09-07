@@ -6,6 +6,7 @@ import { WeChatImportWorkspace } from "@/components/admin/wechat-import-workspac
 import { parseStoredBlocks, parseRewriteDraft } from "@/lib/wechat-import/schema";
 import { sanitizeArticleHtml } from "@/lib/content/sanitize";
 import { WECHAT_STAGING_TTL_MS } from "@/lib/wechat-import/retention";
+import { normalizeWeChatRewriteDraftForLocale } from "@/lib/wechat-import/rewrite";
 import type { ArticleBlock, WeChatRewriteDraft } from "@/lib/wechat-import/types";
 
 function safeBlocks(value: unknown): ArticleBlock[] {
@@ -19,7 +20,7 @@ export default async function WeChatImportDetailPage({ params }: { params: Promi
   const imported = await getWeChatImportForUser(prisma, id, user.id);
   if (!imported) notFound();
   let rewrittenDraft: WeChatRewriteDraft | null = null;
-  try { const draft = parseRewriteDraft(imported.rewrittenDraft); rewrittenDraft = { ...draft, blocks: safeBlocks(draft.blocks) }; } catch { /* Incomplete jobs have no validated draft. */ }
+  try { const draft = normalizeWeChatRewriteDraftForLocale(parseRewriteDraft(imported.rewrittenDraft), imported.targetLocale as "zh-tw" | "en" | "ja"); rewrittenDraft = { ...draft, blocks: safeBlocks(draft.blocks) }; } catch { /* Incomplete jobs have no validated draft. */ }
   const worker = await prisma.workerHeartbeat.findUnique({ where: { id: "wechat-import-worker" }, select: { lastHeartbeat: true, desiredState: true, lastError: true } });
   const report = imported.report && typeof imported.report === "object" && !Array.isArray(imported.report) ? imported.report : {};
   const expiresAt = new Date(Math.min(imported.expiresAt.getTime(), imported.createdAt.getTime() + WECHAT_STAGING_TTL_MS));

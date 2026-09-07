@@ -8,6 +8,7 @@ import { createWeChatImport } from "@/lib/wechat-import/repository";
 import type { WeChatRewriteMode } from "@/lib/wechat-import/types";
 import { WECHAT_STAGING_TTL_MS } from "@/lib/wechat-import/retention";
 import { parseRewriteDraft } from "@/lib/wechat-import/schema";
+import { normalizeWeChatRewriteDraftForLocale } from "@/lib/wechat-import/rewrite";
 import { z } from "zod";
 
 function liveWindow(now = new Date()) { return { expiresAt: { gt: now }, createdAt: { gt: new Date(now.getTime() - WECHAT_STAGING_TTL_MS) } }; }
@@ -52,11 +53,11 @@ export async function queueWeChatTransferAction(importId: string, review?: z.inf
     if (!parsed.success) return { ok: false as const, error: "審閱欄位格式不正確，請重新確認。" };
     try {
       await prisma.$transaction(async (tx) => {
-        const job = await tx.weChatImport.findFirst({ where: { id: importId, userId, post: null, status: "REWRITTEN", updatedAt: new Date(parsed.data.revision), ...liveWindow() }, select: { rewrittenDraft: true, updatedAt: true } });
+        const job = await tx.weChatImport.findFirst({ where: { id: importId, userId, post: null, status: "REWRITTEN", updatedAt: new Date(parsed.data.revision), ...liveWindow() }, select: { rewrittenDraft: true, updatedAt: true, targetLocale: true } });
         if (!job) throw new Error("STALE");
         const { coverAssetId, title, excerpt, slug, seoTitle, seoDescription, seoKeywords } = parsed.data;
         const fields = { title, excerpt, slug, seoTitle, seoDescription, seoKeywords };
-        const draft = parseRewriteDraft({ ...parseRewriteDraft(job.rewrittenDraft), ...fields });
+        const draft = normalizeWeChatRewriteDraftForLocale(parseRewriteDraft({ ...parseRewriteDraft(job.rewrittenDraft), ...fields }), job.targetLocale as "zh-tw" | "en" | "ja");
         if (coverAssetId && !await tx.weChatImportAsset.count({ where: { id: coverAssetId, importId, status: { in: ["STAGED", "READY"] } } })) throw new Error("COVER");
         const updated = await tx.weChatImport.updateMany({ where: { id: importId, userId, status: "REWRITTEN", updatedAt: job.updatedAt, ...liveWindow() }, data: { status: "TRANSFER_QUEUED", rewrittenDraft: draft as never, failureStage: null, errorCode: null, errorSummary: null } });
         if (!updated.count) throw new Error("STALE");

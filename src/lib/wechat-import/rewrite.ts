@@ -1,10 +1,13 @@
 import { sanitizeArticleHtml } from "@/lib/content/sanitize";
+import OpenCC from "opencc-js";
 import { executeLLMCall, type LLMExecutor } from "@/lib/ai/execute-llm";
 import { getLanguageInstruction } from "@/lib/ai/prompt";
 import { parseStructuredJson } from "@/lib/ai/errors";
 import type { Locale } from "@/lib/i18n/config";
 import { parseRewriteDraft } from "./schema";
 import type { ArticleBlock, WeChatRewriteDraft, WeChatRewriteMode } from "./types";
+
+const simplifiedToTraditional = OpenCC.Converter({ from: "cn", to: "tw" });
 
 export function assertImageInvariant(mode: WeChatRewriteMode, source: ArticleBlock[], rewritten: ArticleBlock[]): void {
   if (mode === "FAITHFUL") {
@@ -53,6 +56,26 @@ function assignUniqueDeepSeoTextIds(source: ArticleBlock[], rewritten: ArticleBl
   });
 }
 
+function convertHtmlTextToTraditional(html: string): string {
+  return html.split(/(<[^>]+>)/u).map((part) => part.startsWith("<") ? part : simplifiedToTraditional(part)).join("");
+}
+
+export function normalizeWeChatRewriteDraftForLocale(draft: WeChatRewriteDraft, locale: Locale): WeChatRewriteDraft {
+  if (locale !== "zh-tw") return draft;
+  return {
+    ...draft,
+    title: simplifiedToTraditional(draft.title),
+    excerpt: simplifiedToTraditional(draft.excerpt),
+    seoTitle: simplifiedToTraditional(draft.seoTitle),
+    seoDescription: simplifiedToTraditional(draft.seoDescription),
+    seoKeywords: simplifiedToTraditional(draft.seoKeywords),
+    needsVerification: draft.needsVerification.map(simplifiedToTraditional),
+    blocks: draft.blocks.map((block) => block.type === "text"
+      ? { ...block, html: convertHtmlTextToTraditional(block.html) }
+      : { ...block, alt: simplifiedToTraditional(block.alt) }),
+  };
+}
+
 export async function rewriteWeChatArticle(input: { mode: WeChatRewriteMode; locale: Locale; sourceTitle: string; sourceMetadata: Record<string, unknown>; blocks: ArticleBlock[]; instructions?: string }, options: { execute?: LLMExecutor } = {}): Promise<WeChatRewriteDraft> {
   const execute = options.execute || executeLLMCall;
   const value = await execute({
@@ -80,7 +103,8 @@ export async function rewriteWeChatArticle(input: { mode: WeChatRewriteMode; loc
     // Asset references are server-owned, not editable model output.
     return original ? { ...block, assetId: original.assetId } : block;
   });
-  const draft = parseRewriteDraft({ ...value, blocks: input.mode === "DEEP_SEO" ? assignUniqueDeepSeoTextIds(input.blocks, sanitizedBlocks) : sanitizedBlocks });
+  const parsedDraft = parseRewriteDraft({ ...value, blocks: input.mode === "DEEP_SEO" ? assignUniqueDeepSeoTextIds(input.blocks, sanitizedBlocks) : sanitizedBlocks });
+  const draft = normalizeWeChatRewriteDraftForLocale(parsedDraft, input.locale);
   assertImageInvariant(input.mode, input.blocks, draft.blocks);
   return draft;
 }

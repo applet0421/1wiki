@@ -22,6 +22,16 @@ describe("WeChat import actions", () => {
     await expect(queueWeChatTransferAction(job.id, { ...review, coverAssetId: job.assets[0].id })).resolves.toMatchObject({ ok: false });
   });
 
+  it("converts a legacy Simplified Chinese draft before the transfer is queued", async () => {
+    const user = await prisma.user.create({ data: { username: "wizard-traditional", displayName: "Owner", passwordHash: "test", mustChangePassword: false } });
+    vi.mocked(getCurrentUser).mockResolvedValue(user);
+    const draft = { title: "这是标题", excerpt: "这是摘要", slug: "guide", seoTitle: "这是 SEO 标题", seoDescription: "这是 SEO 描述", seoKeywords: "这是,测试", needsVerification: ["这是待核实事项"], blocks: [{ id: "b-0001", type: "text", html: "<p>这是正文</p>" }] };
+    const job = await prisma.weChatImport.create({ data: { userId: user.id, sourceUrl: "https://mp.weixin.qq.com/s/example", normalizedUrl: "https://mp.weixin.qq.com/s/example", targetLocale: "zh-tw", status: "REWRITTEN", rewrittenDraft: draft, expiresAt: new Date(Date.now() + 1800000) } });
+
+    await expect(queueWeChatTransferAction(job.id, { title: draft.title, excerpt: draft.excerpt, slug: draft.slug, seoTitle: draft.seoTitle, seoDescription: draft.seoDescription, seoKeywords: draft.seoKeywords, revision: job.updatedAt.toISOString(), coverAssetId: "" })).resolves.toEqual({ ok: true });
+    await expect(prisma.weChatImport.findUniqueOrThrow({ where: { id: job.id } })).resolves.toMatchObject({ rewrittenDraft: { title: "這是標題", excerpt: "這是摘要", seoTitle: "這是 SEO 標題", seoDescription: "這是 SEO 描述", seoKeywords: "這是,測試", needsVerification: ["這是待核實事項"], blocks: [{ id: "b-0001", type: "text", html: "<p>這是正文</p>" }] } });
+  });
+
   it("keeps the previous draft when explicitly regenerating with new settings", async () => {
     const user = await prisma.user.create({ data: { username: "wizard-rewrite", displayName: "Owner", passwordHash: "test", mustChangePassword: false } });
     vi.mocked(getCurrentUser).mockResolvedValue(user);
