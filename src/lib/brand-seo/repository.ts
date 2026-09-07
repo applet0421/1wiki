@@ -13,6 +13,7 @@ export type ResolvedBrandSeo = {
   siteName: string;
   alternateNames: string[];
   assets: typeof brandAssetPaths;
+  assetSources: { icon48SourceUrl: string; logoSourceUrl: string; defaultOgSourceUrl: string };
   locales: Record<Locale, LocaleSeo>;
 };
 
@@ -21,6 +22,7 @@ function defaults(): ResolvedBrandSeo {
     siteName: "1Wiki",
     alternateNames: ["1wiki.org"],
     assets: brandAssetPaths,
+    assetSources: { icon48SourceUrl: "", logoSourceUrl: "", defaultOgSourceUrl: "" },
     locales: Object.fromEntries(supportedLocales.map((locale) => {
       const site = getDictionary(locale).site;
       return [locale, { homeTitle: site.name, homeDescription: site.description, ogTitle: site.name, ogDescription: site.description }];
@@ -42,7 +44,7 @@ export async function resolveBrandSeo(client: BrandSeoClient): Promise<ResolvedB
         ogDescription: row.ogDescription || row.homeDescription || locales[row.locale].ogDescription,
       };
     }
-    return { ...fallback, siteName: brand?.siteName || fallback.siteName, alternateNames: brand?.alternateName ? [brand.alternateName] : fallback.alternateNames, locales };
+    return { ...fallback, siteName: brand?.siteName || fallback.siteName, alternateNames: brand?.alternateName ? [brand.alternateName] : fallback.alternateNames, assetSources: { icon48SourceUrl: brand?.icon48SourceUrl || "", logoSourceUrl: brand?.logoSourceUrl || "", defaultOgSourceUrl: brand?.defaultOgSourceUrl || "" }, locales };
   } catch (error) {
     console.error("brand-seo read failed", error);
     return fallback;
