@@ -3,6 +3,7 @@ import type { PrismaClient } from "@prisma/client";
 import { extractViaBrowser } from "./browser-extractor";
 import { extractViaHttp } from "./http-extractor";
 import { createReport } from "./report";
+import { transferWeChatImportAssets } from "./r2-transfer";
 
 const leaseMs = 4 * 60 * 1000;
 type Extracted = Awaited<ReturnType<typeof extractViaHttp>> | Awaited<ReturnType<typeof extractViaBrowser>>;
@@ -18,8 +19,12 @@ function sourcePublishedAt(value: string): Date | null {
 }
 
 export async function processNextWeChatImport(client: PrismaClient, dependencies: Dependencies = {}): Promise<boolean> {
-  const job = await client.weChatImport.findFirst({ where: { status: "FETCH_QUEUED" }, orderBy: { createdAt: "asc" } });
+  const job = await client.weChatImport.findFirst({ where: { status: { in: ["FETCH_QUEUED", "TRANSFER_QUEUED"] } }, orderBy: { createdAt: "asc" } });
   if (!job) return false;
+  if (job.status === "TRANSFER_QUEUED") {
+    await transferWeChatImportAssets(client, job.id);
+    return true;
+  }
   const lease = new Date(Date.now() + leaseMs);
   const claimed = await client.weChatImport.updateMany({ where: { id: job.id, status: "FETCH_QUEUED" }, data: { status: "FETCHING", leaseExpiresAt: lease, errorCode: null, errorSummary: null } });
   if (!claimed.count) return false;
