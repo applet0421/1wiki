@@ -78,6 +78,25 @@ services:
     networks:
       - internal
 
+  wechat-import-worker:
+    build:
+      context: .
+      target: wechat-worker-runtime
+    restart: unless-stopped
+    env_file:
+      - path: .env.production
+        required: false
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-onewiki}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-onewiki}
+      DIRECT_URL: postgresql://${POSTGRES_USER:-onewiki}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-onewiki}
+    command: ["npm", "run", "worker:wechat-import"]
+    depends_on:
+      build:
+        condition: service_completed_successfully
+    networks:
+      - internal
+
   cache-invalidator:
     build: .
     restart: unless-stopped

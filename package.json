@@ -17,7 +17,8 @@
     "bootstrap:owner": "tsx scripts/bootstrap-owner.ts",
     "worker:images": "tsx scripts/image-worker.ts",
     "worker:cache": "tsx scripts/cache-invalidation-worker.ts",
-    "worker:database-backup": "tsx scripts/database-backup-worker.ts"
+    "worker:database-backup": "tsx scripts/database-backup-worker.ts",
+    "worker:wechat-import": "tsx scripts/wechat-import-worker.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1127.0",
