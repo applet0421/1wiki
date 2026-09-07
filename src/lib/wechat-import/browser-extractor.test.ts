@@ -7,7 +7,7 @@ describe("WeChat browser extractor", () => {
     const context = { newPage: vi.fn().mockResolvedValue(page), close: vi.fn() };
     const browser = { newContext: vi.fn().mockResolvedValue(context), close: vi.fn() };
     const launch = vi.fn().mockResolvedValue(browser);
-    const result = await extractViaBrowser("https://mp.weixin.qq.com/s/example", { launch, resolveAddress: async () => ({ address: "93.184.216.34", family: 4 }) });
+    const result = await extractViaBrowser("https://mp.weixin.qq.com/s/example", { launch, executablePath: "/usr/bin/chromium", resolveAddress: async () => ({ address: "93.184.216.34", family: 4 }) });
     expect(result.fetchMethod).toBe("CHROMIUM");
     expect(launch).toHaveBeenCalledWith(expect.objectContaining({ executablePath: "/usr/bin/chromium", headless: true, args: expect.arrayContaining(["--host-resolver-rules=MAP mp.weixin.qq.com 93.184.216.34,EXCLUDE localhost"]) }));
     expect(context.close).toHaveBeenCalled();

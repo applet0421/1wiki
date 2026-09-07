@@ -1,4 +1,5 @@
 import { chromium } from "playwright-core";
+import { existsSync } from "node:fs";
 import type { Route } from "playwright-core";
 import { fetchWeChatAssets } from "./asset-fetcher";
 import { normalizeWeChatContent } from "./normalize-content";
@@ -8,13 +9,21 @@ import { normalizeWeChatArticleUrl, resolvePublicAddress } from "./url-policy";
 type BrowserDependencies = {
   launch?: (options: Parameters<typeof chromium.launch>[0]) => Promise<any>;
   resolveAddress?: (hostname: string) => Promise<{ address: string; family: 4 | 6 }>;
+  executablePath?: string;
 };
+
+function defaultChromiumPath(): string {
+  if (process.env.WECHAT_CHROMIUM_PATH) return process.env.WECHAT_CHROMIUM_PATH;
+  const macChrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+  if (process.platform === "darwin" && existsSync(macChrome)) return macChrome;
+  return "/usr/bin/chromium";
+}
 
 export async function extractViaBrowser(sourceUrl: string, dependencies: BrowserDependencies = {}) {
   const url = normalizeWeChatArticleUrl(sourceUrl);
   const address = await (dependencies.resolveAddress || resolvePublicAddress)(url.hostname);
   const browser = await (dependencies.launch || chromium.launch)({
-    executablePath: process.env.WECHAT_CHROMIUM_PATH || "/usr/bin/chromium",
+    executablePath: dependencies.executablePath || defaultChromiumPath(),
     headless: true,
     args: ["--no-sandbox", "--disable-dev-shm-usage", `--host-resolver-rules=MAP ${url.hostname} ${address.address},EXCLUDE localhost`],
   });
