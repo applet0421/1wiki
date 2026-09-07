@@ -13,6 +13,8 @@ describe("data retention cleanup", () => {
       publicInvalidation: { deleteMany: vi.fn(async () => ({ count: 1 })) },
       session: { deleteMany: vi.fn(async () => ({ count: 1 })) },
       databaseBackup: { deleteMany: vi.fn(async () => ({ count: 1 })) },
+      weChatImport: { updateMany: vi.fn(async () => ({ count: 1 })) },
+      weChatImportAsset: { updateMany: vi.fn(async () => ({ count: 1 })) },
     };
     const now = new Date("2026-09-06T00:00:00.000Z");
 
@@ -24,19 +26,23 @@ describe("data retention cleanup", () => {
     expect(client.imageGeneration.deleteMany).toHaveBeenCalledWith({ where: { createdAt: { lt: new Date("2026-06-08T00:00:00.000Z") }, status: { in: ["READY", "FAILED"] }, imageBytes: null } });
     expect(client.publicInvalidation.deleteMany).toHaveBeenCalledWith({ where: { createdAt: { lt: new Date("2026-03-10T00:00:00.000Z") }, status: { in: ["SUCCESS", "FAILED"] } } });
     expect(client.session.deleteMany).toHaveBeenCalledWith({ where: { expiresAt: { lt: now } } });
+    expect(client.weChatImport.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ status: { in: ["FETCHED", "REWRITTEN", "FAILED", "UNKNOWN", "TRANSFER_FAILED", "ABANDONED"] } }) }));
+    expect(client.weChatImportAsset.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { imageBytes: null, originalUrl: "" } }));
+    expect(result.weChatImportPayloads).toBe(2);
     expect(result.totalDeleted).toBe(8);
   });
 
-  it("does not delete pending, running, unknown, or image bytes needing retry", async () => {
+  it("does not delete pending or running jobs, while allowing expired unknown imports to be scrubbed", async () => {
     const deleteMany = vi.fn(async () => ({ count: 0 }));
     const client = {
       lLMUsage: { deleteMany },
       trafficSyncRun: { deleteMany }, searchEngineNotification: { deleteMany }, imageGeneration: { deleteMany },
       publicInvalidation: { deleteMany }, session: { deleteMany }, databaseBackup: { deleteMany },
+      weChatImport: { updateMany: deleteMany }, weChatImportAsset: { updateMany: deleteMany },
     };
 
     await runDataRetentionCleanup(client as never, DEFAULT_RETENTION_SETTINGS, new Date("2026-09-06T00:00:00.000Z"));
 
-    for (const call of deleteMany.mock.calls as unknown as Array<[unknown]>) expect(JSON.stringify(call[0])).not.toMatch(/PENDING|UNKNOWN/);
+    for (const call of deleteMany.mock.calls as unknown as Array<[unknown]>) expect(JSON.stringify(call[0])).not.toMatch(/PENDING/);
   });
 });

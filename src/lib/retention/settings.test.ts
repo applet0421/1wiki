@@ -12,6 +12,7 @@ describe("data retention settings", () => {
       imageGenerationDays: 90,
       publicInvalidationDays: 180,
       databaseBackupFailureDays: 30,
+      weChatImportHours: 24,
     });
   });
 

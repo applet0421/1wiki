@@ -10,6 +10,7 @@ export const DEFAULT_RETENTION_SETTINGS = {
   imageGenerationDays: 90,
   publicInvalidationDays: 180,
   databaseBackupFailureDays: 30,
+  weChatImportHours: 24,
 } as const;
 
 export type RetentionSettings = {
@@ -37,5 +38,6 @@ export async function getOrCreateRetentionSettings(client: PrismaClient): Promis
     imageGenerationDays: row.imageGenerationDays,
     publicInvalidationDays: row.publicInvalidationDays,
     databaseBackupFailureDays: row.databaseBackupFailureDays,
+    weChatImportHours: row.weChatImportHours,
   };
 }

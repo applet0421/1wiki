@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 import type { RetentionSettings } from "./settings";
 
 const DAY_MS = 86_400_000;
@@ -12,6 +12,7 @@ export type CleanupSummary = {
   publicInvalidation: number;
   sessions: number;
   databaseBackups: number;
+  weChatImportPayloads: number;
   totalDeleted: number;
 };
 
@@ -37,6 +38,19 @@ export async function runDataRetentionCleanup(client: PrismaClient, settings: Re
       },
     }),
   ]);
+  const expiredImports = await client.weChatImport.updateMany({
+    where: { status: { in: ["FETCHED", "REWRITTEN", "FAILED", "UNKNOWN", "TRANSFER_FAILED", "ABANDONED"] }, expiresAt: { lte: now }, post: null },
+    data: { status: "EXPIRED", leaseExpiresAt: null },
+  });
+  const clearedAssets = await client.weChatImportAsset.updateMany({
+    where: { import: { is: { status: "EXPIRED", post: null } } },
+    data: { imageBytes: null, originalUrl: "" },
+  });
+  const clearedImports = await client.weChatImport.updateMany({
+    where: { status: "EXPIRED", post: null },
+    data: { sourceUrl: "https://mp.weixin.qq.com/", normalizedUrl: "https://mp.weixin.qq.com/", sourceCoverUrl: null, sourceContentHtml: null, sourceBlocks: Prisma.DbNull, rewrittenDraft: Prisma.DbNull, editorDraft: Prisma.DbNull },
+  });
   const [llmUsage, trafficSyncRun, searchSuccess, searchFailure, imageGeneration, publicInvalidation, sessions, databaseBackups] = results.map(({ count }) => count);
-  return { llmUsage, trafficSyncRun, searchSuccess, searchFailure, imageGeneration, publicInvalidation, sessions, databaseBackups, totalDeleted: results.reduce((total, result) => total + result.count, 0) };
+  const weChatImportPayloads = clearedAssets.count + clearedImports.count;
+  return { llmUsage, trafficSyncRun, searchSuccess, searchFailure, imageGeneration, publicInvalidation, sessions, databaseBackups, weChatImportPayloads, totalDeleted: results.reduce((total, result) => total + result.count, 0) };
 }
