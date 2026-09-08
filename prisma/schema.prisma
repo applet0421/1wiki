@@ -406,6 +406,13 @@ model DataRetentionSetting {
   updatedAt                  DateTime @updatedAt
 }
 
+model ArticleAdSetting {
+  id                String   @id
+  middleAdInterval  Int      @default(2)
+  maxMiddleAds      Int      @default(3)
+  updatedAt         DateTime @updatedAt
+}
+
 model BrandSeoSettings {
   id                 String   @id
   siteName           String

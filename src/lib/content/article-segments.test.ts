@@ -28,4 +28,14 @@ describe("segmentArticle", () => {
     expect(result.bodySegments).toHaveLength(3);
     expect(result.midAdAfterIndex).toBe(0);
   });
+
+  it("returns repeating middle-ad boundaries from the configured H2 interval", () => {
+    const html = `<p>${"導".repeat(200)}</p>${["一", "二", "三", "四", "五", "六", "七"].map((heading) => `<h2>${heading}</h2><p>${"文".repeat(300)}</p>`).join("")}`;
+
+    expect(segmentArticle(html, { middleAdInterval: 2, maxMiddleAds: 3 }).midAdAfterIndexes).toEqual([1, 3, 5]);
+  });
+
+  it("rejects an invalid configured H2 interval", () => {
+    expect(() => segmentArticle("<h2>一</h2><p>內容</p>", { middleAdInterval: 0, maxMiddleAds: 3 })).toThrow(/middleAdInterval/);
+  });
 });

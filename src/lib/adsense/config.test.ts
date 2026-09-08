@@ -4,16 +4,16 @@ import { getAdSlotConfig, getLiveAdsenseClientId } from "./config";
 const complete = {
   NODE_ENV: "production", NEXT_PUBLIC_ADSENSE_ENABLED: "true", NEXT_PUBLIC_ADSENSE_CLIENT_ID: "ca-pub-1234567890",
   NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_AFTER_INTRO: "101", NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_MID: "102",
-  NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_END: "103", NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR_DESKTOP: "104", NEXT_PUBLIC_ADSENSE_SLOT_FEED_INLINE: "105",
+  NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_END: "103", NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR_DESKTOP_STICKY: "104", NEXT_PUBLIC_ADSENSE_SLOT_FEED_INLINE: "105",
   NEXT_PUBLIC_ADSENSE_SLOT_CATEGORY_AFTER_INTRO: "201", NEXT_PUBLIC_ADSENSE_SLOT_CATEGORY_INLINE: "202",
   NEXT_PUBLIC_ADSENSE_SLOT_CATEGORY_END: "203", NEXT_PUBLIC_ADSENSE_SLOT_CATEGORY_SIDEBAR_DESKTOP: "204",
 };
 
 describe("AdSense configuration", () => {
-  it("uses a separate slot for the second sidebar and disables it when missing in production", () => {
+  it("uses one sticky article sidebar slot and disables it when missing in production", () => {
     const context = { pathname: "/zh-tw/articles/guide", published: true };
-    expect(getAdSlotConfig("sidebar_desktop_sticky", complete, context)).toBeNull();
-    expect(getAdSlotConfig("sidebar_desktop_sticky", { ...complete, NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR_DESKTOP_STICKY: "106" }, context)).toMatchObject({ mode: "live", slotId: "106", shape: "rectangle" });
+    expect(getAdSlotConfig("sidebar_desktop_sticky", complete, context)).toMatchObject({ mode: "live", slotId: "104", shape: "rectangle" });
+    expect(getAdSlotConfig("sidebar_desktop_sticky", { ...complete, NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR_DESKTOP_STICKY: "" }, context)).toBeNull();
   });
   it("requires enabled, client, slot and a published article route", () => {
     expect(getAdSlotConfig("article_mid", complete, { pathname: "/zh-tw/articles/guide", published: true })).toMatchObject({ mode: "live", clientId: "ca-pub-1234567890", slotId: "102" });

@@ -21,4 +21,12 @@ describe("ArticleBody", () => {
     expect(screen.getByTestId("adsense-article_after_intro")).toBeInTheDocument();
     expect(screen.getByTestId("adsense-article_end")).toBeInTheDocument();
   });
+
+  it("inserts a configured number of middle ads at H2 section intervals", () => {
+    const html = `<p>${"導".repeat(200)}</p>${["一", "二", "三", "四", "五", "六", "七"].map((heading) => `<h2>${heading}</h2><p>${"文".repeat(300)}</p>`).join("")}`;
+
+    render(<ArticleBody html={html} pathname="/zh-tw/articles/long" adEnvironment={env} adInsertionRules={{ middleAdInterval: 2, maxMiddleAds: 3 }} />);
+
+    expect(screen.getAllByTestId(/adsense-article_mid/)).toHaveLength(3);
+  });
 });

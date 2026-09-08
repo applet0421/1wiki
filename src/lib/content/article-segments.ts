@@ -4,15 +4,32 @@ export type ArticleSegments = {
   introHtml: string;
   bodySegments: string[];
   midAdAfterIndex: number | null;
+  midAdAfterIndexes: number[];
   visibleCharacterCount: number;
 };
+
+export type ArticleAdInsertionRules = {
+  middleAdInterval: number;
+  maxMiddleAds: number;
+};
+
+export function validateArticleAdInsertionRules(rules: ArticleAdInsertionRules) {
+  if (!Number.isInteger(rules.middleAdInterval) || rules.middleAdInterval < 1 || rules.middleAdInterval > 6) {
+    throw new Error("middleAdInterval 必須是 1 至 6 的整數");
+  }
+  if (!Number.isInteger(rules.maxMiddleAds) || rules.maxMiddleAds < 0 || rules.maxMiddleAds > 5) {
+    throw new Error("maxMiddleAds 必須是 0 至 5 的整數");
+  }
+  return rules;
+}
 
 function countVisibleCharacters(html: string): number {
   const $ = load(html, null, false);
   return $.root().text().replace(/\s/gu, "").length;
 }
 
-export function segmentArticle(html: string): ArticleSegments {
+export function segmentArticle(html: string, rules?: ArticleAdInsertionRules): ArticleSegments {
+  if (rules) validateArticleAdInsertionRules(rules);
   const $ = load(html, null, false);
   const nodes = $.root().contents().toArray();
   const firstH2 = nodes.findIndex(
@@ -54,5 +71,9 @@ export function segmentArticle(html: string): ArticleSegments {
     }
   }
 
-  return { introHtml, bodySegments, midAdAfterIndex, visibleCharacterCount };
+  const midAdAfterIndexes = rules && visibleCharacterCount >= 1200
+    ? bodySegments.slice(0, -1).flatMap((_segment, index) => (index + 1) % rules.middleAdInterval === 0 ? [index] : []).slice(0, rules.maxMiddleAds)
+    : midAdAfterIndex === null ? [] : [midAdAfterIndex];
+
+  return { introHtml, bodySegments, midAdAfterIndex, midAdAfterIndexes, visibleCharacterCount };
 }

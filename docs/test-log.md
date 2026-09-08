@@ -1,6 +1,22 @@
 # 本機驗證紀錄
 
-最後更新：2026-09-07
+最後更新：2026-09-08
+
+## 2026-09-08 文章廣告版面一致化
+
+### OWNER 中段廣告節奏設定
+
+- 新增 `ArticleAdSetting` migration 與 `/admin/ads` OWNER 後台；可設定每 1–6 個 H2 插入一則中段廣告、每篇最多 0–5 則，預設為每 2 個 H2、每篇最多 3 則。
+- 僅對至少 1,200 個可見字元的文章套用中段規則，且不在最後一個 H2 區段後插入；首篇與自動續載文章共用同一份設定。
+- 聚焦驗證：7 個測試檔、19 項測試通過，涵蓋設定範圍、預設設定建立、OWNER action／公開 layout 快取失效、OWNER 後台、導覽權限與首篇／續篇廣告 renderer。
+
+- 首篇與自動載入續篇皆維持最多三個正文版位與一個桌面 Sticky 側欄版位。
+- 移除重複的非 Sticky 文章側欄；文章雙欄與廣告顯示斷點統一為 1024px。
+- 正式廣告新增「AD」標示與 `data-ad-status` 狀態；未填充版位在不打斷可視閱讀的前提下收合。
+- 聚焦驗證：4 個檔案、18 項測試通過；全量 Vitest：135 個檔案、412 項測試通過。
+- `npx tsc --noEmit`、本次變更 TypeScript／TSX 檔案的 ESLint 與 `git diff --check` 通過。
+- 完整 `npm run lint` 仍受既有 `src/lib/wechat-import/browser-extractor.ts` 的 `no-explicit-any` error 阻擋，另有兩個既有 unused-variable warning；均不在本次廣告變更範圍。
+- 本機 In-app Browser 已重新載入指定文章，確認首篇只顯示一個右側廣告區、正式廣告有「廣告」標示，且連續文章仍使用各自完整的廣告配置。
 
 ## 2026-09-07 品牌 SEO OWNER 後台與多語系設定
 

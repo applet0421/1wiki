@@ -1,6 +1,6 @@
 # 1Wiki AdSense SEO 科技教學站 MVP 設計
 
-最後更新：2026-09-06
+最後更新：2026-09-08
 
 ## 2026-09-06 現況與後續規格
 
@@ -220,12 +220,12 @@ MVP 不判斷文章原創程度，不建立 `adsEligible` 欄位。正式公開�
 | Placement | 位置與條件 | MVP 狀態 |
 | --- | --- | --- |
 | `article_after_intro` | 導言或目錄後 | 啟用 |
-| `article_mid` | 約全文 40–50%，優先置於接近 45% 的 H2 區段邊界；短文省略 | 啟用 |
+| `article_mid` | 長文依 OWNER 設定的 H2 區段間隔插入；短文省略 | 啟用 |
 | `article_end` | 正文結束、相關文章前 | 啟用 |
-| `sidebar_desktop` | 文章桌面右側欄，只在 `lg` 以上顯示 | 啟用 |
+| `sidebar_desktop_sticky` | 文章桌面右側欄，只在 1024px 以上顯示 | 啟用 |
 | `feed_inline` | 首頁／分類頁第 4 張文章卡後 | 僅保留設定，第二階段才渲染 |
 
-每篇文章最多三個正文廣告，加一個桌面側欄廣告。不得加入底部固定 anchor、Vignette／開屏廣告、手機版連續兩個大型矩形廣告、按圖片數量自動插入廣告或 Auto ads 自動增加正文廣告。
+首篇與自動載入的續篇使用相同配置：每篇文章使用開頭後、文末與最多五個可設定的中段廣告，加一個桌面側欄廣告。預設中段規則為每 2 個 H2 插入一則、每篇最多 3 則；不得加入底部固定 anchor、Vignette／開屏廣告、手機版連續兩個大型矩形廣告、按圖片數量自動插入廣告或 Auto ads 自動增加正文廣告。
 
 ### 8.3 元件與設定
 
@@ -243,7 +243,7 @@ NEXT_PUBLIC_ADSENSE_CLIENT_ID=
 NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_AFTER_INTRO=
 NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_MID=
 NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_END=
-NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR_DESKTOP=
+NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR_DESKTOP_STICKY=
 NEXT_PUBLIC_ADSENSE_SLOT_FEED_INLINE=
 ADSENSE_PUBLISHER_ID=
 ```
@@ -257,15 +257,15 @@ ADSENSE_PUBLISHER_ID=
 
 AdSense script 僅在允許廣告的公開網站載入一次，不得在 `/admin/**`、`/login`、`/about`、`/contact`、`/privacy`、`/terms`、404、錯誤頁或草稿預覽載入。同一廣告節點不可重複初始化；載入失敗不得影響頁面。
 
-開發環境在未啟用或未設定 slot 時可顯示淡灰色 `AdSense · placement` 預覽框。正式環境不顯示預覽、不載入 script，也不留下大片空白。
+開發環境在未啟用或未設定 slot 時可顯示淡灰色 `AdSense · placement` 預覽框。正式環境不顯示預覽、不載入 script，也不留下大片空白。正式廣告顯示「AD」標示，並依 AdSense `data-ad-status` 收合未填充版位；已在可視範圍內的未填充版位延後至離開視窗再收合，避免閱讀中的突發位移。
 
-`article_mid` 由文章 renderer 顯示時插入，不修改儲存的 HTML；優先選擇接近全文 45% 的 H2 區段結束處。正文少於 1,200 個可見字元，或沒有可用 H2 邊界時，省略該 placement。這項長度檢查只控制中段廣告，不判斷內容原創程度，也不阻止 `article_after_intro` 或 `article_end` 出現在正式公開文章。
+`article_mid` 由文章 renderer 顯示時插入，不修改儲存的 HTML。OWNER 可在 `/admin/ads` 設定每 1–6 個 H2 插入一則，以及每篇最多 0–5 則；預設是每 2 個 H2、每篇最多 3 則。正文少於 1,200 個可見字元、沒有可用 H2 邊界，或即將落在最後一個 H2 區段後方時，省略該 placement。這項長度檢查只控制中段廣告，不判斷內容原創程度，也不阻止 `article_after_intro` 或 `article_end` 出現在正式公開文章。
 
 ### 8.4 響應式與 CLS
 
 廣告容器使用 `width: 100%` 並水平置中。橫幅 slot 在手機至少預留 100px、桌面至少 90px；矩形 slot 至少預留 280px。不得設定會裁切廣告的 `max-height` 或 `overflow: hidden`，也不得覆蓋文字、導覽或操作按鈕。
 
-`sidebar_desktop` 在小於 `lg` 時不得建立可見廣告節點。MVP 不渲染 `feed_inline`。
+`sidebar_desktop_sticky` 在小於 1024px 時不得建立可見廣告節點，文章版面同時回到單欄，不得留下空白側欄。MVP 不渲染 `feed_inline`。
 
 ### 8.5 核准後設定
 
