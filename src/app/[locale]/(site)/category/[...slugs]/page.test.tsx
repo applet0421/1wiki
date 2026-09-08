@@ -1,5 +1,7 @@
 import { render, screen } from "@testing-library/react";
+import type { ComponentProps, ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
+import { CategoryPageContent } from "@/components/site/category-page";
 import CategoryPage, { generateMetadata } from "./page";
 
 const { getPublishedCategoryTreePage, notFound } = vi.hoisted(() => ({
@@ -22,7 +24,8 @@ const data = {
 describe("hierarchical category route", () => {
   it("loads and renders a complete category path", async () => {
     getPublishedCategoryTreePage.mockResolvedValue(data);
-    render(await CategoryPage({ params: Promise.resolve({ locale: "zh-tw", slugs: ["ai", "chatgpt"] }) }));
+    const page = await CategoryPage({ params: Promise.resolve({ locale: "zh-tw", slugs: ["ai", "chatgpt"] }) }) as ReactElement<ComponentProps<typeof CategoryPageContent>>;
+    render(await CategoryPageContent(page.props));
 
     expect(getPublishedCategoryTreePage).toHaveBeenCalledWith({}, "zh-tw", ["ai", "chatgpt"]);
     expect(screen.getByRole("heading", { name: "ChatGPT" })).toBeInTheDocument();

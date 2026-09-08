@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getAdSlotConfig, getLiveAdsenseClientId } from "./config";
+import { getAdSlotConfig, getAnchorAdsConfig, getLiveAdsenseClientId } from "./config";
 
 const complete = {
   NODE_ENV: "production", NEXT_PUBLIC_ADSENSE_ENABLED: "true", NEXT_PUBLIC_ADSENSE_CLIENT_ID: "ca-pub-1234567890",
@@ -44,5 +44,23 @@ describe("AdSense configuration", () => {
     expect(getAdSlotConfig("category_inline", complete, { pathname: "/zh-tw/articles/guide", published: true })).toBeNull();
     expect(getAdSlotConfig("category_inline", complete, { pathname: "/zh-tw/category/software", published: false })).toBeNull();
     expect(getLiveAdsenseClientId(complete, "/zh-tw/category/software")).toBe("ca-pub-1234567890");
+  });
+
+  it("enables bottom Anchor ads only for the owner-selected public page types", () => {
+    const settings = {
+      anchorAdsEnabled: true,
+      anchorAdsOnArticles: true,
+      anchorAdsOnHome: false,
+      anchorAdsOnCategories: true,
+    };
+    expect(getAnchorAdsConfig(settings, "article")).toEqual({ enabled: true });
+    expect(getAnchorAdsConfig(settings, "home")).toEqual({ enabled: false });
+    expect(getAnchorAdsConfig(settings, "category")).toEqual({ enabled: true });
+    expect(getAnchorAdsConfig({ ...settings, anchorAdsEnabled: false }, "article")).toEqual({ enabled: false });
+  });
+
+  it("allows the AdSense loader on the locale home route for Google-managed Anchor ads", () => {
+    expect(getLiveAdsenseClientId(complete, "/zh-tw")).toBe("ca-pub-1234567890");
+    expect(getLiveAdsenseClientId(complete, "/zh-tw/about")).toBeNull();
   });
 });

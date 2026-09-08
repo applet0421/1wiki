@@ -209,6 +209,10 @@ About、Contact、Privacy Policy 與 Terms 提供可直接修改的繁體中文�
 
 ## 8. AdSense
 
+### 8.0 2026-09-08 Anchor 補充
+
+除既有手動 slot 外，OWNER 可在 `/admin/ads` 啟用 Google 管理的 bottom Anchor Auto ad，並個別選擇文章、首頁與分類頁。實作只在 AdSense 載入 script 加入 `data-overlays="bottom"`；不自行建立黏附式 `<ins>` 或指定固定底部尺寸。手動桌面側欄維持小型矩形 slot，僅在視窗寬度至少 1280px 初始化。文章自動續載不新增第二個 page-level script。
+
 ### 8.1 策略
 
 採「手動 AdSense slot 為主、Auto ads 預設關閉」。第一版不複製高密度廣告配置，優先兼顧閱讀體驗、Core Web Vitals 與後續調整彈性。

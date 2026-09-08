@@ -40,4 +40,19 @@ describe("ArticleCard", () => {
       "/zh-tw/category/ai/chatgpt/prompt",
     );
   });
+
+  it("exposes dedicated hooks for the card title, excerpt, and metadata", () => {
+    render(<ArticleCard locale="zh-tw" dictionary={getDictionary("zh-tw")} post={{
+      slug: "hierarchy",
+      title: "文章標題",
+      excerpt: "文章摘要",
+      publishedAt: new Date("2026-09-03T00:00:00Z"),
+      category: { name: "AI", slug: "ai", parent: null },
+    }} />);
+
+    expect(screen.getByRole("heading", { name: "文章標題" })).toHaveClass("article-card-title");
+    expect(screen.getByRole("link", { name: "文章標題" })).toHaveClass("article-card-title-link");
+    expect(screen.getByText("文章摘要")).toHaveClass("article-card-excerpt");
+    expect(screen.getByText("2026年9月3日").parentElement).toHaveClass("article-card-meta");
+  });
 });

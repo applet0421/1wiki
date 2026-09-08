@@ -1,0 +1,82 @@
+<style>
+  .directions { display: grid; gap: 24px; }
+  .direction { border: 1px solid #d9e2f0; border-radius: 18px; padding: 20px; background: #fff; cursor: pointer; }
+  .direction:hover, .direction.selected { border-color: #2764e7; box-shadow: 0 12px 32px rgba(39,100,231,.12); }
+  .direction h3 { margin: 0 0 6px; color: #16213a; }
+  .direction > p { margin: 0 0 16px; color: #52627c; }
+  .device-row { display: grid; grid-template-columns: 1.35fr .85fr .52fr; gap: 14px; align-items: start; }
+  .device { overflow: hidden; border: 1px solid #ced9e9; border-radius: 10px; background: #f8fbff; }
+  .device-label { padding: 7px 10px; border-bottom: 1px solid #dfe7f3; color: #587099; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+  .canvas { padding: 12px; min-height: 242px; color: #1e2b45; font-size: 10px; }
+  .mini-nav { display: flex; justify-content: space-between; padding-bottom: 10px; font-weight: 800; }
+  .mini-brand { color: #2764e7; font-size: 13px; }
+  .mini-links { color: #657694; font-size: 8px; }
+  .kicker { color: #2764e7; font-size: 8px; font-weight: 800; letter-spacing: .08em; }
+  .headline { margin: 5px 0 8px; font-weight: 850; font-size: 18px; line-height: 1.04; letter-spacing: -.04em; }
+  .sub { max-width: 88%; color: #60708a; font-size: 9px; line-height: 1.45; }
+  .feature { display: grid; grid-template-columns: .9fr 1.1fr; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px solid #dfe7f3; }
+  .thumb { min-height: 70px; border-radius: 6px; background: linear-gradient(135deg,#87b4ff,#dceaff 55%,#f5f8fc); }
+  .thumb.dark { background: linear-gradient(135deg,#0c1a34,#344e7d); }
+  .thumb.warm { background: linear-gradient(135deg,#fff0cd,#e3c178); }
+  .feature-title { font-size: 12px; font-weight: 850; line-height: 1.15; }
+  .meta { margin-top: 9px; color: #74849c; font-size: 8px; }
+  .list { display: grid; gap: 0; margin-top: 13px; }
+  .row { display: grid; grid-template-columns: 42px 1fr; gap: 8px; padding: 9px 0; border-top: 1px solid #e1e8f3; }
+  .row .thumb { min-height: 32px; }
+  .row b { font-size: 10px; line-height: 1.25; }
+  .topics { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 13px; }
+  .topic { border: 1px solid #cddbf0; border-radius: 99px; padding: 5px 7px; color: #2764e7; font-size: 8px; font-weight: 800; }
+  .compact .headline { font-size: 15px; }
+  .compact .feature { grid-template-columns: 1fr; }
+  .compact .feature-title { font-size: 11px; }
+  .mobile .canvas { padding: 9px; }
+  .mobile .mini-links { display: none; }
+  .mobile .headline { font-size: 14px; }
+  .mobile .sub { font-size: 8px; }
+  .mobile .feature { grid-template-columns: 1fr; margin-top: 10px; padding-top: 10px; }
+  .mobile .thumb { min-height: 52px; }
+  .mobile .list { margin-top: 9px; }
+  .mobile .row { grid-template-columns: 30px 1fr; padding: 6px 0; }
+  .mobile .row .thumb { min-height: 25px; }
+  .mobile .topics { gap: 4px; margin-top: 9px; }
+  .mobile .topic { padding: 4px 5px; font-size: 7px; }
+  .minimal .headline { max-width: 78%; }
+  .minimal .feature { grid-template-columns: 1fr 1.25fr; }
+  .minimal .list { margin-top: 18px; }
+  @media (max-width: 760px) { .device-row { grid-template-columns: 1fr; } .device { max-width: none; } }
+</style>
+
+<h2>首頁重構：哪一種閱讀節奏最適合 1Wiki？</h2>
+<p class="subtitle">共同原則：最新解法優先、分類為第二層入口；每個方向同時示意桌機、平板、手機。</p>
+
+<div class="directions">
+  <article class="direction" data-choice="editorial-feature" onclick="toggleSelect(this)">
+    <h3>主打解法＋最新列表 <span class="label">建議</span></h3>
+    <p>第一篇文章有最大視覺權重，其餘內容以緊湊列表延續。最像可快速瀏覽的科技媒體首頁。</p>
+    <div class="device-row">
+      <div class="device"><div class="device-label">Desktop</div><div class="canvas"><div class="mini-nav"><span class="mini-brand">1Wiki</span><span class="mini-links">AI 教學　軟體教學　社群平台　About</span></div><div class="kicker">科技問題，一步一步解決</div><div class="headline">最新解答，<br>從這裡開始。</div><div class="sub">AI、App、軟體、手機與 3C 的實用設定、排錯與使用指南。</div><div class="feature"><div class="thumb dark"></div><div><div class="kicker">AI 教學</div><div class="feature-title">GPT-6 很強大，但你的舊規則可能正在拖慢你</div><div class="sub">掌握新工具前，先用這幾步整理你的工作流程。</div><div class="meta">2026年9月8日　閱讀解答 →</div></div></div><div class="list"><div class="row"><div class="thumb"></div><b>使用 Cloudflare 實現域名信箱自由</b></div><div class="row"><div class="thumb warm"></div><b>LINE 收不到訊息怎麼辦？快速排除</b></div></div><div class="topics"><span class="topic">AI 教學</span><span class="topic">軟體教學</span><span class="topic">社群平台</span></div></div></div>
+      <div class="device compact"><div class="device-label">Tablet</div><div class="canvas"><div class="mini-nav"><span class="mini-brand">1Wiki</span><span class="mini-links">分類　☰</span></div><div class="kicker">最新解答</div><div class="headline">先讀最值得看的解法</div><div class="feature"><div class="thumb dark"></div><div><div class="feature-title">GPT-6 很強大，但你的舊規則可能正在拖慢你</div><div class="meta">AI 教學 · 今天</div></div></div><div class="list"><div class="row"><div class="thumb"></div><b>Cloudflare 域名信箱設定</b></div><div class="row"><div class="thumb warm"></div><b>LINE 收不到訊息排除</b></div></div></div></div>
+      <div class="device mobile"><div class="device-label">Mobile</div><div class="canvas"><div class="mini-nav"><span class="mini-brand">1Wiki</span><span>☰</span></div><div class="kicker">最新解答</div><div class="headline">先讀最值得看的解法</div><div class="feature"><div class="thumb dark"></div><div class="feature-title">GPT-6 很強大，但你的舊規則可能正在拖慢你</div><div class="meta">AI 教學 · 今天</div></div><div class="list"><div class="row"><div class="thumb"></div><b>Cloudflare 域名信箱</b></div><div class="row"><div class="thumb warm"></div><b>LINE 收不到訊息</b></div></div></div></div>
+    </div>
+  </article>
+
+  <article class="direction" data-choice="answer-hub" onclick="toggleSelect(this)">
+    <h3>即時解答中心</h3>
+    <p>首屏先用明確問題入口，下面直接列出最新文章；適合把首頁做成「遇到問題就來找答案」的服務入口。</p>
+    <div class="device-row">
+      <div class="device"><div class="device-label">Desktop</div><div class="canvas"><div class="mini-nav"><span class="mini-brand">1Wiki</span><span class="mini-links">AI 教學　軟體教學　社群平台　About</span></div><div class="kicker">你想解決什麼問題？</div><div class="headline">科技問題，<br>現在就找答案。</div><div class="sub">快速瀏覽最新排除教學，或從常見主題開始。</div><div style="margin-top:13px;border:1px solid #cbd8ed;border-radius:7px;padding:9px;color:#8290a8">搜尋 AI、LINE、手機或軟體問題　⌕</div><div class="topics"><span class="topic">LINE</span><span class="topic">ChatGPT</span><span class="topic">iPhone</span><span class="topic">Windows</span></div><div class="list"><div class="row"><div class="thumb dark"></div><b>最新：GPT-6 很強大，但你的舊規則可能正在拖慢你</b></div><div class="row"><div class="thumb"></div><b>使用 Cloudflare 實現域名信箱自由</b></div></div></div></div>
+      <div class="device compact"><div class="device-label">Tablet</div><div class="canvas"><div class="mini-nav"><span class="mini-brand">1Wiki</span><span>☰</span></div><div class="kicker">你想解決什麼問題？</div><div class="headline">現在就找答案。</div><div style="margin-top:10px;border:1px solid #cbd8ed;border-radius:7px;padding:8px;color:#8290a8">搜尋問題　⌕</div><div class="topics"><span class="topic">LINE</span><span class="topic">AI</span><span class="topic">手機</span></div><div class="list"><div class="row"><div class="thumb dark"></div><b>最新 GPT-6 解答</b></div><div class="row"><div class="thumb"></div><b>域名信箱設定</b></div></div></div></div>
+      <div class="device mobile"><div class="device-label">Mobile</div><div class="canvas"><div class="mini-nav"><span class="mini-brand">1Wiki</span><span>☰</span></div><div class="kicker">你想解決什麼問題？</div><div class="headline">現在就找答案。</div><div style="margin-top:8px;border:1px solid #cbd8ed;border-radius:7px;padding:7px;color:#8290a8">搜尋問題　⌕</div><div class="topics"><span class="topic">LINE</span><span class="topic">AI</span></div><div class="list"><div class="row"><div class="thumb dark"></div><b>最新 GPT-6 解答</b></div></div></div></div>
+    </div>
+  </article>
+
+  <article class="direction" data-choice="minimal-feed" onclick="toggleSelect(this)">
+    <h3>極簡新文章流</h3>
+    <p>淡化 Hero，首頁幾乎立即進入文章列表；閱讀密度最高，也最容易讓內容本身成為主角。</p>
+    <div class="device-row">
+      <div class="device minimal"><div class="device-label">Desktop</div><div class="canvas"><div class="mini-nav"><span class="mini-brand">1Wiki</span><span class="mini-links">AI 教學　軟體教學　社群平台　About</span></div><div class="kicker">最新解答</div><div class="headline">科技問題的實用解法。</div><div class="list"><div class="row"><div class="thumb dark"></div><b>GPT-6 很強大，但你的舊規則可能正在拖慢你<br><span class="meta">AI 教學 · 2026年9月8日</span></b></div><div class="row"><div class="thumb"></div><b>使用 Cloudflare 實現域名信箱自由<br><span class="meta">AI 教學 · 2026年9月8日</span></b></div><div class="row"><div class="thumb warm"></div><b>LINE 收不到訊息怎麼辦？5 個步驟快速排除<br><span class="meta">軟體教學 · 2026年9月4日</span></b></div></div><div class="topics"><span class="topic">探索全部分類 →</span></div></div></div>
+      <div class="device compact"><div class="device-label">Tablet</div><div class="canvas"><div class="mini-nav"><span class="mini-brand">1Wiki</span><span>☰</span></div><div class="kicker">最新解答</div><div class="headline">科技問題的實用解法。</div><div class="list"><div class="row"><div class="thumb dark"></div><b>GPT-6 很強大，但舊規則拖慢你</b></div><div class="row"><div class="thumb"></div><b>Cloudflare 域名信箱設定</b></div><div class="row"><div class="thumb warm"></div><b>LINE 訊息排除</b></div></div></div></div>
+      <div class="device mobile"><div class="device-label">Mobile</div><div class="canvas"><div class="mini-nav"><span class="mini-brand">1Wiki</span><span>☰</span></div><div class="kicker">最新解答</div><div class="headline">科技問題的實用解法。</div><div class="list"><div class="row"><div class="thumb dark"></div><b>GPT-6 舊規則拖慢你</b></div><div class="row"><div class="thumb"></div><b>Cloudflare 域名信箱</b></div><div class="row"><div class="thumb warm"></div><b>LINE 訊息排除</b></div></div></div></div>
+    </div>
+  </article>
+</div>

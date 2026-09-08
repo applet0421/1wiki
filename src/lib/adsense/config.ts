@@ -1,7 +1,16 @@
+import { supportedLocales } from "@/lib/i18n/config";
+
 export type AdPlacement = "article_after_intro" | "article_mid" | "article_end" | "sidebar_desktop_sticky" | "category_after_intro" | "category_inline" | "category_end" | "category_sidebar_desktop" | "feed_inline";
 export type AdEnvironment = Record<string, string | undefined>;
 export type AdContext = { pathname: string; published: boolean };
 export type AdSlotConfig = { mode: "live"; placement: AdPlacement; shape: "banner" | "rectangle"; clientId: string; slotId: string } | { mode: "preview"; placement: AdPlacement; shape: "banner" | "rectangle" };
+export type AnchorAdPage = "article" | "home" | "category";
+export type AnchorAdSettings = {
+  anchorAdsEnabled: boolean;
+  anchorAdsOnArticles: boolean;
+  anchorAdsOnHome: boolean;
+  anchorAdsOnCategories: boolean;
+};
 
 const slotKeys: Record<AdPlacement, string> = {
   article_after_intro: "NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_AFTER_INTRO", article_mid: "NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE_MID",
@@ -13,6 +22,7 @@ const slotKeys: Record<AdPlacement, string> = {
 const shapes: Record<AdPlacement, "banner" | "rectangle"> = { article_after_intro: "banner", article_mid: "rectangle", article_end: "banner", sidebar_desktop_sticky: "rectangle", category_after_intro: "banner", category_inline: "rectangle", category_end: "banner", category_sidebar_desktop: "rectangle", feed_inline: "banner" };
 const articlePathPattern = new RegExp(`^/(?:${supportedLocales.join("|")})/articles/[^/]+$`);
 const categoryPathPattern = new RegExp(`^/(?:${supportedLocales.join("|")})/category(?:/[^/]+){1,3}$`);
+const homePathPattern = new RegExp(`^/(?:${supportedLocales.join("|")})$`);
 
 export function getPublicAdEnvironment(): AdEnvironment {
   return {
@@ -27,7 +37,6 @@ export function getPublicAdEnvironment(): AdEnvironment {
     NEXT_PUBLIC_ADSENSE_SLOT_CATEGORY_INLINE: process.env.NEXT_PUBLIC_ADSENSE_SLOT_CATEGORY_INLINE,
     NEXT_PUBLIC_ADSENSE_SLOT_CATEGORY_END: process.env.NEXT_PUBLIC_ADSENSE_SLOT_CATEGORY_END,
     NEXT_PUBLIC_ADSENSE_SLOT_CATEGORY_SIDEBAR_DESKTOP: process.env.NEXT_PUBLIC_ADSENSE_SLOT_CATEGORY_SIDEBAR_DESKTOP,
-    NEXT_PUBLIC_CATEGORY_INLINE_AD_INTERVAL: process.env.NEXT_PUBLIC_CATEGORY_INLINE_AD_INTERVAL,
     NEXT_PUBLIC_ADSENSE_SLOT_FEED_INLINE: process.env.NEXT_PUBLIC_ADSENSE_SLOT_FEED_INLINE,
   };
 }
@@ -46,8 +55,16 @@ export function getAdSlotConfig(placement: AdPlacement, env: AdEnvironment, cont
 }
 
 export function getLiveAdsenseClientId(env: AdEnvironment, pathname: string): string | null {
-  if (env.NEXT_PUBLIC_ADSENSE_ENABLED !== "true" || (!articlePathPattern.test(pathname) && !categoryPathPattern.test(pathname))) return null;
+  if (env.NEXT_PUBLIC_ADSENSE_ENABLED !== "true" || (!articlePathPattern.test(pathname) && !categoryPathPattern.test(pathname) && !homePathPattern.test(pathname))) return null;
   const id = env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.trim() || "";
   return id || null;
 }
-import { supportedLocales } from "@/lib/i18n/config";
+
+export function getAnchorAdsConfig(settings: AnchorAdSettings, page: AnchorAdPage) {
+  const enabledForPage = page === "article"
+    ? settings.anchorAdsOnArticles
+    : page === "home"
+      ? settings.anchorAdsOnHome
+      : settings.anchorAdsOnCategories;
+  return { enabled: settings.anchorAdsEnabled && enabledForPage };
+}

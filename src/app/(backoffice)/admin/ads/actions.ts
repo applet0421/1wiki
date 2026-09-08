@@ -5,10 +5,14 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 import { supportedLocales } from "@/lib/i18n/config";
-import { ARTICLE_AD_SETTING_ID, hasArticleAdSettingsModel, validateArticleAdSettings } from "@/lib/adsense/article-ad-settings";
+import { ARTICLE_AD_SETTING_ID, DEFAULT_ARTICLE_AD_SETTINGS, hasArticleAdSettingsModel, validateArticleAdSettings } from "@/lib/adsense/article-ad-settings";
 
 function asNumber(formData: FormData, field: string) {
   return Number(formData.get(field));
+}
+
+function isChecked(formData: FormData, field: string) {
+  return formData.get(field) === "on";
 }
 
 export async function saveArticleAdSettingsAction(formData: FormData) {
@@ -20,8 +24,14 @@ export async function saveArticleAdSettingsAction(formData: FormData) {
 
   try {
     const settings = validateArticleAdSettings({
+      ...DEFAULT_ARTICLE_AD_SETTINGS,
       middleAdInterval: asNumber(formData, "middleAdInterval"),
       maxMiddleAds: asNumber(formData, "maxMiddleAds"),
+      categoryInlineAdInterval: asNumber(formData, "categoryInlineAdInterval"),
+      anchorAdsEnabled: isChecked(formData, "anchorAdsEnabled"),
+      anchorAdsOnArticles: isChecked(formData, "anchorAdsOnArticles"),
+      anchorAdsOnHome: isChecked(formData, "anchorAdsOnHome"),
+      anchorAdsOnCategories: isChecked(formData, "anchorAdsOnCategories"),
     });
     await prisma.articleAdSetting.upsert({
       where: { id: ARTICLE_AD_SETTING_ID },

@@ -9,6 +9,9 @@ const { listPublishedPosts, listPublishedRootCategories } = vi.hoisted(() => ({
 
 vi.mock("@/lib/content/repository", () => ({ listPublishedPosts, listPublishedRootCategories }));
 vi.mock("@/lib/db/prisma", () => ({ prisma: {} }));
+vi.mock("@/lib/adsense/article-ad-settings", () => ({
+  getOrCreateArticleAdSettings: vi.fn().mockResolvedValue({ middleAdInterval: 2, maxMiddleAds: 3, anchorAdsEnabled: false, anchorAdsOnArticles: true, anchorAdsOnHome: true, anchorAdsOnCategories: true }),
+}));
 
 describe("HomePage", () => {
   it("shows only root category cards with canonical category URLs", async () => {

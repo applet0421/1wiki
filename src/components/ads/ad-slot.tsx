@@ -15,7 +15,7 @@ export function AdSlot({ placement, config }: { placement: AdPlacement; config: 
 
   useEffect(() => {
     if (config?.mode !== "live" || initialized.current) return;
-    const desktop = desktopOnly ? window.matchMedia("(min-width: 1024px)") : null;
+    const desktop = desktopOnly ? window.matchMedia("(min-width: 1280px)") : null;
     let observer: IntersectionObserver | undefined;
     let active = true;
     function observe() {

@@ -407,10 +407,15 @@ model DataRetentionSetting {
 }
 
 model ArticleAdSetting {
-  id                String   @id
-  middleAdInterval  Int      @default(2)
-  maxMiddleAds      Int      @default(3)
-  updatedAt         DateTime @updatedAt
+  id                       String   @id
+  middleAdInterval         Int      @default(2)
+  maxMiddleAds             Int      @default(3)
+  categoryInlineAdInterval Int      @default(10)
+  anchorAdsEnabled         Boolean  @default(false)
+  anchorAdsOnArticles      Boolean  @default(true)
+  anchorAdsOnHome          Boolean  @default(true)
+  anchorAdsOnCategories    Boolean  @default(true)
+  updatedAt                DateTime @updatedAt
 }
 
 model BrandSeoSettings {

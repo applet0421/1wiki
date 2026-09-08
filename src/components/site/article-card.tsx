@@ -21,6 +21,6 @@ export function ArticleCard({ post, locale, dictionary }: { post: CardPost; loca
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={post.coverImage!} alt={`${post.title} 首圖`} loading="lazy" width="640" height="360" />
     </Link> : null}
-    <div className="article-card-content"><Link className="card-category" href={categoryHref}>{post.category.name}</Link><h2><Link href={`/${locale}/articles/${post.slug}`}>{post.title}</Link></h2><p>{post.excerpt}</p><div><time dateTime={post.publishedAt?.toISOString()}>{post.publishedAt ? new Intl.DateTimeFormat(getLocaleConfig(locale).dateLocale, { dateStyle: "medium" }).format(post.publishedAt) : ""}</time><Link href={`/${locale}/articles/${post.slug}`}>{dictionary.article.readMore}</Link></div></div>
+    <div className="article-card-content"><Link className="card-category" href={categoryHref}>{post.category.name}</Link><h2 className="article-card-title"><Link className="article-card-title-link" href={`/${locale}/articles/${post.slug}`} style={{ fontSize: "inherit", fontWeight: "inherit", lineHeight: "inherit" }}>{post.title}</Link></h2><p className="article-card-excerpt">{post.excerpt}</p><div className="article-card-meta"><time dateTime={post.publishedAt?.toISOString()}>{post.publishedAt ? new Intl.DateTimeFormat(getLocaleConfig(locale).dateLocale, { dateStyle: "medium" }).format(post.publishedAt) : ""}</time><Link href={`/${locale}/articles/${post.slug}`}>{dictionary.article.readMore}</Link></div></div>
   </article>;
 }

@@ -6,7 +6,7 @@ import { JsonLd } from "@/components/site/json-ld";
 import { ArticleBody } from "@/components/site/article-body";
 import { AdSlot } from "@/components/ads/ad-slot";
 import { AdsenseScript } from "@/components/ads/adsense-script";
-import { getAdSlotConfig, getLiveAdsenseClientId, getPublicAdEnvironment } from "@/lib/adsense/config";
+import { getAdSlotConfig, getAnchorAdsConfig, getLiveAdsenseClientId, getPublicAdEnvironment } from "@/lib/adsense/config";
 import { getSiteUrl } from "@/lib/config/site";
 import type { getPublishedPostBySlug } from "@/lib/content/repository";
 import { getCategoryHref } from "@/lib/content/category-tree";
@@ -26,8 +26,9 @@ export async function ArticlePanel({ post, locale, initial = false }: { post: Ar
   const context = { pathname, published: true };
   const sidebarConfig = getAdSlotConfig("sidebar_desktop_sticky", adEnvironment, context);
   const hasLiveSlot = sidebarConfig?.mode === "live" || (["article_after_intro", "article_mid", "article_end"] as const).some((placement) => getAdSlotConfig(placement, adEnvironment, context)?.mode === "live");
-  const clientId = hasLiveSlot ? getLiveAdsenseClientId(adEnvironment, pathname) : null;
   const [brand, adInsertionRules] = await Promise.all([resolveBrandSeo(prisma), getOrCreateArticleAdSettings(prisma)]);
+  const anchorConfig = getAnchorAdsConfig(adInsertionRules, "article");
+  const clientId = initial && (hasLiveSlot || anchorConfig.enabled) ? getLiveAdsenseClientId(adEnvironment, pathname) : null;
   const ancestors = [
     ...(post.category.parent?.parent ? [post.category.parent.parent] : []),
     ...(post.category.parent ? [post.category.parent] : []),
@@ -42,7 +43,7 @@ export async function ArticlePanel({ post, locale, initial = false }: { post: Ar
     },
     select: { id: true, slug: true, title: true },
     orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
-    take: 3,
+    take: 6,
   });
   const breadcrumbCategories = [...ancestors, post.category];
   const breadcrumbItems = [
@@ -53,7 +54,7 @@ export async function ArticlePanel({ post, locale, initial = false }: { post: Ar
     })),
     { name: post.title, href: pathname },
   ];
-  return <><AdsenseScript clientId={clientId} /><section className={`article-layout${sidebarConfig ? " has-sidebar" : ""}`} aria-label={post.title}><article className="article-page">{initial ? <><JsonLd value={buildArticleJsonLd(post, getSiteUrl(), locale, { siteName: brand.siteName, alternateNames: brand.alternateNames, logoUrl: `${getSiteUrl()}${brand.assets.logo}` })} /><JsonLd value={buildBreadcrumbJsonLd(breadcrumbItems, getSiteUrl())} /></> : null}<CategoryBreadcrumbs ancestors={ancestors} current={post.category} locale={locale} /><header className="article-header"><p className="eyebrow">{post.category.name}</p>{initial ? <h1>{post.title}</h1> : <h2 className="article-title"><Link href={pathname}>{post.title}</Link></h2>}<p className="article-excerpt">{post.excerpt}</p><div className="article-meta"><AuthorByline byline={post.byline} fallback={post.author.displayName} locale={locale} /><time dateTime={post.publishedAt?.toISOString()}>{post.publishedAt ? new Intl.DateTimeFormat(dateLocale, { dateStyle: "long" }).format(post.publishedAt) : ""}</time>{post.updatedAt > (post.publishedAt || post.createdAt) ? <span>{dictionary.article.updated} {new Intl.DateTimeFormat(dateLocale, { dateStyle: "medium" }).format(post.updatedAt)}</span> : null}</div></header><ArticleBody html={post.contentHtml} pathname={pathname} adEnvironment={adEnvironment} adInsertionRules={adInsertionRules} />{relatedPosts.length > 0 ? <aside className="related-box" aria-label={dictionary.article.relatedTitle}>
+  return <><AdsenseScript clientId={clientId} enableBottomAnchor={anchorConfig.enabled} /><section className={`article-layout${sidebarConfig ? " has-sidebar" : ""}`} aria-label={post.title}><article className="article-page">{initial ? <><JsonLd value={buildArticleJsonLd(post, getSiteUrl(), locale, { siteName: brand.siteName, alternateNames: brand.alternateNames, logoUrl: `${getSiteUrl()}${brand.assets.logo}` })} /><JsonLd value={buildBreadcrumbJsonLd(breadcrumbItems, getSiteUrl())} /></> : null}<CategoryBreadcrumbs ancestors={ancestors} current={post.category} locale={locale} /><header className="article-header"><p className="eyebrow">{post.category.name}</p>{initial ? <h1>{post.title}</h1> : <h2 className="article-title"><Link href={pathname}>{post.title}</Link></h2>}<p className="article-excerpt">{post.excerpt}</p><div className="article-meta"><AuthorByline byline={post.byline} fallback={post.author.displayName} locale={locale} /><time dateTime={post.publishedAt?.toISOString()}>{post.publishedAt ? new Intl.DateTimeFormat(dateLocale, { dateStyle: "long" }).format(post.publishedAt) : ""}</time>{post.updatedAt > (post.publishedAt || post.createdAt) ? <span>{dictionary.article.updated} {new Intl.DateTimeFormat(dateLocale, { dateStyle: "medium" }).format(post.updatedAt)}</span> : null}</div></header><ArticleBody html={post.contentHtml} pathname={pathname} adEnvironment={adEnvironment} adInsertionRules={adInsertionRules} />{relatedPosts.length > 0 ? <aside className="related-box" aria-label={dictionary.article.relatedTitle}>
   <h2>{dictionary.article.relatedTitle}</h2>
   <ul className="related-articles">
     {relatedPosts.map((related) => <li key={related.id}>

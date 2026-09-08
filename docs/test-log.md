@@ -4,6 +4,26 @@
 
 ## 2026-09-08 文章廣告版面一致化
 
+### 分類頁廣告版位與 Inline 後台設定
+
+- 分類頁停用頂部 `category_after_intro`；901–1279px 與更窄裝置皆採單欄且不顯示側欄，Desktop Sticky 側欄僅保留於 ≥1280px。
+- `ArticleAdSetting` 新增 `categoryInlineAdInterval`，migration 為 `20260908030000_add_category_inline_ad_interval`；OWNER 可在 `/admin/ads` 設定 4–20，預設 10。
+- Inline 只有在間隔位置後方仍有已載入文章時才顯示；預設下 10 篇不顯示，第 11 篇載入後在第 10 篇後插入。舊的 `NEXT_PUBLIC_CATEGORY_INLINE_AD_INTERVAL` 已移除。
+- 測試先確認缺少功能時有 6 項預期失敗；實作後 7 個聚焦測試檔、28 項測試通過，並以固定間隔突變確認資料庫設定整合測試確實會失敗。
+- `20260908030000_add_category_inline_ad_interval` 已在本機隔離資料庫 `onewiki_test` 與 Supabase Direct connection（5432）套用；兩端皆確認 26 個 migration 全部為最新。
+- `npx tsc --noEmit`、本次 TypeScript／TSX 檔案的 ESLint 與 `git diff --check` 通過；本機約 1090px 瀏覽器確認頂部廣告與側欄空位均已移除，後台顯示預設 10 與 4–20 的輸入限制。
+- 全量 Vitest 為 141 個測試檔、451/455 項通過；剩餘 4 項失敗位於既有 WeChat import／Prompt usage 變更，分類頁相關測試均已通過。
+
+### Google bottom Anchor OWNER 設定
+
+- `ArticleAdSetting` 新增 Anchor 總開關與文章／首頁／分類頁三個布林欄位；migration 為 `20260908010000_add_article_ad_anchor_settings`，預設關閉總開關。
+- 文章首篇、首頁與分類頁依設定輸出唯一的 `data-overlays="bottom"` Google AdSense script；連續閱讀續篇不輸出第二份 script。全站 layout 不再在未分類路由載入 AdSense。
+- 側欄手動 slot 的 CSS 與 JavaScript 初始化門檻調整為 1280px；未新增自訂固定式廣告或影音浮層。
+- 聚焦驗證：`npx tsc --noEmit` 與 9 個相關測試檔、34 項測試通過；`git diff --check` 通過。
+- 全量 `npm test` 未通過，失敗集中於本次未修改的 WeChat import 與 prompt-usage integration 測試；未將其列為 Anchor 功能已驗證。
+- 預設的 6543 Supabase pooler migration 連線逾時；改以同一環境中 5432 連線執行後，`20260908010000_add_article_ad_anchor_settings` 已成功套用，並已重啟本機開發伺服器。
+- 若 Prisma Client 已更新但資料庫尚缺 `anchorAds*` 欄位，公開讀取會辨識 Prisma `P2022` 並安全回退預設設定；OWNER 寫入仍會要求先完成 migration，避免靜默遺失設定。本機首頁與 `/admin/ads` 已在 migration 後重新載入；後台四個 Anchor 控制項可用，總開關預設關閉。
+
 ### OWNER 中段廣告節奏設定
 
 - 新增 `ArticleAdSetting` migration 與 `/admin/ads` OWNER 後台；可設定每 1–6 個 H2 插入一則中段廣告、每篇最多 0–5 則，預設為每 2 個 H2、每篇最多 3 則。

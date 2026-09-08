@@ -38,12 +38,16 @@ describe("saveArticleAdSettingsAction", () => {
     const form = new FormData();
     form.set("middleAdInterval", "2");
     form.set("maxMiddleAds", "3");
+    form.set("categoryInlineAdInterval", "8");
+    form.set("anchorAdsEnabled", "on");
+    form.set("anchorAdsOnArticles", "on");
+    form.set("anchorAdsOnHome", "on");
 
     await expect(saveArticleAdSettingsAction(form)).rejects.toThrow("redirect:/admin/ads?success=saved");
     expect(upsert).toHaveBeenCalledWith({
       where: { id: "default" },
-      create: { id: "default", middleAdInterval: 2, maxMiddleAds: 3 },
-      update: { middleAdInterval: 2, maxMiddleAds: 3 },
+      create: { id: "default", middleAdInterval: 2, maxMiddleAds: 3, categoryInlineAdInterval: 8, anchorAdsEnabled: true, anchorAdsOnArticles: true, anchorAdsOnHome: true, anchorAdsOnCategories: false },
+      update: { middleAdInterval: 2, maxMiddleAds: 3, categoryInlineAdInterval: 8, anchorAdsEnabled: true, anchorAdsOnArticles: true, anchorAdsOnHome: true, anchorAdsOnCategories: false },
     });
     expect(revalidatePath).toHaveBeenCalledWith("/zh-tw", "layout");
     expect(revalidatePath).toHaveBeenCalledWith("/en", "layout");

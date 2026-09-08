@@ -34,16 +34,32 @@ npx tsc --noEmit
 
 OWNER 可在 `/admin/ads` 設定中段廣告節奏：每 1–6 個 H2 插入一則、每篇最多 0–5 則；預設為每 2 個 H2、每篇最多 3 則。設定變更會重新驗證各語系公開 layout，首篇與後續自動載入文章會在下一次渲染時共同採用新規則。
 
-文章版面與側欄顯示斷點統一為 1024px；寬度不足時改為單欄，側欄廣告不顯示也不初始化，不保留空白欄位。全部正式廣告在各自容器距視窗下緣 300px 內時才插入 AdSense 元素並初始化一次；預覽框維持顯示，保留版面高度。連續閱讀帶入新文章時，不會一次初始化整篇的所有廣告。缺少 IntersectionObserver 的瀏覽器退回一般初始化，但仍遵守桌面側欄限制。
+文章版面與側欄顯示斷點統一為 1280px；寬度不足時改為單欄，側欄廣告不顯示也不初始化，不保留空白欄位。全部正式廣告在各自容器距視窗下緣 300px 內時才插入 AdSense 元素並初始化一次；預覽框維持顯示，保留版面高度。連續閱讀帶入新文章時，不會一次初始化整篇的所有廣告。缺少 IntersectionObserver 的瀏覽器退回一般初始化，但仍遵守桌面側欄限制。
 
 正式廣告容器會顯示低對比的「AD」標示，並監聽 AdSense 的 `data-ad-status`。`filled` 正常顯示；`unfill-optimized` 保留給 AdSense 管理；`unfilled` 若已在視窗內，會等離開可視範圍後再收合，否則立即移除預留高度與間距，避免留下大片空白。
 
 唯一側欄版位使用環境變數 `NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR_DESKTOP_STICKY`。正式環境必須填入有效 slot ID 並啟用 AdSense 才會投放；未設定時不顯示，本機開發環境顯示預覽框。舊的 `NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR_DESKTOP` 已移除。
 
+## Google 底部 Anchor（2026-09-08）
+
+`/admin/ads` 的 OWNER 設定新增總開關與文章、首頁、分類頁三個顯示開關，預設總開關關閉。啟用後僅在已啟用 AdSense 且具有有效 publisher client ID 的對應公開頁，輸出 Google Auto ads 的 `data-overlays="bottom"`；Google 負責裝置相容性、顯示與關閉控制。沒有自建 fixed `<ins>`、Vignette 或浮動影音廣告。
+
+文章首篇最多輸出一次 page-level AdSense script；往下自動載入的續篇只保留既有內文與側欄手動版位，不會重新設定 Anchor 或插入第二份 script。公開 layout 不再對所有路由載入 AdSense，因此後台、登入、政策及其他非目標頁不會初始化 Anchor。
+
 ## 分類列表載入與卡片（2026-09-06 盤點）
 
 分類頁另使用 `CategoryArticleList`，接近底部 500px 時呼叫 `/api/categories/posts`，以 locale、分類 path、offset 分批載入，每批 10 筆；結束時顯示「已載入全部文章」。這個列表並非上述文章正文連續閱讀元件，尚沒有相同的手動重試／無 IntersectionObserver 按鈕備援。
 
-分類廣告提供 `category_after_intro`、`category_inline`、`category_end`、`category_sidebar_desktop`，對應 `.env.example` 的 `NEXT_PUBLIC_ADSENSE_SLOT_CATEGORY_*`。`NEXT_PUBLIC_CATEGORY_INLINE_AD_INTERVAL` 預設 10，控制列表間廣告間隔。
+分類頁暫停顯示 `category_after_intro` 頂部廣告。`category_inline` 的間隔改由 OWNER 在 `/admin/ads` 設定，可填 4–20、預設 10；只有間隔位置之後已載入至少一篇文章時才插入，例如預設值下剛好 10 篇不顯示，第 11 篇載入後才在第 10 篇後顯示。原本的 `NEXT_PUBLIC_CATEGORY_INLINE_AD_INTERVAL` 已移除，避免與後台形成兩套設定來源。
+
+分類頁各裝置版位狀態：
+
+| 視窗寬度 | 頂部 | Inline | 列表結尾 | 側欄 |
+| --- | --- | --- | --- | --- |
+| ≤900px | 停用 | 依後台間隔、有後續文章才顯示 | 至少 4 篇時顯示 | 隱藏 |
+| 901–1279px | 停用 | 依後台間隔、有後續文章才顯示 | 至少 4 篇時顯示 | 隱藏 |
+| ≥1280px | 停用 | 依後台間隔、有後續文章才顯示 | 至少 4 篇時顯示 | 顯示 Desktop Sticky |
+
+上述手動版位仍需對應的 `NEXT_PUBLIC_ADSENSE_SLOT_CATEGORY_*` slot ID；正式環境未啟用 AdSense 或未設定 slot 時不會投放。分類頁 Bottom Anchor 則由同一後台的 Anchor 總開關與分類頁開關獨立控制。
 
 共用文章卡片已支援封面，封面上傳及補值規則見 [文章編輯與媒體](article-editing.md)。本次只重跑卡片等聚焦測試，歷史瀏覽器紀錄保留原有適用範圍，詳見 [測試紀錄](test-log.md)。

@@ -4,10 +4,11 @@ import { ArticlePanel } from "./article-panel";
 
 const mocks = vi.hoisted(() => ({
   adEnvironment: { NODE_ENV: "development" } as Record<string, string | undefined>,
+  postFindMany: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock("@/lib/db/prisma", () => ({
-  prisma: { post: { findMany: vi.fn().mockResolvedValue([]) } },
+  prisma: { post: { findMany: mocks.postFindMany } },
 }));
 
 vi.mock("@/lib/brand-seo/repository", () => ({
@@ -48,6 +49,7 @@ const post = {
 describe("ArticlePanel advertising", () => {
   afterEach(() => {
     mocks.adEnvironment = { NODE_ENV: "development" };
+    vi.clearAllMocks();
   });
 
   it.each([
@@ -67,5 +69,13 @@ describe("ArticlePanel advertising", () => {
 
     expect(screen.queryByLabelText("文章側欄廣告")).not.toBeInTheDocument();
     expect(screen.getByLabelText("第一篇")).not.toHaveClass("has-sidebar");
+  });
+});
+
+describe("ArticlePanel related articles", () => {
+  it("limits the related-post query to six articles", async () => {
+    render(await ArticlePanel({ post: post as never, locale: "zh-tw", initial: true }));
+
+    expect(mocks.postFindMany).toHaveBeenCalledWith(expect.objectContaining({ take: 6 }));
   });
 });
