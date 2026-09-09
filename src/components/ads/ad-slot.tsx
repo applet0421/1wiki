@@ -11,7 +11,7 @@ export function AdSlot({ placement, config }: { placement: AdPlacement; config: 
   const adElement = useRef<HTMLModElement>(null);
   const [ready, setReady] = useState(false);
   const [adState, setAdState] = useState<"loading" | "filled" | "optimized" | "unfilled-pending" | "unfilled">("loading");
-  const desktopOnly = placement === "sidebar_desktop_sticky" || placement === "category_sidebar_desktop";
+  const desktopOnly = placement === "sidebar_desktop_sticky" || placement === "category_sidebar_desktop" || placement === "home_sidebar_desktop";
 
   useEffect(() => {
     if (config?.mode !== "live" || initialized.current) return;

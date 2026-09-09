@@ -1,11 +1,10 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState } from "react";
-import { AdSlot } from "@/components/ads/ad-slot";
+import { useEffect, useRef, useState } from "react";
 import type { AdSlotConfig } from "@/lib/adsense/config";
 import type { Locale } from "@/lib/i18n/config";
 import type { SiteDictionary } from "@/lib/i18n/dictionaries";
-import { ArticleCard } from "./article-card";
+import { ArticleFeedList } from "./article-feed-list";
 
 type CategoryPost = { id: string; slug: string; title: string; excerpt: string; publishedAt: string | Date | null; category: { name: string; slug: string; parent?: { name: string; slug: string; parent?: { name: string; slug: string } | null } | null } };
 
@@ -34,9 +33,7 @@ export function CategoryArticleList({ initialPosts, locale, dictionary, path, in
   }, [hasMore, loading, locale, path, posts.length]);
 
   return <>
-    <ol className="category-article-list" aria-label="文章列表">
-      {posts.map((post, index) => <Fragment key={post.id}><li className="category-article-item"><ArticleCard post={{ ...post, publishedAt: post.publishedAt ? new Date(post.publishedAt) : null }} locale={locale} dictionary={dictionary} /></li>{(index + 1) % adInterval === 0 && index + 1 < posts.length ? <li className="category-feed-ad"><AdSlot placement="category_inline" config={inlineAdConfig} /></li> : null}</Fragment>)}
-    </ol>
+    <ArticleFeedList posts={posts} locale={locale} dictionary={dictionary} adInterval={adInterval} inlineAdConfig={inlineAdConfig} />
     <div ref={sentinel} className="category-load-sentinel" aria-live="polite">{loading ? "載入更多文章…" : ""}</div>
   </>;
 }

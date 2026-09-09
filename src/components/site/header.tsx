@@ -11,8 +11,12 @@ type NavigationCategory = { id: string; name: string; segments: string[]; childr
 
 export function SiteHeader({ locale, dictionary, categories }: { locale: Locale; dictionary: SiteDictionary; categories: NavigationCategory[] }) {
   const [openCategoryId, setOpenCategoryId] = useState<string | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isTabletMoreOpen, setIsTabletMoreOpen] = useState(false);
   const navigationRef = useRef<HTMLElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuTriggerRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuId = useId();
 
   useEffect(() => {
     if (!openCategoryId) return;
@@ -35,10 +39,31 @@ export function SiteHeader({ locale, dictionary, categories }: { locale: Locale;
     };
   }, [openCategoryId]);
 
-  return <header className="site-header"><div className="nav-shell"><Link href={`/${locale}`} className="brand-mark">1Wiki</Link><nav ref={navigationRef} className="primary-navigation" onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setOpenCategoryId(null); }} aria-label={dictionary.navigation.primary}>{categories.map((category) => <NavigationCategoryItem category={category} dictionary={dictionary} locale={locale} isOpen={openCategoryId === category.id} key={category.id} onClose={() => setOpenCategoryId(null)} onOpen={(trigger) => { triggerRef.current = trigger; setOpenCategoryId(category.id); }} onToggle={(trigger) => {
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setIsMobileMenuOpen(false);
+      mobileMenuTriggerRef.current?.focus();
+    }
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [isMobileMenuOpen]);
+
+  const categoryItem = (category: NavigationCategory) => <NavigationCategoryItem category={category} dictionary={dictionary} locale={locale} isOpen={openCategoryId === category.id} key={category.id} onClose={() => setOpenCategoryId(null)} onOpen={(trigger) => { triggerRef.current = trigger; setOpenCategoryId(category.id); }} onToggle={(trigger) => {
     triggerRef.current = trigger;
     setOpenCategoryId((current) => current === category.id ? null : category.id);
-  }} />)}</nav><LanguageSwitcher locale={locale} /><Link href="/login" className="admin-link">{dictionary.navigation.admin}</Link></div></header>;
+  }} />;
+  const compactCategories = categories.slice(0, 2);
+  const overflowCategories = categories.slice(2);
+
+  return <header className="site-header"><div className="nav-shell"><Link href={`/${locale}`} className="brand-mark">1Wiki</Link><nav ref={navigationRef} className="primary-navigation" onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) { setOpenCategoryId(null); setIsTabletMoreOpen(false); } }} aria-label={dictionary.navigation.primary}><div className="desktop-navigation-items">{categories.map(categoryItem)}<Link href={`/${locale}/about`}>{dictionary.footer.about}</Link></div><div className="tablet-navigation-items">{compactCategories.map(categoryItem)}<div className="tablet-more-menu"><button type="button" className="tablet-more-trigger" aria-expanded={isTabletMoreOpen} onClick={() => setIsTabletMoreOpen((open) => !open)}>{dictionary.navigation.more}</button>{isTabletMoreOpen ? <div className="tablet-more-dropdown">{overflowCategories.map(categoryItem)}<Link href={`/${locale}/about`} onClick={() => setIsTabletMoreOpen(false)}>{dictionary.footer.about}</Link></div> : null}</div></div></nav><div className="nav-actions"><LanguageSwitcher locale={locale} /><Link href="/login" className="admin-link">{dictionary.navigation.admin}</Link><button ref={mobileMenuTriggerRef} type="button" className="mobile-menu-trigger" aria-label={isMobileMenuOpen ? dictionary.navigation.closeMenu : dictionary.navigation.openMenu} aria-expanded={isMobileMenuOpen} aria-controls={mobileMenuId} onClick={() => setIsMobileMenuOpen((open) => !open)}><span aria-hidden="true" /><span aria-hidden="true" /><span aria-hidden="true" /></button></div></div>{isMobileMenuOpen ? <div id={mobileMenuId} className="mobile-nav-drawer" role="dialog" aria-modal="true" aria-label={dictionary.navigation.primary}><nav aria-label={dictionary.navigation.primary}>{categories.map(categoryItem)}<Link href={`/${locale}/about`} onClick={() => setIsMobileMenuOpen(false)}>{dictionary.footer.about}</Link></nav><div className="mobile-nav-footer"><LanguageSwitcher locale={locale} /><Link href="/login" className="admin-link" onClick={() => setIsMobileMenuOpen(false)}>{dictionary.navigation.admin}</Link></div></div> : null}</header>;
 }
 
 function NavigationCategoryItem({ category, dictionary, locale, isOpen, onClose, onOpen, onToggle }: { category: NavigationCategory; dictionary: SiteDictionary; locale: Locale; isOpen: boolean; onClose: () => void; onOpen: (trigger: HTMLButtonElement) => void; onToggle: (trigger: HTMLButtonElement) => void }) {

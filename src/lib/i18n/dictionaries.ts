@@ -5,17 +5,13 @@ const zhTwDictionary = {
     name: "1Wiki｜AI、軟體、3C 使用教學與疑難解答",
     description: "1Wiki 提供 AI、LINE、軟體與 3C 疑難解答，以清楚步驟協助你完成設定、排除錯誤並安全使用常見科技服務。",
   },
-  navigation: { primary: "主要導覽", language: "選擇語言", admin: "後台", allCategory: "全部" },
+  navigation: { primary: "主要導覽", language: "選擇語言", admin: "後台", allCategory: "全部", more: "更多", openMenu: "開啟選單", closeMenu: "關閉選單" },
   home: {
     eyebrow: "遇到科技問題，先從這裡找答案",
-    title: "把複雜的科技問題，變成做得到的步驟。",
-    intro: "1Wiki 提供 AI、LINE、軟體與 3C 疑難解答，以清楚步驟協助你完成設定、排除錯誤並安全使用常見科技服務。",
-    featuredEyebrow: "精選解答",
-    featuredTitle: "最新值得先看的解法",
+    title: "把複雜的科技問題變簡單。",
+    intro: "1Wiki 提供 AI、App、軟體、手機與 3C 教學，從設定、操作到疑難排解，幫你更快解決每天遇到的科技問題。",
     exploreEyebrow: "探索主題",
     exploreTitle: "先選一個你想解決的主題",
-    topicShortcutsEyebrow: "探索主題",
-    topicShortcutsTitle: "繼續找你需要的解法",
     latestEyebrow: "最新解答",
     latestTitle: "剛整理好的實用教學",
     viewCategory: "查看教學 →",
@@ -39,8 +35,8 @@ type DictionaryShape = {
 
 const enDictionary = {
   site: { name: "1Wiki | Practical technology guides", description: "Clear, practical guides for AI, software, social platforms, and everyday technology." },
-  navigation: { primary: "Primary navigation", language: "Choose language", admin: "Admin", allCategory: "All" },
-  home: { eyebrow: "Clear answers, step by step", title: "Stuck with technology? Start here.", intro: "1Wiki publishes practical guides for everyday technology problems.", featuredEyebrow: "Featured answer", featuredTitle: "The latest guide worth reading first", exploreEyebrow: "Explore topics", exploreTitle: "Start with a category", topicShortcutsEyebrow: "Explore topics", topicShortcutsTitle: "Keep exploring the answers you need", latestEyebrow: "Latest answers", latestTitle: "Recently published guides", viewCategory: "View guides →", emptyTitle: "Content coming soon", emptyDescription: "English guides are being prepared." },
+  navigation: { primary: "Primary navigation", language: "Choose language", admin: "Admin", allCategory: "All", more: "More", openMenu: "Open menu", closeMenu: "Close menu" },
+  home: { eyebrow: "Clear answers, step by step", title: "Making complex technology simple.", intro: "Practical AI, app, software, mobile, and tech guides—from setup and everyday use to troubleshooting.", exploreEyebrow: "Explore topics", exploreTitle: "Start with a category", latestEyebrow: "Latest answers", latestTitle: "Recently published guides", viewCategory: "View guides →", emptyTitle: "Content coming soon", emptyDescription: "English guides are being prepared." },
   author: { eyebrow: "About the author", articles: "Articles by this author", empty: "No published articles yet." },
   category: { eyebrow: "Topic", emptyTitle: "Content coming soon", emptyDescription: "Guides for this topic are being prepared." },
   article: { home: "Home", readMore: "Read the answer →", updated: "Updated", relatedTitle: "Recommended in this category", explore: "Explore more", categoryLink: "View category →" },
@@ -52,8 +48,8 @@ const enDictionary = {
 
 const jaDictionary = {
   site: { name: "1Wiki｜実用的なテクノロジーガイド", description: "AI、ソフトウェア、SNS、デジタル機器の問題を分かりやすい手順で解決します。" },
-  navigation: { primary: "メインナビゲーション", language: "言語を選択", admin: "管理画面", allCategory: "すべての" },
-  home: { eyebrow: "一つずつ、分かりやすく解決", title: "テクノロジーで困ったら、ここから。", intro: "1Wikiでは、日常のテクノロジー問題に役立つ実用的なガイドを提供します。", featuredEyebrow: "注目の回答", featuredTitle: "まず読んでほしい最新ガイド", exploreEyebrow: "トピックを探す", exploreTitle: "カテゴリーから探す", topicShortcutsEyebrow: "トピックを探す", topicShortcutsTitle: "必要な答えをさらに探す", latestEyebrow: "最新の回答", latestTitle: "新着ガイド", viewCategory: "ガイドを見る →", emptyTitle: "コンテンツを準備中です", emptyDescription: "日本語のガイドを準備しています。" },
+  navigation: { primary: "メインナビゲーション", language: "言語を選択", admin: "管理画面", allCategory: "すべての", more: "もっと見る", openMenu: "メニューを開く", closeMenu: "メニューを閉じる" },
+  home: { eyebrow: "一つずつ、分かりやすく解決", title: "複雑なテクノロジーを、もっとシンプルに。", intro: "AI、アプリ、ソフトウェア、スマホ、デジタル機器の使い方からトラブル解決まで、毎日の困りごとを分かりやすく解決します。", exploreEyebrow: "トピックを探す", exploreTitle: "カテゴリーから探す", latestEyebrow: "最新の回答", latestTitle: "新着ガイド", viewCategory: "ガイドを見る →", emptyTitle: "コンテンツを準備中です", emptyDescription: "日本語のガイドを準備しています。" },
   author: { eyebrow: "著者紹介", articles: "この著者の記事", empty: "公開された記事はまだありません。" },
   category: { eyebrow: "カテゴリー", emptyTitle: "コンテンツを準備中です", emptyDescription: "このカテゴリーのガイドを準備しています。" },
   article: { home: "ホーム", readMore: "回答を読む →", updated: "更新日", relatedTitle: "同じカテゴリーのおすすめ記事", explore: "関連情報", categoryLink: "カテゴリーを見る →" },

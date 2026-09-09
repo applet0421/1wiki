@@ -1,214 +1,110 @@
-# Homepage Editorial Feed Implementation Plan
+# Homepage Minimal Article Feed Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Rebuild the locale homepage into a compact introductory surface with one featured latest guide, a scannable latest-guide list, and category shortcuts after the content.
+**Goal:** Rebuild the locale homepage as a compact reading introduction followed by the same article-card feed and ad rhythm used on category pages.
 
-**Architecture:** `HomePage` will partition the existing, newest-first `posts` array into `posts[0]` for a new homepage-only featured guide and `posts.slice(1)` for the existing `ArticleCard` list. Homepage-specific semantic class names and media queries in `globals.css` will control the feature and list hierarchy without changing the category-page card contract. All new visible labels will come from the existing `dictionary.home` object for zh-TW, English, and Japanese.
+**Architecture:** Extract category list markup and interval-aware Inline insertion into a reusable component. Category pages retain their loading state; homepage passes its static newest-first posts into that component and composes homepage-specific Inline, end, and desktop sidebar placements. Homepage CSS controls only its compact intro and sidebar, while cards retain category classes.
 
-**Tech Stack:** Next.js App Router, React Server Components, TypeScript, CSS media queries, Vitest, Testing Library.
+**Tech Stack:** Next.js App Router, React, TypeScript, CSS, Vitest, Testing Library.
 
 **Spec:** `docs/superpowers/specs/2026-09-08-homepage-editorial-feed-design.md`
 
 ## Global Constraints
 
-- Preserve the current `getHomeData(locale)` query, 12-post limit, root-category source, locale routing, and empty-state behavior.
-- Keep existing Homepage Anchor ad configuration; do not create home top, sidebar, or inline ad slots.
-- Use translated `dictionary.home` strings rather than hard-coded UI copy.
-- Preserve genuine keyboard-accessible article and category links; do not nest anchors.
-- Do not alter category-page layouts or their ArticleCard responsive behavior.
-- Verify 375px, 768px, 1024px, 1440px, and wide desktop visual states after code changes.
+- Keep the 12-post query, locale routing, root categories, empty state, and Homepage Anchor setting.
+- No top ad. Reuse `categoryInlineAdInterval` (4–20) and insert Inline only when another article follows the interval boundary.
+- Reuse `ArticleCard`, `category-article-list`, `category-article-item`, and category responsive card rules.
+- Homepage sidebar is only eligible at ≥1280px; no sidebar at 901–1279px or below.
+- Use `dictionary.home` for visible copy. Do not add a database setting or homepage loading API.
 
----
-
-## File Structure
-
-- Modify: `src/app/[locale]/(site)/page.tsx` — partition the existing posts, render the homepage information hierarchy, and attach homepage-only classes.
-- Modify: `src/app/[locale]/(site)/page.test.tsx` — define homepage data-partition and semantic-order regression coverage.
-- Modify: `src/lib/i18n/dictionaries.ts` — provide all new translated home-section labels.
-- Modify: `src/app/globals.css` — scope featured/list/category-shortcut responsive styles to the homepage only.
-- Modify: `docs/test-log.md` — append the final focused test and visual-regression execution record using its existing format.
-
-### Task 1: Define homepage labels and rendering contract
+### Task 1: Extract the reusable category-style feed
 
 **Files:**
-- Modify: `src/lib/i18n/dictionaries.ts`
-- Modify: `src/app/[locale]/(site)/page.tsx`
-- Test: `src/app/[locale]/(site)/page.test.tsx`
+- Create: `src/components/site/article-feed-list.tsx`
+- Create: `src/components/site/article-feed-list.test.tsx`
+- Modify: `src/components/site/category-article-list.tsx`
+- Test: `src/components/site/category-article-list.test.tsx`
 
-**Interfaces:**
-- Consumes: `SiteDictionary["home"]`, `getHomeData(locale): Promise<[Post[], RootCategory[]]>`.
-- Produces: `dictionary.home.featuredEyebrow`, `dictionary.home.featuredTitle`, and homepage landmarks `home-featured-guide`, `latest-answers`, `home-topic-shortcuts`.
+**Interface:** `ArticleFeedList({ posts, locale, dictionary, inlineAdConfig, adInterval, testId? })` renders a `category-article-list` ordered list.
 
-- [ ] **Step 1: Write the failing homepage hierarchy tests**
-
-  Import `within` from `@testing-library/react`. Add a three-post test fixture and assert that the first title appears inside the featured region, the next two titles appear in `latest-answers`, and the featured region precedes the list and topic shortcuts:
+- [ ] Write a failing `article-feed-list.test.tsx` using 3 posts and `adInterval={2}`; assert no preview ad, since the second post has no later article. Render 4 posts and assert exactly one preview follows the second row:
 
   ```tsx
-  const featured = screen.getByTestId("home-featured-guide");
-  const latest = screen.getByTestId("latest-answers");
-  const topics = screen.getByTestId("home-topic-shortcuts");
-
-  expect(within(featured).getByRole("heading", { name: "第一篇教學" })).toBeInTheDocument();
-  expect(within(latest).getByRole("heading", { name: "第二篇教學" })).toBeInTheDocument();
-  expect(within(latest).getByRole("heading", { name: "第三篇教學" })).toBeInTheDocument();
-  expect(featured.compareDocumentPosition(latest) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  expect(latest.compareDocumentPosition(topics) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(screen.getAllByTestId("ad-preview-category_inline")).toHaveLength(1);
+  expect(screen.getByText("教學 2").closest("li")?.nextElementSibling).toHaveClass("category-feed-ad");
   ```
 
-- [ ] **Step 2: Run the focused test and verify failure**
+- [ ] Run `npm test -- src/components/site/article-feed-list.test.tsx`; expect failure because the component does not exist.
+- [ ] Create the client component, mapping each post to `<li className="category-article-item"><ArticleCard … /></li>` and add `<li className="category-feed-ad"><AdSlot placement={inlineAdConfig?.placement ?? "category_inline"} config={inlineAdConfig} /></li>` when `(index + 1) % adInterval === 0 && index + 1 < posts.length`. Normalize non-null dates with `new Date(post.publishedAt)`.
+- [ ] Replace the ordered-list JSX in `CategoryArticleList` with `ArticleFeedList`; retain its observer, API URL, sentinel, loading and all props.
+- [ ] Run `npm test -- src/components/site/article-feed-list.test.tsx src/components/site/category-article-list.test.tsx`; expect PASS.
+- [ ] Commit:
 
-  Run: `npm test -- src/app/[locale]/(site)/page.test.tsx`
+  ```bash
+  git add src/components/site/article-feed-list.tsx src/components/site/article-feed-list.test.tsx src/components/site/category-article-list.tsx src/components/site/category-article-list.test.tsx
+  git commit -m "refactor: share category-style article feed"
+  ```
 
-  Expected: FAIL because `home-featured-guide` and `home-topic-shortcuts` do not exist and all posts are currently rendered in one list.
+### Task 2: Add homepage feed placements
 
-- [ ] **Step 3: Add locale-safe labels**
+**Files:**
+- Modify: `src/lib/adsense/config.ts`
+- Test: `src/lib/adsense/config.test.ts`
+- Modify: `src/components/ads/ad-slot.tsx`
 
-  Add the following keys to the `home` object in the zh-TW dictionary and equivalent natural translations in English and Japanese:
+**Interface:** valid placements become `home_inline`, `home_end`, and `home_sidebar_desktop`, accepted only for `^/(zh-tw|en|ja)$` published home paths.
+
+- [ ] Add failing config tests:
 
   ```ts
-  featuredEyebrow: "精選解答",
-  featuredTitle: "最新值得先看的解法",
-  topicShortcutsEyebrow: "探索主題",
-  topicShortcutsTitle: "繼續找你需要的解法",
+  expect(getAdSlotConfig("home_inline", env, { pathname: "/zh-tw", published: true })).toMatchObject({ mode: "live", placement: "home_inline", shape: "rectangle" });
+  expect(getAdSlotConfig("home_end", env, { pathname: "/zh-tw", published: false })).toBeNull();
+  expect(getAdSlotConfig("home_sidebar_desktop", env, { pathname: "/zh-tw/category/ai", published: true })).toBeNull();
   ```
 
-  Keep the `DictionaryShape` constraint satisfied so missing translations fail TypeScript checking.
+- [ ] Run `npm test -- src/lib/adsense/config.test.ts`; expect TypeScript failure because the three placements are absent.
+- [ ] Add placement keys, environment names and shapes:
 
-- [ ] **Step 4: Partition posts and render semantic homepage sections**
-
-  In `HomePage`, derive the first and remaining posts before JSX:
-
-  ```tsx
-  const [featuredPost, ...latestPosts] = posts;
+  ```ts
+  home_inline: "NEXT_PUBLIC_ADSENSE_SLOT_HOME_INLINE" // rectangle
+  home_end: "NEXT_PUBLIC_ADSENSE_SLOT_HOME_END" // banner
+  home_sidebar_desktop: "NEXT_PUBLIC_ADSENSE_SLOT_HOME_SIDEBAR_DESKTOP" // rectangle
   ```
 
-  Render the existing intro first, then a `section` with `data-testid="home-featured-guide"` for `featuredPost`, followed by a `section` containing `<div className="article-list" data-testid="latest-answers">` that maps `latestPosts`. Render the category links last in `section data-testid="home-topic-shortcuts"`.
+  In `getAdSlotConfig`, compute `isHome = homePathPattern.test(context.pathname)` and return `null` unless every `home_` placement is `isHome && context.published`. Leave article/category gates and `feed_inline` unchanged.
+- [ ] Add `placement === "home_sidebar_desktop"` to `AdSlot`’s `desktopOnly` expression.
+- [ ] Run `npm test -- src/lib/adsense/config.test.ts src/components/ads/ad-slot.test.tsx`; expect PASS.
+- [ ] Commit the four tested files with `git commit -m "feat: add homepage article feed placements"`.
 
-  The featured guide must use a real `Link` to `/${locale}/articles/${featuredPost.slug}`, reuse its category URL from `getCategoryHref`, and render category, title, excerpt, date, cover image when present, and the current `dictionary.article.readMore` CTA. Keep the no-post branch unchanged.
-
-- [ ] **Step 5: Run the focused test and verify success**
-
-  Run: `npm test -- src/app/[locale]/(site)/page.test.tsx`
-
-  Expected: PASS, including existing root-category URL, revised hero copy, and empty-state assertions.
-
-- [ ] **Step 6: Commit the contract change**
-
-  ```bash
-  git add src/lib/i18n/dictionaries.ts 'src/app/[locale]/(site)/page.tsx' 'src/app/[locale]/(site)/page.test.tsx'
-  git commit -m "feat: prioritize featured guides on home"
-  ```
-
-### Task 2: Add scoped responsive homepage presentation
+### Task 3: Compose the minimal homepage
 
 **Files:**
-- Modify: `src/app/globals.css`
 - Modify: `src/app/[locale]/(site)/page.tsx`
 - Test: `src/app/[locale]/(site)/page.test.tsx`
+- Modify: `src/lib/i18n/dictionaries.ts`
+- Modify: `src/app/globals.css`
 
-**Interfaces:**
-- Consumes: `home-hero`, `home-featured-guide`, `home-latest-list`, and `home-topic-shortcuts` landmarks emitted by Task 1.
-- Produces: homepage-only responsive visual hierarchy that does not change `.category-article-item` behavior.
+**Interface:** `HomePage` renders `.home-intro`, an `ArticleFeedList` carrying `data-testid="latest-answers"`, optional home end/sidebar slots, then `.home-topic-shortcuts`.
 
-- [ ] **Step 1: Extend the failing test with homepage-only class assertions**
-
-  Assert that the featured region has `home-featured-guide`, the latest list has `home-latest-list`, and category shortcuts retain `category-grid` plus `home-topic-shortcuts`:
+- [ ] Add a failing 5-post homepage test with `categoryInlineAdInterval: 4`: assert a `category-article-list`, five articles, one `home_inline` preview after row four, `home_end`, `home_sidebar_desktop`, and topic shortcuts after `latest-answers`.
+- [ ] Run `npm test -- 'src/app/[locale]/(site)/page.test.tsx`; expect failure because home still uses `article-list`, category-first ordering, and no home slots.
+- [ ] Add translated `topicShortcutsEyebrow` and `topicShortcutsTitle` to all dictionaries. In `HomePage`, preserve empty/Anchor logic; compute `showAds = posts.length >= 4`, home context/path and live placement status. Render:
 
   ```tsx
-  expect(featured).toHaveClass("home-featured-guide");
-  expect(latest).toHaveClass("home-latest-list");
-  expect(topics).toHaveClass("home-topic-shortcuts");
-  expect(topics.querySelector(".category-grid")).toBeInTheDocument();
+  <section className="home-intro">…eyebrow, h1, intro…</section>
+  <div className="category-content-layout"><section aria-label="文章列表">…<ArticleFeedList posts={posts} adInterval={adSettings.categoryInlineAdInterval} inlineAdConfig={getAdSlotConfig("home_inline", env, context)} testId="latest-answers" />…</section>{showAds ? <aside className="home-sidebar"><AdSlot placement="home_sidebar_desktop" config={…} /></aside> : null}</div>
+  <section className="home-topic-shortcuts" data-testid="home-topic-shortcuts">…root category cards…</section>
   ```
 
-- [ ] **Step 2: Run the focused test and verify failure**
+  Add `home_end` directly after the list only when `showAds`.
+- [ ] Add only shell CSS: `.home-intro` with compact padding, `max-width:48rem`, H1 `clamp(1.7rem,3vw,2.7rem)`, muted intro; sticky `.home-sidebar`; trailing `.home-topic-shortcuts`; hide `.home-sidebar` in existing `max-width:1279px`. Do not alter category card/list declarations.
+- [ ] Run homepage/feed/category/card suites; expect PASS. Commit homepage files with `git commit -m "feat: rebuild home as minimal article feed"`.
 
-  Run: `npm test -- src/app/[locale]/(site)/page.test.tsx`
+### Task 4: Verify and record
 
-  Expected: FAIL because Task 1 establishes semantic test IDs but does not yet attach the presentation classes.
+**Files:** `docs/test-log.md`
 
-- [ ] **Step 3: Implement the desktop presentation in `globals.css`**
-
-  In `page.tsx`, add `home-featured-guide` to the featured section, `home-featured-card` to its article, `home-latest-list` to the latest-list div, and `home-topic-shortcuts` to the category section. Then replace the home-only tall hero rule with a compact `home-hero` (`min-height: 0`, `padding-block: clamp(2.5rem, 6vw, 5rem) clamp(2rem, 4vw, 3.5rem)`) and add styles following this shape:
-
-  ```css
-  .home-featured-guide { margin-bottom: clamp(2.5rem, 5vw, 4rem); }
-  .home-featured-card { display: grid; grid-template-columns: minmax(18rem, .9fr) minmax(0, 1.1fr); gap: clamp(1.5rem, 3vw, 2.75rem); }
-  .home-latest-list { gap: 0; border-top: 1px solid #dce3ee; }
-  .home-latest-list .article-card { border-width: 0 0 1px; border-radius: 0; padding-block: 1.5rem; }
-  .home-topic-shortcuts { margin-top: clamp(3rem, 6vw, 5rem); }
-  ```
-
-  Scope all selectors under `.home-*`; do not modify `.category-article-item` or its breakpoint rules. Use 4:3 `aspect-ratio` and `object-fit: cover` on the featured cover. Preserve the existing blue/neutral tokens, modest borders, and no card-within-card treatment.
-
-- [ ] **Step 4: Add breakpoint rules**
-
-  At `max-width: 1279px`, keep the homepage as one content column. At `max-width: 900px`, reduce feature/list gaps and preserve horizontal article rows where available. At `max-width: 640px`, switch `.home-featured-card` and `.home-latest-list .article-card` to block layout; use a 16:9 featured cover, compact 16:9 list covers, and ensure no fixed dimensions create horizontal scrolling.
-
-- [ ] **Step 5: Run the focused component suite**
-
-  Run: `npm test -- src/app/[locale]/(site)/page.test.tsx src/components/site/article-card.test.tsx`
-
-  Expected: PASS. The ArticleCard suite confirms its category-page contract still renders its existing classes and links.
-
-- [ ] **Step 6: Commit the responsive presentation**
-
-  ```bash
-  git add src/app/globals.css 'src/app/[locale]/(site)/page.tsx' 'src/app/[locale]/(site)/page.test.tsx'
-  git commit -m "feat: add responsive homepage editorial layout"
-  ```
-
-### Task 3: Verify rendering, accessibility, and regression record
-
-**Files:**
-- Modify: `docs/test-log.md`
-- Test: `src/app/[locale]/(site)/page.test.tsx`
-- Test: `src/components/site/article-card.test.tsx`
-
-**Interfaces:**
-- Consumes: completed homepage markup and CSS from Tasks 1–2.
-- Produces: a reproducible validation record for the homepage redesign.
-
-- [ ] **Step 1: Run the complete focused suite**
-
-  Run:
-
-  ```bash
-  npm test -- \
-    'src/app/[locale]/(site)/page.test.tsx' \
-    src/components/site/article-card.test.tsx \
-    src/components/site/category-page.test.tsx \
-    src/components/site/category-article-list.test.tsx
-  ```
-
-  Expected: all tests PASS; this demonstrates homepage changes did not regress shared ArticleCard/category behavior.
-
-- [ ] **Step 2: Perform browser checks at each required viewport**
-
-  Use the local dev server and inspect `http://localhost:3000/zh-tw` at `375x844`, `768x1024`, `1024x900`, `1440x1024`, and a wide desktop viewport. For every viewport confirm:
-
-  ```text
-  - the featured title is visible before the latest list;
-  - feature/list images retain their intended aspect ratios without distortion;
-  - the content has no horizontal page overflow;
-  - every feature/list title and CTA resolves to the article URL;
-  - topic shortcuts are after the latest content.
-  ```
-
-- [ ] **Step 3: Run whitespace validation**
-
-  Run: `git diff --check`
-
-  Expected: no output and exit status 0.
-
-- [ ] **Step 4: Record exact validation evidence**
-
-  Append a dated entry to `docs/test-log.md` using its existing heading format. Record the focused Vitest command, successful result count, the five viewport sizes, and whether all five checks above passed. If full lint is run, record the known unrelated `src/lib/wechat-import/browser-extractor.ts` findings separately instead of attributing them to this change.
-
-- [ ] **Step 5: Commit the validation record**
-
-  ```bash
-  git add docs/test-log.md
-  git commit -m "test: record homepage editorial layout validation"
-  ```
+- [ ] Run homepage, shared-feed, category-feed, ArticleCard, category-page, config, and AdSlot tests plus `git diff --check`; all must pass.
+- [ ] At 375×844, 768×1024, 1024×900, 1440×1024 and 1835×1368 verify no horizontal overflow, shared category list/card classes, sidebar absence below 1280px, interval-aware Inline position, and topic shortcuts after feed/end ad.
+- [ ] Append the exact test command, test result, five viewports and checks to `docs/test-log.md`; commit with `git commit -m "test: record homepage minimal feed validation"`.

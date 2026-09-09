@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { SiteHeader } from "./header";
@@ -9,7 +9,7 @@ describe("SiteHeader", () => {
       { id: "ai", name: "AI", segments: ["ai"] },
     ]} />);
 
-    expect(screen.getByRole("link", { name: "AI" })).toHaveAttribute("href", "/zh-tw/category/ai");
+    expect(screen.getAllByRole("link", { name: "AI" })[0]).toHaveAttribute("href", "/zh-tw/category/ai");
     expect(screen.queryByRole("link", { name: "軟體" })).not.toBeInTheDocument();
   });
 
@@ -28,21 +28,21 @@ describe("SiteHeader", () => {
       },
     ]} />);
 
-    expect(screen.getByRole("link", { name: "AI" })).toHaveAttribute("href", "/zh-tw/category/ai");
-    const trigger = screen.getByRole("button", { name: "AI" });
+    expect(screen.getAllByRole("link", { name: "AI" })[0]).toHaveAttribute("href", "/zh-tw/category/ai");
+    const trigger = screen.getAllByRole("button", { name: "AI" })[0];
     expect(trigger).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByRole("link", { name: "ChatGPT" })).not.toBeInTheDocument();
 
     fireEvent.click(trigger);
 
     expect(trigger).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByRole("link", { name: "全部 AI" })).toHaveAttribute("href", "/zh-tw/category/ai");
-    expect(screen.getByRole("link", { name: "ChatGPT" })).toHaveAttribute("href", "/zh-tw/category/ai/chatgpt");
+    expect(screen.getAllByRole("link", { name: "全部 AI" })[0]).toHaveAttribute("href", "/zh-tw/category/ai");
+    expect(screen.getAllByRole("link", { name: "ChatGPT" })[0]).toHaveAttribute("href", "/zh-tw/category/ai/chatgpt");
     expect(screen.queryByRole("link", { name: "Prompt" })).not.toBeInTheDocument();
-    const childTrigger = screen.getByRole("button", { name: "ChatGPT" });
+    const childTrigger = screen.getAllByRole("button", { name: "ChatGPT" })[0];
     fireEvent.click(childTrigger);
     expect(childTrigger).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByRole("link", { name: "Prompt" })).toHaveAttribute("href", "/zh-tw/category/ai/chatgpt/prompt");
+    expect(screen.getAllByRole("link", { name: "Prompt" })[0]).toHaveAttribute("href", "/zh-tw/category/ai/chatgpt/prompt");
     fireEvent.keyDown(childTrigger, { key: "Escape" });
     expect(screen.queryByRole("link", { name: "Prompt" })).not.toBeInTheDocument();
     expect(trigger).toHaveAttribute("aria-expanded", "true");
@@ -53,5 +53,26 @@ describe("SiteHeader", () => {
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     fireEvent.keyDown(trigger, { key: "Escape" });
     expect(trigger).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("opens a mobile navigation drawer with categories and the admin link", () => {
+    render(<SiteHeader locale="zh-tw" dictionary={getDictionary("zh-tw")} categories={[
+      { id: "ai", name: "AI", segments: ["ai"] },
+      { id: "software", name: "軟體", segments: ["software"] },
+    ]} />);
+
+    const menuTrigger = screen.getByRole("button", { name: "開啟選單" });
+    expect(menuTrigger).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("dialog", { name: "主要導覽" })).not.toBeInTheDocument();
+
+    fireEvent.click(menuTrigger);
+
+    expect(menuTrigger).toHaveAttribute("aria-expanded", "true");
+    const drawer = screen.getByRole("dialog", { name: "主要導覽" });
+    expect(drawer).toBeInTheDocument();
+    expect(within(drawer).getByRole("link", { name: "AI" })).toHaveAttribute("href", "/zh-tw/category/ai");
+    expect(within(drawer).getByRole("link", { name: "軟體" })).toHaveAttribute("href", "/zh-tw/category/software");
+    expect(within(drawer).getByRole("link", { name: "關於我們" })).toHaveAttribute("href", "/zh-tw/about");
+    expect(within(drawer).getByRole("link", { name: "後台" })).toHaveAttribute("href", "/login");
   });
 });
