@@ -1,6 +1,6 @@
 # 1Wiki
 
-最後更新：2026-09-06
+最後更新：2026-09-09
 
 1Wiki 是提供 AI、軟體、社群與 3C 使用教學及疑難解答的多語系內容網站。繁體中文為預設語系，英文與日文已提供獨立入口；MVP 另包含文章後台、帳密權限、AI 初稿、SEO 與手動 AdSense 版位。
 
@@ -11,7 +11,7 @@
 - 在專案負責人明確確認前，不部署至 Vercel，不更新遠端環境變數或遠端資料庫。
 - 部署前需先整理變更內容、測試結果、已知限制與必要的資料庫 migration，再另行執行發布。
 
-目前功能、待驗收工作與驗證範圍見 [工作狀態](docs/project-status.md)，本次執行結果見 [測試紀錄](docs/test-log.md)。
+所有文件入口見 [文件中心](docs/README.md)，目前功能、待驗收工作與驗證範圍見 [工作狀態](docs/project-status.md)，實際執行結果見 [測試紀錄](docs/test-log.md)。
 
 ## MVP 功能
 
@@ -21,10 +21,11 @@
 - 文章、三級分類、Rich Text Editor、YouTube／Shorts 嵌入與 SEO 欄位管理
 - 作者庫、語系化作者頁與署名；文章卡片封面、同分類連續閱讀及分類頁載入更多
 - OWNER 專用 GA4 流量監測、AI 配圖 Worker 監控與公開快取監控
+- 微信公眾號五步驟匯入、原文／改寫對照、30 分鐘暫存、R2 轉存與繁體中文正規化
 - DeepSeek（預設）、OpenAI、Gemini 三選一的 AI 文章初稿、來源分析與選題生成
 - OWNER 專用 Prompt 版本管理、歷史回復、LLM Token／失敗／耗時追蹤與美元成本估算
 - canonical、Open Graph、Article structured data、sitemap 與 robots
-- 手動 AdSense slot；Auto ads 預設關閉
+- OWNER 可調文章／分類廣告節奏、手動 AdSense slot 與 bottom-only Anchor；全部預設關閉
 - PostgreSQL、Prisma、Next.js App Router；正式建議部署至 GCP VM，Vercel 文件僅保留作為歷史替代方案
 
 ## 本機啟動
@@ -69,6 +70,9 @@ npm run dev
 | `CACHE_REVALIDATE_SECRET` | cache-invalidator 呼叫 Next ISR 失效 endpoint 的內部密鑰 |
 | `CLOUDFLARE_ZONE_ID` | Cloudflare HTML cache purge 的 zone ID；可選 |
 | `CLOUDFLARE_API_TOKEN` | 僅具 Cache Purge 權限的 Cloudflare token；可選 |
+| `NEXT_PUBLIC_ADSENSE_*` | AdSense client ID、文章／分類／首頁手動 slot 及啟用開關 |
+| `NEXT_PUBLIC_GA4_MEASUREMENT_ID`、`GA4_*` | 前台 GA4 與 OWNER 報表同步 |
+| `INDEXNOW_KEY`、`SEARCH_ENGINE_CRON_SECRET` | IndexNow 通知與內部處理 API；目前尚未達可發布條件 |
 
 可以用 `openssl rand -base64 48` 產生 session secret。後台密碼至少 12 字元，且需同時包含字母與數字；連續登入失敗五次會鎖定 15 分鐘。
 
@@ -124,7 +128,7 @@ API key 只在伺服器端使用。一般「新增文章」仍可用主題與關
 4. 配置 Google 認證 CMP 或 Google Privacy & Messaging。
 5. 最後將 `NEXT_PUBLIC_ADSENSE_ENABLED` 改為 `true` 並重新部署。
 
-文章正文最多顯示 `article_after_intro`、`article_mid`、`article_end` 三個版位；`article_mid` 只在至少 1,200 個可見字元的長文中，插入接近全文 45% 的 H2 段落邊界。桌面右欄另有 `sidebar_desktop` 與 `sidebar_desktop_sticky`，只在 1024px 以上顯示；廣告採接近視窗才初始化。分類頁另有開頭、列表間、末尾及側欄版位，完整行為見 [連續閱讀與廣告](docs/article-auto-loading.md)。`feed_inline` 目前只有中央設定，MVP 不啟用。
+文章正文使用 `article_after_intro`、依 OWNER 設定重複插入的 `article_mid`、`article_end`，以及唯一的 `sidebar_desktop_sticky`。`article_mid` 僅用於至少 1,200 個可見字元且具適合 H2 邊界的文章。文章、分類與首頁桌面側欄皆只在 1280px 以上顯示並初始化；廣告採接近視窗才初始化，未填充版位會安全收合。分類頁停用頂部廣告，列表 Inline 間隔由 OWNER 設定；進行中的首頁文章流另使用 `home_inline`、`home_end`、`home_sidebar_desktop`。完整行為見 [連續閱讀與廣告](docs/article-auto-loading.md)。`feed_inline` 保留但不啟用。
 
 ## AI 配圖
 
@@ -136,6 +140,7 @@ API key 只在伺服器端使用。一般「新增文章」仍可用主題與關
 - [作者庫](docs/author-library.md)：作者指派、封存及公開作者頁。
 - [流量監測](docs/traffic-monitoring.md)：GA4 設定、同步入口與指標限制。
 - [搜尋引擎通知](docs/search-engine-submission.md)：IndexNow 目前為部分實作；Cron、金鑰驗證及可靠性仍待完成，不可視為已啟用。
+- [微信擷取回歸](docs/wechat-fetch-regression.md)：五步驟操作、暫存期限、改寫模式、錯誤定位及已知外部限制。
 
 ## 測試與驗收
 

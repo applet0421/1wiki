@@ -1,6 +1,8 @@
 # Search Engine Auto Update Implementation Plan
 
-最後更新：2026-09-06
+最後更新：2026-09-09
+
+文件狀態：歷史實作計畫；現行能力與缺口以 [搜尋引擎通知與設定](../../search-engine-submission.md) 為準。
 
 ## 2026-09-06 執行狀態
 

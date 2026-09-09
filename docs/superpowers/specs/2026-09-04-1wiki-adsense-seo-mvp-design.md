@@ -1,6 +1,8 @@
 # 1Wiki AdSense SEO 科技教學站 MVP 設計
 
-最後更新：2026-09-08
+最後更新：2026-09-09
+
+文件狀態：歷史 MVP 設計規格；現況以 [工作狀態](../../project-status.md) 為準。
 
 ## 2026-09-06 現況與後續規格
 
@@ -226,7 +228,7 @@ MVP 不判斷文章原創程度，不建立 `adsEligible` 欄位。正式公開�
 | `article_after_intro` | 導言或目錄後 | 啟用 |
 | `article_mid` | 長文依 OWNER 設定的 H2 區段間隔插入；短文省略 | 啟用 |
 | `article_end` | 正文結束、相關文章前 | 啟用 |
-| `sidebar_desktop_sticky` | 文章桌面右側欄，只在 1024px 以上顯示 | 啟用 |
+| `sidebar_desktop_sticky` | 文章桌面右側欄；現行實作只在 1280px 以上顯示 | 啟用 |
 | `feed_inline` | 首頁／分類頁第 4 張文章卡後 | 僅保留設定，第二階段才渲染 |
 
 首篇與自動載入的續篇使用相同配置：每篇文章使用開頭後、文末與最多五個可設定的中段廣告，加一個桌面側欄廣告。預設中段規則為每 2 個 H2 插入一則、每篇最多 3 則；不得加入底部固定 anchor、Vignette／開屏廣告、手機版連續兩個大型矩形廣告、按圖片數量自動插入廣告或 Auto ads 自動增加正文廣告。
@@ -269,7 +271,7 @@ AdSense script 僅在允許廣告的公開網站載入一次，不得在 `/admin
 
 廣告容器使用 `width: 100%` 並水平置中。橫幅 slot 在手機至少預留 100px、桌面至少 90px；矩形 slot 至少預留 280px。不得設定會裁切廣告的 `max-height` 或 `overflow: hidden`，也不得覆蓋文字、導覽或操作按鈕。
 
-`sidebar_desktop_sticky` 在小於 1024px 時不得建立可見廣告節點，文章版面同時回到單欄，不得留下空白側欄。MVP 不渲染 `feed_inline`。
+`sidebar_desktop_sticky` 在小於 1280px 時不得建立可見廣告節點，文章版面同時回到單欄，不得留下空白側欄。MVP 不渲染 `feed_inline`。
 
 ### 8.5 核准後設定
 

@@ -1,5 +1,9 @@
 # WeChat Wizard Implementation Plan
 
+最後更新：2026-09-09
+
+文件狀態：歷史實作計畫；現行操作與回歸以 [微信擷取相容性回歸](../../wechat-fetch-regression.md) 為準。
+
 > **For agentic workers:** Use superpowers:executing-plans to implement this plan task-by-task, inline on main as requested.
 
 **Goal:** Turn WeChat imports into the user-approved five-step workflow with complete previews and explicit actions.

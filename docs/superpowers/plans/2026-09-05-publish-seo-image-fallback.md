@@ -1,6 +1,8 @@
 # Publish SEO and Image Fallback Implementation Plan
 
-最後更新：2026-09-06
+最後更新：2026-09-09
+
+文件狀態：歷史實作計畫；現行規則以 [文章編輯、封面與影片](../../article-editing.md) 為準。
 
 ## 2026-09-06 執行狀態
 

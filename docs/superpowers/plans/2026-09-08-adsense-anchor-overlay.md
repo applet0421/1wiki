@@ -1,5 +1,9 @@
 # AdSense Anchor Overlay Implementation Plan
 
+最後更新：2026-09-09
+
+文件狀態：歷史實作計畫；現行文章／分類廣告規則見 [同分類文章連續閱讀](../../article-auto-loading.md)。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add OWNER-controlled, bottom-only AdSense Anchor ads to eligible public pages while retaining compliant manual in-page and desktop-sidebar placements.

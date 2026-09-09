@@ -1,6 +1,8 @@
 # Hierarchical Categories Design
 
-最後更新：2026-09-05
+最後更新：2026-09-09
+
+文件狀態：歷史三級分類設計規格；現況以 [工作狀態](../../project-status.md) 為準。
 
 ## 目標
 

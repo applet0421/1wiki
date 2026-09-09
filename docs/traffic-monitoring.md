@@ -1,8 +1,10 @@
 # 流量監測與 GA4 設定
 
-最後更新：2026-09-06
+最後更新：2026-09-09
 
-後台 `/admin/traffic` 使用 GA4 Data API 的每日彙總資料，顯示瀏覽量、平均每日活躍使用者、工作階段、互動率、平均互動時間、熱門分類與熱門文章。
+文件狀態：現行操作文件；本次依程式碼校正為累計頁面瀏覽量模型，未連線 GA4 或確認正式同步狀態。
+
+後台 `/admin/traffic` 使用 GA4 Data API 的全期間頁面資料，顯示累計頁面瀏覽量、熱門分類與熱門文章。資料庫不保存每日趨勢、活躍使用者、工作階段、互動率或平均互動時間。
 
 ## 必要設定
 
@@ -30,13 +32,13 @@ GA4 Data API 的 OWNER 流量同步仍需要另外建立 Service Account，並�
 
 ## 同步
 
-Owner 可在流量監測頁按「立即同步 GA4」，系統會重算最近三天資料。排程服務可對 `/api/admin/traffic/sync` 發送 `POST`，並帶上 `Authorization: Bearer <GA4_SYNC_SECRET>`。
+OWNER 可在流量監測頁按「立即同步 GA4」。目前 API 每次查詢 `2020-01-01` 到執行當天，依去除 query string 的 `pagePath` 彙總 `screenPageViews`，再 upsert 每個頁面的目前累計值。排程服務可對 `/api/admin/traffic/sync` 發送 `POST`，並帶上 `Authorization: Bearer <GA4_SYNC_SECRET>`。
 
-建議每小時同步一次今天到昨天，並每日凌晨重新同步最近三天。系統只保存頁面與網站層級的每日彙總，不保存 IP 或可識別個人的訪客資料。
+目前沒有增量同步或日期趨勢需求；可依營運需要安排每小時或每日執行。系統只保存每個 page path 的累計值與同步執行紀錄，不保存 IP 或可識別個人的訪客資料。
 
 ## 目前實作與驗證範圍
 
-需先套用 `20260906001000_traffic_analytics`；後台只允許 OWNER，支援日期及語系篩選。上面的同步頻率是操作建議，目前 `vercel.json` 只有尚待接妥的搜尋引擎排程，沒有 GA4 自動同步排程。
+需先套用 `20260906001000_traffic_analytics` 與 `20260906210000_simplify_traffic_totals`；後台只允許 OWNER，支援語系篩選，不再提供日期篩選。上面的同步頻率是操作建議，目前 `vercel.json` 只有尚待接妥的搜尋引擎排程，沒有 GA4 自動同步排程。
 
 目前 page context 依網址分類首頁、分類、文章、作者與靜態頁。文章路由只填 content slug，不填 category slug／root category slug；熱門分類不可解讀為已完整彙總文章所屬分類。連續閱讀不改網址，因此也不能直接當作每篇載入文章都有獨立 page_view。
 

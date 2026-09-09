@@ -1,6 +1,34 @@
 # 本機驗證紀錄
 
-最後更新：2026-09-08
+最後更新：2026-09-09
+
+文件狀態：現行驗證紀錄；每個日期區段只代表當時實際執行的工作樹與環境，不可由局部通過推定全站或外部服務已完成。
+
+## 2026-09-09 全專案文件整理與目前工作樹基線
+
+範圍：更新專案入口、文件中心、工作狀態、所有現行操作文件、稽核、歷史 specs／plans 的檢閱日期及狀態；同步 `.env.example` 的三個首頁 AdSense slot。未修改或修復既有首頁、導覽、微信、favicon 或其他程式。
+
+執行命令：
+
+```sh
+npm test -- 'src/app/[locale]/(site)/page.test.tsx' src/components/site/header.test.tsx src/components/site/article-feed-list.test.tsx src/components/site/category-article-list.test.tsx src/components/ads/ad-slot.test.tsx src/lib/adsense/config.test.ts
+npx tsc --noEmit
+npm test -- --reporter=dot
+npm run lint
+NEXT_PUBLIC_SITE_URL=http://localhost:3000 npm run build
+git diff --check
+```
+
+結果：
+
+- 首頁、導覽、文章流與 AdSense 聚焦測試：6 個測試檔、24 項測試全數通過。
+- TypeScript：`npx tsc --noEmit` 通過。
+- 全量 Vitest：142 個測試檔中 138 通過、4 失敗；458 項中 453 通過、5 失敗。失敗為 `favicon-assets.test.ts` 期待 48px 但目前未提交 favicon 是 32px、Prompt schema 預期少了兩個新微信 Prompt，以及微信 Worker／action 共 3 項既有失敗。
+- 完整 ESLint：未通過。`src/lib/wechat-import/browser-extractor.ts` 有 1 個 `no-explicit-any` error；`src/lib/wechat-import/normalize-content.ts` 有 1 個 unused-variable warning。
+- Production build：Prisma generate、Next.js 編譯與 TypeScript 階段通過；靜態頁產生時因目前環境資料庫主機 `base` 無法連線（Prisma `P1001`）而失敗。此輪未改用或啟動另一個資料庫，也未將外部環境失敗記成程式通過。
+- 文件寫回後的本地 Markdown 檢查通過：37 份 Markdown 均有 `最後更新：2026-09-09`，且所有本地連結目標存在；`git diff --check` 通過；本次計畫沒有待填標記。
+
+限制：全量失敗與 Build 阻擋都保留原狀，因本次授權範圍是文件整理，不包含修復使用者正在進行的程式工作。沒有執行 E2E、真實 AdSense／GA4／R2／搜尋引擎、正式 VM／Coolify 或遠端資料庫驗證。
 
 ## 2026-09-08 文章廣告版面一致化
 

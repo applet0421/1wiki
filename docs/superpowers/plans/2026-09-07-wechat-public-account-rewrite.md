@@ -1,6 +1,8 @@
 # 微信公眾號文章改寫 Implementation Plan
 
-最後更新：2026-09-07
+最後更新：2026-09-09
+
+文件狀態：歷史實作計畫；現行操作與回歸以 [微信擷取相容性回歸](../../wechat-fetch-regression.md) 為準。
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

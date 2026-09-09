@@ -1,6 +1,8 @@
 # 同分類文章連續閱讀
 
-最後更新：2026-09-08
+最後更新：2026-09-09
+
+文件狀態：現行操作文件。文章與分類功能已提交；首頁共用文章流與首頁手動廣告目前仍在工作樹中，完成狀態以 [工作狀態](project-status.md) 為準。
 
 文章頁距離載入區約 600px 時，自動在原文下方接上一篇完整文章。各篇之間顯示點狀分隔帶，沿用文章標題、麵包屑、作者、正文、分類入口與廣告版位。窄螢幕沿用單欄版面。
 
@@ -63,3 +65,9 @@ OWNER 可在 `/admin/ads` 設定中段廣告節奏：每 1–6 個 H2 插入一�
 上述手動版位仍需對應的 `NEXT_PUBLIC_ADSENSE_SLOT_CATEGORY_*` slot ID；正式環境未啟用 AdSense 或未設定 slot 時不會投放。分類頁 Bottom Anchor 則由同一後台的 Anchor 總開關與分類頁開關獨立控制。
 
 共用文章卡片已支援封面，封面上傳及補值規則見 [文章編輯與媒體](article-editing.md)。本次只重跑卡片等聚焦測試，歷史瀏覽器紀錄保留原有適用範圍，詳見 [測試紀錄](test-log.md)。
+
+## 首頁文章流（2026-09-09 進行中）
+
+首頁目前工作樹改為重用 `ArticleFeedList` 與分類卡片樣式，最多顯示既有查詢回傳的 12 篇最新文章。`home_inline` 沿用 OWNER 的 `categoryInlineAdInterval`，同樣只有間隔位置後方仍有文章時才插入；`home_end` 位於列表結尾，`home_sidebar_desktop` 只在 ≥1280px 顯示及初始化。
+
+首頁不新增頂部手動廣告；Bottom Anchor 仍由 `/admin/ads` 的總開關與首頁開關控制。對應環境變數為 `NEXT_PUBLIC_ADSENSE_SLOT_HOME_INLINE`、`NEXT_PUBLIC_ADSENSE_SLOT_HOME_END`、`NEXT_PUBLIC_ADSENSE_SLOT_HOME_SIDEBAR_DESKTOP`。這些變更尚待本輪全量測試、Build 與瀏覽器斷點驗收，不能視為已發布。

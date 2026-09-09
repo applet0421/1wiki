@@ -1,5 +1,9 @@
 # 1Wiki Locale Architecture Implementation Plan
 
+最後更新：2026-09-09
+
+文件狀態：歷史實作計畫；checkbox 保存當時執行脈絡，不代表目前待辦。現況見 [工作狀態](../../project-status.md)。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 將 1Wiki 公開內容移至可擴充的語系前綴路由，預設繁體中文並提供英文、日文空白首頁與語言選擇器，同時確保內容、SEO、後台及 AI 流程依語系隔離。

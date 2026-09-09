@@ -1,18 +1,18 @@
 # 搜尋引擎通知與設定
 
-最後更新：2026-09-07
+最後更新：2026-09-09
 
-狀態：本機部分實作，尚未完成發布驗收。以下分別記錄現有行為與待完成設定；尚未操作 Google、Bing、Vercel 或遠端資料庫。
+文件狀態：現行操作文件。本機部分實作，尚未完成發布驗收。以下分別記錄現有行為與待完成設定；本次文件整理未操作 Google、Bing、Vercel、正式 VM 或遠端資料庫。
 
 ## 已有程式能力
 
 - 品牌搜尋訊號包含 48×48 ICO／PNG 與 SVG 圖示、首頁品牌式 description、`WebSite.name = 1Wiki`、網域備援 `alternateName`，以及初始 HTML 中可直接爬取的頂層分類連結。僅 OWNER 可用的 `/admin/brand-seo` 可維護網站名稱、備用名稱、三種品牌素材與 `zh-tw`、`en`、`ja` 各自的首頁／分享標題與摘要；語言清單沿用系統既有語系，未另建語言管理。公開素材固定經由 `/brand/icon-48.png`、`/brand/logo`、`/brand/og-default` 提供，資料來源則為 R2。Google 是否採用 favicon、網站名稱、摘要與 sitelinks 仍由搜尋系統決定。
 - 各語系內容獨立維護，現階段不宣告 `hreflang`；這不是翻譯對照資料，避免向搜尋引擎暗示不存在的互譯關係。
 - 動態 `/sitemap.xml` 提供各語系文章、分類、已公開資訊頁與作者頁。文章／分類查詢目前僅依 PUBLISHED 篩選；作者頁另檢查發布時間。尚未統一未來發布時間與 canonical 排除規則。
-- 新 migration `20260906120000_search_engine_notifications` 建立通知表，保存 URL、引擎、事件、狀態、嘗試次數、下次時間、最後錯誤與送出時間，以 `(engine, url, eventType)` 唯一鍵 upsert。
+- migration `20260906120000_search_engine_notifications` 建立通知表，保存 URL、引擎、事件、狀態、嘗試次數、下次時間、最後錯誤與送出時間，以 `(engine, url, eventType)` 唯一鍵 upsert。
 - 文章保存與切換狀態後產生 `publish`、`update`、`unpublish`；canonical 空白或以本站網址開頭才入列。通知寫入在保存交易之外。
 - OWNER 可開啟 `/admin/search-engine` 查看待處理／成功／失敗數量、最近 20 筆紀錄及「立即處理通知」。Sitemap「可用」是固定文字，並非 HTTP 健康檢查；資料庫摘要查詢例外目前回傳零值。
-- `POST /api/internal/search-engine/process` 每次讀取最多 100 筆已到期的 Bing PENDING 通知，送往 IndexNow；成功標為 SUCCESS，失敗保留 PENDING、記錄錯誤並延後固定五分鐘。
+- `POST /api/internal/search-engine/process` 每次讀取最多 100 筆已到期的 PENDING 通知。Bing 批次送往 IndexNow；Google 批次在 OAuth 設定完整時，以 Search Console API 重新提交 sitemap。成功標為 SUCCESS，任一提交例外會讓本批次保留 PENDING、記錄錯誤並延後固定五分鐘。
 - 缺金鑰、站點網址或空批次時跳過提交。API 回傳 `summary`（選取筆數）、`success`（送出筆數）、`failure`（失敗筆數）；跳過時不能僅憑 failure=0 判定已送達。未授權為 401，提交例外為 502；資料庫讀取例外尚不在統一回應範圍內。
 
 ## 環境設定與目前限制
@@ -20,13 +20,15 @@
 | 變數 | 實際用途 |
 | --- | --- |
 | `NEXT_PUBLIC_SITE_URL` | 本站公開根網址與 IndexNow host |
-| `INDEXNOW_KEY` | 提交金鑰；目前只送 host、key、urlList |
+| `INDEXNOW_KEY` | 提交金鑰；必須與 repository 內根目錄公開驗證檔的檔名及內容一致 |
 | `SEARCH_ENGINE_CRON_SECRET` | 內部 API bearer secret，優先於 CRON_SECRET |
 | `CRON_SECRET` | API secret 備援；使用 Vercel Cron 時需確認與 API 預期一致 |
+| `GSC_SITE_URL`、`GSC_SITEMAP_URL` | Google Search Console property 與 sitemap；未設定時回退正式站網址 |
+| `GSC_CLIENT_ID`、`GSC_CLIENT_SECRET`、`GSC_REFRESH_TOKEN` | Google sitemap 提交所需 OAuth；缺任一項即跳過 Google 提交 |
 
 `vercel.json` 已寫入每五分鐘排程，但 route **只提供 POST**。[Vercel Cron 文件](https://vercel.com/docs/cron-jobs) 說明排程以 GET 呼叫，故目前不能把此設定視為可運作排程。
 
-[IndexNow 文件](https://www.indexnow.org/documentation) 要求公開 key 驗證檔案；目前沒有自動提供根目錄 key 檔案，也不讀取計畫中的 `INDEXNOW_KEY_LOCATION`。啟用前需完成這部分。
+repository 已提供 `/492a65f8a02b7fb10cd0b601b15fc7ba9188986cb071f8e0ed4e454f8b4548c7.txt` 靜態驗證檔。正式環境的 `INDEXNOW_KEY` 必須使用同一字串，並在部署後確認該 URL 回傳 200 與純文字 key。程式不支援自訂 `keyLocation`；若改 key，必須同步更換公開檔名、內容與環境變數。
 
 待補實作：原子 claim、退避上限／最大次數、4xx 永久失敗、過期清理、正確同源 canonical 比對、未來發布排除、刪除／改 slug 的舊 URL 通知，以及保存與 enqueue 的交易一致性。現有程式沒有寫入 FAILED 狀態的路徑。
 
@@ -37,7 +39,7 @@
 1. 確認正式 `NEXT_PUBLIC_SITE_URL`，以規劃中的 `https://www.1wiki.org` 為例，在 Google Search Console 與 Bing Webmaster 驗證對應網站資源，提交 `https://www.1wiki.org/sitemap.xml`。
 2. 部署後檢查 `/favicon.ico`、`/brand/icon-48.png`、`/brand/logo`、`/brand/og-default`、首頁 favicon link、description、`WebSite` JSON-LD、sitemap、robots、canonical、DNS 及 HTTPS，再由 Search Console 對首頁要求建立索引。搜尋外觀更新可能需要數天至數週。
 3. Google 一般教學文章以 sitemap 與公開連結供發現；目前沒有 Search Console API 串接。[Google Indexing API](https://developers.google.com/search/apis/indexing-api/v3/using-api) 僅適用 JobPosting 或特定直播影片頁，不能用來實作本站一般文章即時索引。
-4. 補齊 IndexNow key 公開檔案、上述程式缺口，完成隔離資料庫 migration 與回歸，再依 README 發布政策安排啟用。
+4. 確認 IndexNow key 公開檔可從正式網域取得，補齊上述程式缺口，完成隔離資料庫 migration 與回歸，再依 README 發布政策安排啟用。
 
 ## 故障定位與驗證
 

@@ -1,6 +1,8 @@
 # Worker Monitoring Implementation Plan
 
-最後更新：2026-09-06
+最後更新：2026-09-09
+
+文件狀態：歷史實作計畫；現況以 [工作狀態](../../project-status.md) 為準。
 
 ## 2026-09-06 執行狀態
 

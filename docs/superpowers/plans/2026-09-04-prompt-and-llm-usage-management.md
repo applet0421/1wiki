@@ -1,5 +1,9 @@
 # Prompt and LLM Usage Management Implementation Plan
 
+最後更新：2026-09-09
+
+文件狀態：歷史實作計畫；checkbox 保存當時執行脈絡，不代表目前待辦。現況見 [工作狀態](../../project-status.md)。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 讓 OWNER 能版本化管理所有 LLM Prompt，並在後台查詢每次呼叫的 token、狀態、耗時與美元估算成本。

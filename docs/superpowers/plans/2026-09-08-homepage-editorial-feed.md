@@ -1,5 +1,9 @@
 # Homepage Minimal Article Feed Implementation Plan
 
+最後更新：2026-09-09
+
+文件狀態：進行中；對應程式仍在未提交工作樹，尚待全量驗證與瀏覽器驗收。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Rebuild the locale homepage as a compact reading introduction followed by the same article-card feed and ad rhythm used on category pages.
