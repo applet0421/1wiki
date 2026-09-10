@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 import { supportedLocales } from "@/lib/i18n/config";
 import { ARTICLE_AD_SETTING_ID, DEFAULT_ARTICLE_AD_SETTINGS, hasArticleAdSettingsModel, validateArticleAdSettings } from "@/lib/adsense/article-ad-settings";
+import { enqueuePublicInvalidation } from "@/lib/content/public-invalidation-outbox";
 
 function asNumber(formData: FormData, field: string) {
   return Number(formData.get(field));
@@ -45,5 +46,6 @@ export async function saveArticleAdSettingsAction(formData: FormData) {
 
   revalidatePath("/admin/ads");
   for (const locale of supportedLocales) revalidatePath(`/${locale}`, "layout");
+  await Promise.all(supportedLocales.map((locale) => enqueuePublicInvalidation(prisma, { locale })));
   redirect("/admin/ads?success=saved");
 }

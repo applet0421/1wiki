@@ -4,11 +4,13 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
-import { supportedLocales } from "@/lib/i18n/config";
+import { defaultLocale, supportedLocales } from "@/lib/i18n/config";
 import { parseBrandSeoForm } from "@/lib/brand-seo/schema";
 import { validateStoredBrandAssets } from "@/lib/brand-seo/assets";
 import { BRAND_SEO_SETTINGS_ID } from "@/lib/brand-seo/constants";
-import { brandSeoInvalidationPaths } from "@/lib/brand-seo/invalidation";
+import { brandSeoSharedPublicPaths } from "@/lib/brand-seo/invalidation";
+import { enqueuePublicInvalidation } from "@/lib/content/public-invalidation-outbox";
+import { revalidatePublicContent } from "@/lib/content/public-invalidation";
 
 function field(formData: FormData, name: string) { return String(formData.get(name) || ""); }
 
@@ -45,6 +47,11 @@ export async function saveBrandSeoAction(formData: FormData) {
     const message = error instanceof Error ? error.message : "品牌設定儲存失敗";
     redirect(`/admin/brand-seo?error=${encodeURIComponent(message)}`);
   }
-  for (const path of brandSeoInvalidationPaths()) revalidatePath(path);
+  revalidatePath("/admin/brand-seo");
+  await Promise.all(supportedLocales.map((locale) => {
+    const input = { locale, extraPaths: locale === defaultLocale ? brandSeoSharedPublicPaths() : undefined };
+    revalidatePublicContent(input);
+    return enqueuePublicInvalidation(prisma, input);
+  }));
   redirect("/admin/brand-seo?success=saved");
 }

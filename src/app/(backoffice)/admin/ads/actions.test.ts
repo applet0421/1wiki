@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
-const { getCurrentUser, upsert, revalidatePath, redirect, db } = vi.hoisted(() => {
+const { getCurrentUser, upsert, revalidatePath, redirect, enqueuePublicInvalidation, db } = vi.hoisted(() => {
   const upsert = vi.fn();
   return {
     getCurrentUser: vi.fn(),
     upsert,
     revalidatePath: vi.fn(),
+    enqueuePublicInvalidation: vi.fn(),
     redirect: vi.fn((url: string) => { throw new Error(`redirect:${url}`); }),
     db: { articleAdSetting: { upsert } },
   };
@@ -15,6 +16,7 @@ vi.mock("@/lib/auth/session", () => ({ getCurrentUser }));
 vi.mock("@/lib/db/prisma", () => ({ prisma: db }));
 vi.mock("next/cache", () => ({ revalidatePath }));
 vi.mock("next/navigation", () => ({ redirect }));
+vi.mock("@/lib/content/public-invalidation-outbox", () => ({ enqueuePublicInvalidation }));
 
 import { saveArticleAdSettingsAction } from "./actions";
 
@@ -33,7 +35,7 @@ describe("saveArticleAdSettingsAction", () => {
     db.articleAdSetting = original;
   });
 
-  it("saves owner settings and invalidates public locale layouts", async () => {
+  it("saves owner settings and invalidates public locale layouts and edge-cache entries", async () => {
     getCurrentUser.mockResolvedValue({ role: "OWNER", mustChangePassword: false });
     const form = new FormData();
     form.set("middleAdInterval", "2");
@@ -52,5 +54,9 @@ describe("saveArticleAdSettingsAction", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/zh-tw", "layout");
     expect(revalidatePath).toHaveBeenCalledWith("/en", "layout");
     expect(revalidatePath).toHaveBeenCalledWith("/ja", "layout");
+    expect(enqueuePublicInvalidation).toHaveBeenCalledTimes(3);
+    expect(enqueuePublicInvalidation).toHaveBeenCalledWith(db, { locale: "zh-tw" });
+    expect(enqueuePublicInvalidation).toHaveBeenCalledWith(db, { locale: "en" });
+    expect(enqueuePublicInvalidation).toHaveBeenCalledWith(db, { locale: "ja" });
   });
 });

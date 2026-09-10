@@ -7,6 +7,8 @@ export type PublicInvalidationInput = {
   categoryPaths?: string[];
   authorSlugs?: string[];
   pageSlugs?: string[];
+  /** Public root-relative paths shared across locales, such as site assets. */
+  extraPaths?: string[];
 };
 
 function unique(values: string[]): string[] {
@@ -21,6 +23,7 @@ export function buildPublicInvalidationPaths(input: PublicInvalidationInput): st
   paths.push(...unique(input.categoryPaths ?? []).map((path) => `${locale}/category/${path}`));
   paths.push(...unique(input.authorSlugs ?? []).map((slug) => `${locale}/authors/${slug}`));
   paths.push(...unique(input.pageSlugs ?? []).map((slug) => `${locale}/${slug}`));
+  paths.push(...unique(input.extraPaths ?? []).filter((path) => path.startsWith("/")));
   paths.push("/sitemap.xml");
 
   return unique(paths);

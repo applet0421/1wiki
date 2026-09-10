@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import HomePage from "./page";
+import HomePage, { revalidate } from "./page";
 
 const { listPublishedPosts, listPublishedRootCategories } = vi.hoisted(() => ({
   listPublishedPosts: vi.fn(),
@@ -14,6 +14,10 @@ vi.mock("@/lib/adsense/article-ad-settings", () => ({
 }));
 
 describe("HomePage", () => {
+  it("keeps the homepage cached until explicit invalidation", () => {
+    expect(revalidate).toBe(false);
+  });
+
   it("shows only root category cards with canonical category URLs", async () => {
     listPublishedPosts.mockResolvedValueOnce([{
       id: "post", slug: "guide", title: "Guide", excerpt: "Intro", publishedAt: new Date("2026-09-03T00:00:00Z"),

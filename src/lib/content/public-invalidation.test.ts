@@ -41,6 +41,18 @@ describe("buildPublicInvalidationPaths", () => {
     ]);
   });
 
+  it("includes shared public assets needed by a global settings update", () => {
+    expect(buildPublicInvalidationPaths({
+      locale: "zh-tw",
+      extraPaths: ["/manifest.webmanifest", "/brand/logo", "/brand/logo"],
+    })).toEqual([
+      "/zh-tw",
+      "/manifest.webmanifest",
+      "/brand/logo",
+      "/sitemap.xml",
+    ]);
+  });
+
   it("marks a public path list as invalidation work", async () => {
     const { revalidatePublicContent } = await import("./public-invalidation");
     const { revalidatePath } = await import("next/cache");

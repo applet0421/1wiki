@@ -13,7 +13,8 @@ import { AdsenseScript } from "@/components/ads/adsense-script";
 import { getAdSlotConfig, getAnchorAdsConfig, getLiveAdsenseClientId, getPublicAdEnvironment } from "@/lib/adsense/config";
 import { getOrCreateArticleAdSettings } from "@/lib/adsense/article-ad-settings";
 
-export const revalidate = 60;
+// Public content is refreshed only by the invalidation outbox after an admin update.
+export const revalidate = false;
 type Props = { params: Promise<{ locale: string }> };
 
 const getHomeData = cache((locale: "zh-tw" | "en" | "ja") => Promise.all([

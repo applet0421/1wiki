@@ -13,7 +13,8 @@ import { AnalyticsTracker } from "@/components/site/analytics-tracker";
 import { getAnalyticsConfig } from "@/lib/analytics/config";
 import { resolveBrandSeo } from "@/lib/brand-seo/repository";
 
-export const revalidate = 60;
+// Public content is refreshed only by the invalidation outbox after an admin update.
+export const revalidate = false;
 
 export default async function SiteLayout({ children, params }: { children: ReactNode; params: Promise<{ locale: string }> }) {
   const { locale } = await params;
