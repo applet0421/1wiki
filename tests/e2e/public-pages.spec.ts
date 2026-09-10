@@ -60,6 +60,65 @@ test("頂部分類可展開下層分類並前往階層網址", async ({ page }) 
   await expect(page).toHaveURL(/\/zh-tw\/category\/ai\/chatgpt\/prompt$/);
 });
 
+test("行動版選單會以完整可捲動的抽屜顯示所有導覽項目", async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto("/zh-tw");
+
+  const menuTrigger = page.getByRole("button", { name: "開啟選單" });
+  await expect(menuTrigger).toHaveAttribute("aria-expanded", "false");
+  await menuTrigger.click();
+  await expect(page.getByRole("button", { name: "關閉選單" })).toHaveAttribute("aria-expanded", "true");
+
+  const drawer = page.getByRole("dialog", { name: "主要導覽" });
+  await expect(drawer).toBeVisible();
+  const drawerBounds = await drawer.evaluate((element) => {
+    const { bottom, top } = element.getBoundingClientRect();
+    return { bottom, top };
+  });
+  expect(drawerBounds.top).toBe(60);
+  expect(drawerBounds.bottom).toBe(852);
+  await expect(drawer.getByRole("link", { name: "後台" })).toBeVisible();
+});
+
+test("行動版選單的巢狀分類與語言選單不會出現白底或被裁切", async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto("/zh-tw");
+  await page.getByRole("button", { name: "開啟選單" }).click();
+
+  const drawer = page.getByRole("dialog", { name: "主要導覽" });
+  const aiTrigger = drawer.getByRole("button", { name: "AI 教學" });
+  await aiTrigger.press("Enter");
+  await expect(aiTrigger).toHaveAttribute("aria-expanded", "true");
+  const chatGptTrigger = drawer.getByRole("button", { name: "ChatGPT" });
+  await chatGptTrigger.press("Enter");
+  await expect(chatGptTrigger).toHaveAttribute("aria-expanded", "true");
+  const submenu = drawer.locator(".nav-category-submenu");
+  await expect(submenu).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+
+  const languageTrigger = drawer.getByRole("button", { name: "選擇語言：繁體中文" });
+  await expect(languageTrigger).toHaveText("繁體中文");
+  await languageTrigger.press("Enter");
+  await expect(languageTrigger).toHaveAttribute("aria-expanded", "true");
+  const languageMenu = drawer.locator(".language-menu");
+  const menuBounds = await languageMenu.evaluate((element) => {
+    const { left, right } = element.getBoundingClientRect();
+    return { left, right };
+  });
+  expect(menuBounds.left).toBeGreaterThanOrEqual(0);
+  expect(menuBounds.right).toBeLessThanOrEqual(393);
+  await expect(languageMenu.getByRole("link", { name: "English" })).toBeVisible();
+});
+
+test("行動版文章會保留可閱讀的完整主欄寬度", async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto("/zh-tw/articles/chatgpt-login-guide");
+
+  const article = page.locator(".article-page");
+  const { width } = await article.evaluate((element) => element.getBoundingClientRect());
+  expect(width).toBeGreaterThan(300);
+  await expect(page.getByRole("heading", { level: 1, name: "ChatGPT 無法登入怎麼辦？" })).toBeVisible();
+});
+
 test("階層分類會彙整後代文章並顯示完整麵包屑", async ({ page }) => {
   await page.goto("/zh-tw/category/ai/chatgpt/prompt");
   await expect(page.getByRole("heading", { level: 1, name: "Prompt 撰寫" })).toBeVisible();
