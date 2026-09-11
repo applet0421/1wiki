@@ -42,6 +42,7 @@ describe("HomePage", () => {
 
     expect(screen.getByRole("heading", { name: "把複雜的科技問題變簡單。" })).toBeInTheDocument();
     expect(screen.getByText("1Wiki 提供 AI、App、軟體、手機與 3C 教學，從設定、操作到疑難排解，幫你更快解決每天遇到的科技問題。")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "剛整理好的實用教學" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "先選一個你想解決的主題" })).not.toBeInTheDocument();
     expect(screen.getByTestId("latest-answers")).toHaveClass("category-article-list");
     expect(screen.getAllByRole("article")).toHaveLength(2);
