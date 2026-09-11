@@ -11,12 +11,16 @@ function escapeAttribute(value: string): string {
   return value.replace(/&/gu, "&amp;").replace(/"/gu, "&quot;").replace(/</gu, "&lt;");
 }
 
+function escapeHtml(value: string): string {
+  return value.replace(/&/gu, "&amp;").replace(/</gu, "&lt;").replace(/>/gu, "&gt;");
+}
+
 function buildContentHtml(blocks: ArticleBlock[], publicUrls: Map<string, string>): string {
   return blocks.map((block) => {
     if (block.type === "text") return block.html;
     const url = publicUrls.get(block.assetId);
     if (!url) throw new Error("改寫草稿引用的圖片未完成轉存。");
-    return `<img src="${escapeAttribute(url)}" alt="${escapeAttribute(block.alt)}">`;
+    return `<figure class="article-image article-image-standard"><img src="${escapeAttribute(url)}" alt="${escapeAttribute(block.alt)}"><figcaption>${escapeHtml(block.alt)}</figcaption></figure>`;
   }).join("\n");
 }
 
