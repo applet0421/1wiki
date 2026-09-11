@@ -64,6 +64,7 @@ export function PostEditor({ categories, authors = [], post, error, provider = "
     post ? post.bylineId ?? "" : firstActiveAuthorId(authors, initialLocale),
   );
   const [generated, setGenerated] = useState<GeneratedArticle | null>(initialGenerated || null);
+  const [editedContentHtml, setEditedContentHtml] = useState<string | null>(null);
   const source: EditablePost | undefined = generated ? {
     id: post?.id || "",
     locale: post?.locale || selectedLocale,
@@ -80,7 +81,7 @@ export function PostEditor({ categories, authors = [], post, error, provider = "
     canonicalUrl: post?.canonicalUrl || null,
   } : post;
   const notes = verificationNotes(post?.aiNeedsVerification);
-  const layoutDiagnostics = inspectArticleLayout(source?.contentHtml || "");
+  const layoutDiagnostics = inspectArticleLayout(editedContentHtml ?? (source?.contentHtml || ""));
   const localeLocked = post?.status === "PUBLISHED";
   return <form action={savePostAction} className="admin-grid">
     {post ? <input type="hidden" name="id" value={post.id} /> : null}{sourceImportId ? <input type="hidden" name="sourceImportId" value={sourceImportId} /> : null}{error ? <p className="form-error" role="alert">{error}</p> : null}
@@ -103,7 +104,7 @@ export function PostEditor({ categories, authors = [], post, error, provider = "
       </select></label>
       <label className="span-2">摘要<textarea name="excerpt" defaultValue={source?.excerpt || ""} rows={3} maxLength={320} /></label>
       <label className="span-2">封面圖片網址<CoverImageField initialValue={source?.coverImage || ""} /></label>
-      <div className="span-2"><span className="field-label">正文</span><RichTextEditor initialHtml={source?.contentHtml} aiImageContext={{ postId: post?.id, locale: selectedLocale }} /></div>
+      <div className="span-2"><span className="field-label">正文</span><RichTextEditor initialHtml={source?.contentHtml} onHtmlChange={setEditedContentHtml} aiImageContext={{ postId: post?.id, locale: selectedLocale }} /></div>
     </fieldset>
     <SeoFields key={`seo-${generated?.title || "stored"}`} post={source} />
     <div className="editor-actions"><button type="submit" name="intent" value="draft" className="button button-quiet">儲存草稿</button><button type="submit" name="intent" value="publish" className="button button-primary">發布文章</button></div>
