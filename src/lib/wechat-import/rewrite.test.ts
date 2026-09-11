@@ -50,7 +50,7 @@ describe("WeChat article rewrite", () => {
     const execute = async () => ({ title: "这一次，真不是狼来了", slug: "guide", excerpt: "这是摘要", blocks: [{ id: "b-0001", type: "text" as const, html: "<h2>这是段落</h2>" }, { id: "b-0002", type: "image" as const, assetId: "asset-1", alt: "这是图片" }], seoTitle: "这是 SEO 标题", seoDescription: "这是 SEO 描述", seoKeywords: "这是,测试", needsVerification: ["这是待核实事项"] });
     const draft = await rewriteWeChatArticle({ mode: "FAITHFUL", locale: "zh-tw", sourceTitle: "原標題", sourceMetadata: {}, blocks }, { execute });
     expect(draft).toMatchObject({ title: "這一次，真不是狼來了", excerpt: "這是摘要", seoTitle: "這是 SEO 標題", seoDescription: "這是 SEO 描述", seoKeywords: "這是,測試", needsVerification: ["這是待核實事項"] });
-    expect(draft.blocks).toEqual([{ id: "b-0001", type: "text", html: "<h2>這是段落</h2>" }, { id: "b-0002", type: "image", assetId: "asset-1", alt: "這是圖片" }]);
+    expect(draft.blocks).toEqual([{ id: "b-0001", type: "text", html: "<h2>這是段落</h2>" }, { id: "b-0002", type: "image", assetId: "asset-1", alt: "圖" }]);
   });
 
   it("assigns a unique text block id when deep SEO output collides with an image id", async () => {
@@ -73,7 +73,8 @@ describe("WeChat article rewrite", () => {
     if (!faithfulRequest || !seoRequest) throw new Error("Expected one request per rewrite mode");
     expect(faithfulRequest.key).toBe("WECHAT_ARTICLE_REWRITE_FAITHFUL");
     expect(seoRequest.key).toBe("WECHAT_ARTICLE_REWRITE_DEEP_SEO");
-    expect(faithfulRequest.variables.blockContract).toContain("不新增、刪除或重排區塊");
+    expect(faithfulRequest.variables.blockContract).toContain("圖片不會傳入模型");
+    expect(faithfulRequest.variables.blockContract).toContain("保留本段每個文字 block 的數量、id、type 與順序");
     expect(faithfulRequest.variables.blockContract).toContain("h2、h3");
     expect(seoRequest.variables.blockContract).toContain("以 h2 建立主要章節");
     expect(seoRequest.variables.blockContract).toContain("h3");
@@ -92,11 +93,9 @@ describe("WeChat article rewrite", () => {
     const execute = vi.fn(async () => ({ title: "標題", slug: "guide", excerpt: "摘要", blocks, seoTitle: "標題", seoDescription: "描述", seoKeywords: "教學", needsVerification: [] }));
     await rewriteWeChatArticle({ mode: "FAITHFUL", locale: "zh-tw", sourceTitle: "原標題", sourceMetadata: {}, blocks }, { execute: execute as never });
     const request = execute.mock.calls[0] as unknown as [import("@/lib/ai/execute-llm").ExecuteLLMInput<unknown>];
-    const schema = request[0].jsonSchema as { properties: { blocks: { items: { anyOf: unknown[] } } } };
-    expect(schema.properties.blocks.items.anyOf).toEqual(expect.arrayContaining([
-      expect.objectContaining({ required: ["id", "type", "html"], additionalProperties: false }),
-      expect.objectContaining({ required: ["id", "type", "assetId", "alt"], additionalProperties: false }),
-    ]));
+    const schema = request[0].jsonSchema as { properties: { blocks: { items: { required: string[]; properties: { type: { enum: string[] } } } } } };
+    expect(schema.properties.blocks.items.required).toEqual(["id", "type", "html"]);
+    expect(schema.properties.blocks.items.properties.type.enum).toEqual(["text"]);
     expect(request[0].variables.blockContract).toContain(JSON.stringify(schema));
   });
 
@@ -110,5 +109,29 @@ describe("WeChat article rewrite", () => {
     const draft = await rewriteWeChatArticle({ mode: "FAITHFUL", locale: "zh-tw", sourceTitle: "標題", sourceMetadata: {}, blocks }, { execute });
     expect(draft.blocks[1]).toMatchObject({ id: "b-0002", assetId: "asset-1" });
     expect(() => assertImageInvariant("FAITHFUL", blocks, [blocks[0], { id: "b-0002", type: "image", alt: "圖", assetId: "wrong" }])).toThrow();
+  });
+
+  it("splits long text rewrites and restores source images without sending them to the model", async () => {
+    const longBlocks = [
+      { id: "b-0001", type: "text" as const, html: `<p>${"第一段內容".repeat(900)}</p>` },
+      { id: "b-0002", type: "image" as const, assetId: "asset-1", alt: "原始圖片" },
+      { id: "b-0003", type: "text" as const, html: `<p>${"第二段內容".repeat(900)}</p>` },
+    ];
+    const execute = vi.fn(async (request: ExecuteLLMInput<unknown>) => {
+      const requestedBlocks = JSON.parse(request.variables.sourceBlocks) as Array<{ id: string; type: string; html?: string }>;
+      return {
+        title: "改寫標題", slug: "rewritten-guide", excerpt: "摘要", seoTitle: "SEO 標題", seoDescription: "SEO 描述", seoKeywords: "微信,教學", needsVerification: [],
+        blocks: requestedBlocks.map((block) => ({ id: block.id, type: "text" as const, html: `<h2>章節</h2><h3>重點</h3>${block.html}` })),
+      };
+    });
+
+    const draft = await rewriteWeChatArticle({ mode: "FAITHFUL", locale: "zh-tw", sourceTitle: "原標題", sourceMetadata: {}, blocks: longBlocks }, { execute: execute as never });
+
+    expect(execute).toHaveBeenCalledTimes(2);
+    for (const [request] of execute.mock.calls as unknown as Array<[ExecuteLLMInput<unknown>]>) {
+      expect(request.variables.sourceBlocks).not.toContain('"type":"image"');
+    }
+    expect(draft.blocks.map((block) => block.id)).toEqual(["b-0001", "b-0002", "b-0003"]);
+    expect(draft.blocks[1]).toEqual(longBlocks[1]);
   });
 });

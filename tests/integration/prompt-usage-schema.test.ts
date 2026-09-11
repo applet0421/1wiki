@@ -6,7 +6,7 @@ describe("Prompt and LLM usage schema", () => {
   beforeEach(resetDatabase);
   afterAll(() => prisma.$disconnect());
 
-  it("installs article and image active v1 Prompt definitions", async () => {
+  it("installs article, image, and WeChat Prompt definitions", async () => {
     const definitions = await prisma.promptDefinition.findMany({
       include: { versions: true },
       orderBy: { key: "asc" },
@@ -21,7 +21,10 @@ describe("Prompt and LLM usage schema", () => {
       "IMAGE_PLAN",
       "SOURCE_ANALYZE",
       "WECHAT_ARTICLE_REWRITE",
+      "WECHAT_ARTICLE_REWRITE_DEEP_SEO",
+      "WECHAT_ARTICLE_REWRITE_FAITHFUL",
     ]);
+    // The isolated test reset intentionally retains only each definition's v1 fixture.
     expect(definitions.every((item) => item.activeVersionNumber === 1)).toBe(true);
     expect(definitions.every((item) => item.versions.length === 1)).toBe(true);
   });
