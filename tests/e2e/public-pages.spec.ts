@@ -77,10 +77,11 @@ test("行動版選單會以完整可捲動的抽屜顯示所有導覽項目", as
   });
   expect(drawerBounds.top).toBe(60);
   expect(drawerBounds.bottom).toBe(852);
-  await expect(drawer.getByRole("link", { name: "後台" })).toBeVisible();
+  await expect(drawer.getByRole("link", { name: "後台" })).toHaveCount(0);
+  await expect(drawer.getByRole("button", { name: "選擇語言：繁體中文" })).toHaveCount(0);
 });
 
-test("行動版選單的巢狀分類與語言選單不會出現白底或被裁切", async ({ page }) => {
+test("行動版選單的巢狀分類不會出現白底", async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 852 });
   await page.goto("/zh-tw");
   await page.getByRole("button", { name: "開啟選單" }).click();
@@ -95,18 +96,6 @@ test("行動版選單的巢狀分類與語言選單不會出現白底或被裁�
   const submenu = drawer.locator(".nav-category-submenu");
   await expect(submenu).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
 
-  const languageTrigger = drawer.getByRole("button", { name: "選擇語言：繁體中文" });
-  await expect(languageTrigger).toHaveText("繁體中文");
-  await languageTrigger.press("Enter");
-  await expect(languageTrigger).toHaveAttribute("aria-expanded", "true");
-  const languageMenu = drawer.locator(".language-menu");
-  const menuBounds = await languageMenu.evaluate((element) => {
-    const { left, right } = element.getBoundingClientRect();
-    return { left, right };
-  });
-  expect(menuBounds.left).toBeGreaterThanOrEqual(0);
-  expect(menuBounds.right).toBeLessThanOrEqual(393);
-  await expect(languageMenu.getByRole("link", { name: "English" })).toBeVisible();
 });
 
 test("行動版文章會保留可閱讀的完整主欄寬度", async ({ page }) => {

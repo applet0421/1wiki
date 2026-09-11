@@ -441,12 +441,6 @@ td small { display: block; color: #a45a00; margin-top: .3rem; }
   .mobile-nav-drawer .nav-category-trigger { width: 2.75rem; justify-content: center; }
   .mobile-nav-drawer .nav-category-dropdown { position: static; grid-column: 1 / -1; min-width: 0; transform: none; overflow: hidden; border: 0; border-top: 1px solid #e2e8f0; border-radius: 0; background: transparent; padding: .35rem 0 .5rem .75rem; box-shadow: none; }
   .mobile-nav-drawer .nav-category-dropdown::before { display: none; }
-  .mobile-nav-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-top: 1px solid #dce3ee; padding-top: 1.25rem; }
-  .mobile-nav-footer .language-switcher { flex: 1; }
-  .mobile-nav-footer .language-trigger { padding-inline: 0; }
-  .mobile-nav-footer .language-trigger > span { display: inline; }
-  .mobile-nav-footer .language-menu { top: auto; right: auto; bottom: calc(100% + .55rem); left: 0; }
-  .mobile-nav-footer .admin-link { display: inline-flex; }
   .home-hero { grid-template-columns: 1fr; min-height: auto; padding-block: 4rem; }
   .category-grid, .article-grid { grid-template-columns: 1fr; }
   .article-list .article-card, .article-list .article-card.has-cover { display: block; }
