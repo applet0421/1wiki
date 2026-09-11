@@ -119,10 +119,9 @@ describe("WeChat article rewrite", () => {
     ];
     const execute = vi.fn(async (request: ExecuteLLMInput<unknown>) => {
       const requestedBlocks = JSON.parse(request.variables.sourceBlocks) as Array<{ id: string; type: string; html?: string }>;
-      return {
-        title: "改寫標題", slug: "rewritten-guide", excerpt: "摘要", seoTitle: "SEO 標題", seoDescription: "SEO 描述", seoKeywords: "微信,教學", needsVerification: [],
-        blocks: requestedBlocks.map((block) => ({ id: block.id, type: "text" as const, html: `<h2>章節</h2><h3>重點</h3>${block.html}` })),
-      };
+      const rewrittenBlocks = requestedBlocks.map((block) => ({ id: block.id, type: "text" as const, html: `<h2>章節</h2><h3>重點</h3>${block.html}` }));
+      if (request.variables.previousContext.includes("第 1 段")) return { title: "改寫標題", slug: "rewritten-guide", excerpt: "摘要", seoTitle: "SEO 標題", seoDescription: "SEO 描述", seoKeywords: "微信,教學", needsVerification: [], blocks: rewrittenBlocks };
+      return { blocks: rewrittenBlocks };
     });
 
     const draft = await rewriteWeChatArticle({ mode: "FAITHFUL", locale: "zh-tw", sourceTitle: "原標題", sourceMetadata: {}, blocks: longBlocks }, { execute: execute as never });
@@ -131,6 +130,8 @@ describe("WeChat article rewrite", () => {
     for (const [request] of execute.mock.calls as unknown as Array<[ExecuteLLMInput<unknown>]>) {
       expect(request.variables.sourceBlocks).not.toContain('"type":"image"');
     }
+    const [, secondCall] = execute.mock.calls as unknown as Array<[ExecuteLLMInput<unknown>]>;
+    expect(secondCall?.[0].jsonSchema).toMatchObject({ required: ["blocks"] });
     expect(draft.blocks.map((block) => block.id)).toEqual(["b-0001", "b-0002", "b-0003"]);
     expect(draft.blocks[1]).toEqual(longBlocks[1]);
   });

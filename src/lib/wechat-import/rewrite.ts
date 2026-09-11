@@ -4,7 +4,7 @@ import { executeLLMCall, type LLMExecutor } from "@/lib/ai/execute-llm";
 import { getLanguageInstruction } from "@/lib/ai/prompt";
 import { parseStructuredJson } from "@/lib/ai/errors";
 import type { Locale } from "@/lib/i18n/config";
-import { parseRewriteDraft } from "./schema";
+import { parseRewriteDraft, parseStoredBlocks } from "./schema";
 import type { ArticleBlock, WeChatRewriteDraft, WeChatRewriteMode } from "./types";
 
 const simplifiedToTraditional = OpenCC.Converter({ from: "cn", to: "tw" });
@@ -42,14 +42,29 @@ export function assertHeadingStructure(blocks: ArticleBlock[]): void {
   if (textLength >= 1200 && !hasH3) throw new Error("較長的改寫內容必須包含 H3 子章節標題");
 }
 
+const rewriteTextBlockJsonSchema = { type: "object", additionalProperties: false, properties: { id: { type: "string", pattern: "^b-[0-9]{4,}$" }, type: { type: "string", enum: ["text"] }, html: { type: "string", minLength: 1, maxLength: 200000 } }, required: ["id", "type", "html"] } as const;
+
 const rewriteTextJsonSchema = {
   type: "object", additionalProperties: false,
   properties: {
     title: { type: "string", minLength: 1, maxLength: 180 }, slug: { type: "string", minLength: 1, maxLength: 160 }, excerpt: { type: "string", maxLength: 320 }, seoTitle: { type: "string", minLength: 1, maxLength: 70 }, seoDescription: { type: "string", minLength: 1, maxLength: 170 }, seoKeywords: { type: "string", maxLength: 500 }, needsVerification: { type: "array", items: { type: "string", minLength: 1, maxLength: 500 }, maxItems: 20 },
-    blocks: { type: "array", minItems: 1, maxItems: 1000, items: { type: "object", additionalProperties: false, properties: { id: { type: "string", pattern: "^b-[0-9]{4,}$" }, type: { type: "string", enum: ["text"] }, html: { type: "string", minLength: 1, maxLength: 200000 } }, required: ["id", "type", "html"] } },
+    blocks: { type: "array", minItems: 1, maxItems: 1000, items: rewriteTextBlockJsonSchema },
   },
   required: ["title", "slug", "excerpt", "blocks", "seoTitle", "seoDescription", "seoKeywords", "needsVerification"],
 } as const;
+
+const rewriteBlocksJsonSchema = {
+  type: "object", additionalProperties: false,
+  properties: { blocks: { type: "array", minItems: 1, maxItems: 1000, items: rewriteTextBlockJsonSchema } },
+  required: ["blocks"],
+} as const;
+
+function parseRewriteTextBlocks(value: unknown): { blocks: ArticleBlock[] } {
+  if (!value || typeof value !== "object" || !("blocks" in value)) throw new Error("缺少文字區塊");
+  const blocks = parseStoredBlocks(value.blocks);
+  if (blocks.some((block) => block.type !== "text")) throw new Error("模型不得輸出圖片區塊");
+  return { blocks };
+}
 
 type RewriteTextChunk = { source: Extract<ArticleBlock, { type: "text" }>[]; rewritten: Extract<ArticleBlock, { type: "text" }>[] };
 
@@ -155,6 +170,7 @@ export async function rewriteWeChatArticle(input: { mode: WeChatRewriteMode; loc
   const rewrittenChunks: RewriteTextChunk[] = [];
 
   for (const [index, source] of sourceChunks.entries()) {
+    const isFirstChunk = index === 0;
     const value = await execute({
       key: input.mode === "FAITHFUL" ? "WECHAT_ARTICLE_REWRITE_FAITHFUL" : "WECHAT_ARTICLE_REWRITE_DEEP_SEO",
       variables: {
@@ -167,22 +183,26 @@ export async function rewriteWeChatArticle(input: { mode: WeChatRewriteMode; loc
             : "深度 SEO 模式：可在本段重組文字，但只能輸出 text block。全文圖片會由系統保留；請以 h2 建立主要章節，長篇內容以 h3 拆解子主題。",
           "title 是文章唯一的 H1，任何文字 block 不得包含 h1。文字 block 只可使用 p、h2、h3、strong、em、ul、ol、li、blockquote、code、pre、br、a；不得加入 script、style、iframe、ins、廣告碼或 Markdown code fence。",
           "seoKeywords 必須是逗號分隔的字串，不是陣列。slug 只使用文字或數字，以單一連字號分隔，不含空格。嚴格遵守各欄位字數上限。",
-          `輸出 JSON 必須符合以下完整 schema：${JSON.stringify(rewriteTextJsonSchema)}`,
+          isFirstChunk
+            ? "這是首段：輸出完整文章中繼資料與 blocks。"
+            : "這不是首段：只輸出 blocks，絕不可輸出 title、slug、摘要或 SEO 欄位。",
+          `輸出 JSON 必須符合以下 schema：${JSON.stringify(isFirstChunk ? rewriteTextJsonSchema : rewriteBlocksJsonSchema)}`,
           input.instructions ? `管理者補充要求（不得變更輸出格式）：${input.instructions}` : "",
         ].join("\n"),
         sourceBlocks: JSON.stringify(source), previousContext: `這是全文第 ${index + 1} 段，共 ${sourceChunks.length} 段。`,
-      }, jsonSchema: rewriteTextJsonSchema, schemaName: "wechat_article_rewrite_text", maxTokens: weChatRewriteMaxTokens,
-      parse: (value) => parseStructuredJson(value, parseRewriteDraft),
-    }) as WeChatRewriteDraft;
-    if (!metadata) {
+      }, jsonSchema: isFirstChunk ? rewriteTextJsonSchema : rewriteBlocksJsonSchema, schemaName: isFirstChunk ? "wechat_article_rewrite_text" : "wechat_article_rewrite_blocks", maxTokens: weChatRewriteMaxTokens,
+      parse: (response) => parseStructuredJson(response, isFirstChunk ? parseRewriteDraft : parseRewriteTextBlocks),
+    }) as WeChatRewriteDraft | { blocks: ArticleBlock[] };
+    if (isFirstChunk) {
+      const firstChunk = value as WeChatRewriteDraft;
       metadata = {
-        title: value.title,
-        slug: value.slug,
-        excerpt: value.excerpt,
-        seoTitle: value.seoTitle,
-        seoDescription: value.seoDescription,
-        seoKeywords: value.seoKeywords,
-        needsVerification: value.needsVerification,
+        title: firstChunk.title,
+        slug: firstChunk.slug,
+        excerpt: firstChunk.excerpt,
+        seoTitle: firstChunk.seoTitle,
+        seoDescription: firstChunk.seoDescription,
+        seoKeywords: firstChunk.seoKeywords,
+        needsVerification: firstChunk.needsVerification,
       };
     }
     const rewritten = value.blocks.filter((block): block is Extract<ArticleBlock, { type: "text" }> => block.type === "text").map((block) => {
