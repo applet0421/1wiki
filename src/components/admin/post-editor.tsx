@@ -11,6 +11,7 @@ import { RichTextEditor } from "./rich-text-editor";
 import { SeoFields } from "./seo-fields";
 import { TitleSlugFields } from "./title-slug-fields";
 import { defaultLocale, getLocaleConfig, supportedLocales, type Locale } from "@/lib/i18n/config";
+import { inspectArticleLayout } from "@/lib/content/article-layout";
 
 type EditablePost = { id: string; locale: string; status: "DRAFT" | "PUBLISHED"; title: string; slug: string; excerpt: string; contentHtml: string; coverImage: string | null; categoryId: string; bylineId?: string | null; sourceImportId?: string | null; seoTitle: string | null; seoDescription: string | null; seoKeywords: string | null; canonicalUrl: string | null; aiContentType?: "TROUBLESHOOTING" | "HOW_TO" | null; primaryKeyword?: string | null; searchIntent?: string | null; aiSourceSupport?: "STRONG" | "MEDIUM" | null; aiNeedsVerification?: unknown };
 
@@ -79,6 +80,7 @@ export function PostEditor({ categories, authors = [], post, error, provider = "
     canonicalUrl: post?.canonicalUrl || null,
   } : post;
   const notes = verificationNotes(post?.aiNeedsVerification);
+  const layoutDiagnostics = inspectArticleLayout(source?.contentHtml || "");
   const localeLocked = post?.status === "PUBLISHED";
   return <form action={savePostAction} className="admin-grid">
     {post ? <input type="hidden" name="id" value={post.id} /> : null}{sourceImportId ? <input type="hidden" name="sourceImportId" value={sourceImportId} /> : null}{error ? <p className="form-error" role="alert">{error}</p> : null}
@@ -87,6 +89,7 @@ export function PostEditor({ categories, authors = [], post, error, provider = "
       <dl><div><dt>主要關鍵字</dt><dd>{post.primaryKeyword}</dd></div><div><dt>搜尋意圖</dt><dd>{post.searchIntent}</dd></div></dl>
       {notes.length > 0 ? <div className="verification-warning"><strong>發布前需要查證</strong><ul>{notes.map((note) => <li key={note}>{note}</li>)}</ul></div> : <p className="form-success">AI 未標記待查證項目，發布前仍請人工檢查全文。</p>}
     </section> : null}
+    {layoutDiagnostics.length > 0 ? <section className="panel verification-warning" role="region" aria-label="文章版型檢查"><strong>文章版型檢查</strong><ul>{layoutDiagnostics.map((item) => <li key={item.code}>{item.message}</li>)}</ul></section> : null}
     {showAIGenerator ? <AIGenerator provider={provider} locale={selectedLocale} onGenerated={setGenerated} /> : null}
     <fieldset key={generated?.title || "stored"} className="panel form-grid"><legend>文章內容</legend>
       <TitleSlugFields initialTitle={source?.title} initialSlug={source?.slug} />
