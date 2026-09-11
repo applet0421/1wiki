@@ -95,4 +95,14 @@ describe("RichTextEditor media controls", () => {
 
     expect(image).toHaveAttribute("alt", "更新後的替代文字");
   });
+
+  it("wraps a selected image in a standard figure with an editable caption", () => {
+    const { container } = render(<RichTextEditor initialHtml='<img src="https://media.example.com/image.png" alt="同步按鈕">' />);
+    const image = container.querySelector("[contenteditable=\"true\"] img") as HTMLImageElement;
+    fireEvent.click(image);
+    fireEvent.click(screen.getByRole("button", { name: "圖片圖說" }));
+    fireEvent.change(screen.getByLabelText("圖片圖說"), { target: { value: "在好友頁執行同步。" } });
+    fireEvent.click(screen.getByRole("button", { name: "更新圖片版型" }));
+    expect(container.querySelector("figure.article-image-standard figcaption")).toHaveTextContent("在好友頁執行同步。");
+  });
 });

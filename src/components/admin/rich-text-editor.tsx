@@ -24,6 +24,8 @@ export function RichTextEditor({ initialHtml = "", inputName = "contentHtml", ar
   const [insertMode, setInsertMode] = useState<"link" | "image" | "youtube" | null>(null);
   const [insertUrl, setInsertUrl] = useState("");
   const [imageAlt, setImageAlt] = useState("");
+  const [imageCaption, setImageCaption] = useState("");
+  const [editingCaption, setEditingCaption] = useState(false);
   const [pendingUpload, setPendingUpload] = useState<{ publicUrl: string } | null>(null);
   const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null);
   function updateHtml(nextHtml: string) { setHtml(nextHtml); onHtmlChange?.(nextHtml); }
@@ -121,6 +123,8 @@ export function RichTextEditor({ initialHtml = "", inputName = "contentHtml", ar
     if (!(target instanceof HTMLImageElement)) return;
     setSelectedImage(target);
     setImageAlt(target.alt);
+    setImageCaption(target.closest("figure")?.querySelector("figcaption")?.textContent || "");
+    setEditingCaption(false);
     setInsertMode(null);
     setPendingUpload(null);
   }
@@ -130,6 +134,19 @@ export function RichTextEditor({ initialHtml = "", inputName = "contentHtml", ar
     updateHtml(editorRef.current?.innerHTML || "");
     setSelectedImage(null);
     setUploadStatus("圖片替代文字已更新");
+  }
+  function updateSelectedImageFigure() {
+    if (!selectedImage) return;
+    selectedImage.alt = imageAlt.trim();
+    let figure = selectedImage.closest("figure");
+    if (!figure) {
+      figure = document.createElement("figure"); figure.className = "article-image article-image-standard";
+      selectedImage.replaceWith(figure); figure.append(selectedImage);
+    }
+    let caption = figure.querySelector("figcaption");
+    if (!caption) { caption = document.createElement("figcaption"); figure.append(caption); }
+    caption.textContent = imageCaption.trim();
+    updateHtml(editorRef.current?.innerHTML || ""); setSelectedImage(null); setEditingCaption(false); setUploadStatus("圖片版型已更新");
   }
   return <div className="editor-frame">
     <div className="editor-toolbar" role="toolbar" aria-label="文章格式">
@@ -149,6 +166,8 @@ export function RichTextEditor({ initialHtml = "", inputName = "contentHtml", ar
     </div> : null}
     {selectedImage ? <div className="editor-insert-form" role="group" aria-label="編輯圖片">
       <label>圖片替代文字<input autoFocus maxLength={500} value={imageAlt} onChange={(event) => setImageAlt(event.target.value)} /></label>
+      {editingCaption ? <label>圖片圖說<input autoFocus maxLength={500} value={imageCaption} onChange={(event) => setImageCaption(event.target.value)} /></label> : <button type="button" onClick={() => setEditingCaption(true)}>圖片圖說</button>}
+      {editingCaption ? <button type="button" disabled={!imageAlt.trim() || !imageCaption.trim()} onClick={updateSelectedImageFigure}>更新圖片版型</button> : null}
       <button type="button" disabled={!imageAlt.trim()} onClick={updateSelectedImage}>更新圖片</button>
       <button type="button" onClick={() => setSelectedImage(null)}>取消</button>
     </div> : null}
