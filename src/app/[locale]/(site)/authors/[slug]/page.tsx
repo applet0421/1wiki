@@ -11,7 +11,7 @@ import { prisma } from "@/lib/db/prisma";
 import { isLocale, getLocaleConfig } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 
-export const revalidate = 300;
+export const revalidate = false;
 export const dynamicParams = true;
 
 export function generateStaticParams() {

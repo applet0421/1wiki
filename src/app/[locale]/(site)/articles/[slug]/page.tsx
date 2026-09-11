@@ -10,7 +10,7 @@ import { decodeRouteSlug } from "@/lib/content/slug";
 import { prisma } from "@/lib/db/prisma";
 import { buildPostMetadata } from "@/lib/seo/metadata";
 type Props = { params: Promise<{ locale: string; slug: string }> };
-export const revalidate = 300;
+export const revalidate = false;
 export const dynamicParams = true;
 
 export function generateStaticParams() {
