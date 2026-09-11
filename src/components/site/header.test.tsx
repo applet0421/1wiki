@@ -13,6 +13,16 @@ describe("SiteHeader", () => {
     expect(screen.queryByRole("link", { name: "軟體" })).not.toBeInTheDocument();
   });
 
+  it("does not expose the About page in public navigation", () => {
+    render(<SiteHeader locale="zh-tw" dictionary={getDictionary("zh-tw")} categories={[
+      { id: "ai", name: "AI", segments: ["ai"] },
+      { id: "software", name: "軟體", segments: ["software"] },
+      { id: "hardware", name: "手錶", segments: ["hardware"] },
+    ]} />);
+
+    expect(screen.queryByRole("link", { name: "關於我們" })).not.toBeInTheDocument();
+  });
+
   it("expands a navigation category to reveal one level at a time", () => {
     render(<SiteHeader locale="zh-tw" dictionary={getDictionary("zh-tw")} categories={[
       {
