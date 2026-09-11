@@ -42,7 +42,11 @@ export async function processNextWeChatImport(client: PrismaClient, dependencies
       await client.weChatImport.updateMany({ where: { id: job.id, status: "REWRITING" }, data: { status: "REWRITTEN", rewrittenDraft: draft as never, leaseExpiresAt: null, failureStage: null, errorCode: null, errorSummary: null } });
     } catch (error) {
       const errorCode = error instanceof AIProviderError ? `LLM_${error.category.toUpperCase()}` : "LLM_FAILED";
-      const errorSummary = error instanceof AIProviderError ? error.message : "文章改寫未完成，請查看 LLM 用量紀錄並明確重試。";
+      const errorSummary = error instanceof AIProviderError
+        ? error.category === "output_limit"
+          ? "文章完整內容超出目前單次模型輸出上限；請改用支援更長輸出的模型後重試。"
+          : error.message
+        : "文章改寫未完成，請查看 LLM 用量紀錄並明確重試。";
       await client.weChatImport.updateMany({ where: { id: job.id, status: "REWRITING" }, data: { status: "FAILED", failureStage: "REWRITE", errorCode, errorSummary, leaseExpiresAt: null } });
     }
     return true;

@@ -79,6 +79,15 @@ describe("WeChat article rewrite", () => {
     expect(seoRequest.variables.blockContract).toContain("h3");
   });
 
+  it("reserves enough single-call output tokens for long WeChat rewrites", async () => {
+    const draft = { title: "標題", slug: "guide", excerpt: "摘要", blocks, seoTitle: "標題", seoDescription: "描述", seoKeywords: "教學", needsVerification: [] };
+    const execute = vi.fn(async () => draft);
+
+    await rewriteWeChatArticle({ mode: "FAITHFUL", locale: "zh-tw", sourceTitle: "原標題", sourceMetadata: {}, blocks }, { execute: execute as never });
+
+    expect(execute).toHaveBeenCalledWith(expect.objectContaining({ maxTokens: 10000 }));
+  });
+
   it("provides typed block and SEO constraints to JSON-only providers", async () => {
     const execute = vi.fn(async () => ({ title: "標題", slug: "guide", excerpt: "摘要", blocks, seoTitle: "標題", seoDescription: "描述", seoKeywords: "教學", needsVerification: [] }));
     await rewriteWeChatArticle({ mode: "FAITHFUL", locale: "zh-tw", sourceTitle: "原標題", sourceMetadata: {}, blocks }, { execute: execute as never });

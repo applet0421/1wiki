@@ -25,6 +25,19 @@ describe("WeChat import worker", () => {
     await expect(prisma.weChatImport.findUniqueOrThrow({ where: { id: job.id } })).resolves.toMatchObject({ status: "FAILED", errorCode: "LLM_INVALID_OUTPUT", errorSummary: expect.stringContaining("格式不正確") });
   });
 
+  it("explains that a truncated WeChat rewrite reached the model output limit", async () => {
+    const user = await prisma.user.create({ data: { username: "wechat-output-limit", displayName: "Worker", passwordHash: "test", mustChangePassword: false } });
+    const job = await prisma.weChatImport.create({ data: { userId: user.id, status: "REWRITE_QUEUED", sourceUrl: "https://mp.weixin.qq.com/s/example", normalizedUrl: "https://mp.weixin.qq.com/s/example", targetLocale: "zh-tw", sourceBlocks: [{ id: "b-0001", type: "text", html: "<p>內文</p>" }], expiresAt: new Date(Date.now() + 86400000) } });
+
+    await processNextWeChatImport(prisma, { rewrite: async () => { throw new AIProviderError("output_limit"); } });
+
+    await expect(prisma.weChatImport.findUniqueOrThrow({ where: { id: job.id } })).resolves.toMatchObject({
+      status: "FAILED",
+      errorCode: "LLM_OUTPUT_LIMIT",
+      errorSummary: "文章完整內容超出目前單次模型輸出上限；請改用支援更長輸出的模型後重試。",
+    });
+  });
+
   it("claims one queued job and persists a completed HTTP extraction", async () => {
     const user = await prisma.user.create({ data: { username: "wechat-worker", displayName: "Worker", passwordHash: "test", mustChangePassword: false } });
     const job = (await createWeChatImport(prisma, user.id, { sourceUrl: "https://mp.weixin.qq.com/s/example", targetLocale: "zh-tw" })).import;
@@ -43,7 +56,7 @@ describe("WeChat import worker", () => {
 
   it("hands a confirmed rewrite to the R2 transfer stage", async () => {
     const user = await prisma.user.create({ data: { username: "wechat-transfer-worker", displayName: "Transfer", passwordHash: "test", mustChangePassword: false } });
-    const job = await prisma.weChatImport.create({ data: { userId: user.id, status: "TRANSFER_QUEUED", sourceUrl: "https://mp.weixin.qq.com/s/example", normalizedUrl: "https://mp.weixin.qq.com/s/example", targetLocale: "zh-tw", expiresAt: new Date("2026-09-08T00:00:00Z") } });
+    const job = await prisma.weChatImport.create({ data: { userId: user.id, status: "TRANSFER_QUEUED", sourceUrl: "https://mp.weixin.qq.com/s/example", normalizedUrl: "https://mp.weixin.qq.com/s/example", targetLocale: "zh-tw", expiresAt: new Date(Date.now() + 86400000) } });
     const transferSpy = vi.spyOn(transfer, "transferWeChatImportAssets").mockResolvedValue(true);
     await expect(processNextWeChatImport(prisma)).resolves.toBe(true);
     expect(transferSpy).toHaveBeenCalledWith(prisma, job.id);
@@ -53,7 +66,7 @@ describe("WeChat import worker", () => {
     const user = await prisma.user.create({ data: { username: "wechat-rewrite-worker", displayName: "Rewrite", passwordHash: "test", mustChangePassword: false } });
     const sourceBlocks: ArticleBlock[] = [{ id: "b-0001", type: "text", html: "<p>原始內文</p>" }];
     const job = await prisma.weChatImport.create({ data: {
-      userId: user.id, status: "REWRITE_QUEUED", sourceUrl: "https://mp.weixin.qq.com/s/example", normalizedUrl: "https://mp.weixin.qq.com/s/example", targetLocale: "zh-tw", sourceTitle: "原始標題", sourceBlocks, expiresAt: new Date("2026-09-08T00:00:00Z"),
+      userId: user.id, status: "REWRITE_QUEUED", sourceUrl: "https://mp.weixin.qq.com/s/example", normalizedUrl: "https://mp.weixin.qq.com/s/example", targetLocale: "zh-tw", sourceTitle: "原始標題", sourceBlocks, expiresAt: new Date(Date.now() + 86400000),
     } });
     const rewrite = vi.fn(async () => ({ title: "改寫標題", slug: "rewritten-title", excerpt: "摘要", seoTitle: "改寫標題", seoDescription: "摘要", seoKeywords: "關鍵字", needsVerification: [], blocks: sourceBlocks }));
 

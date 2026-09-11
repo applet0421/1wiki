@@ -9,6 +9,7 @@ import type { ArticleBlock, WeChatRewriteDraft, WeChatRewriteMode } from "./type
 
 const simplifiedToTraditional = OpenCC.Converter({ from: "cn", to: "tw" });
 const weChatTextTags = ["p", "h2", "h3", "strong", "em", "ul", "ol", "li", "blockquote", "code", "pre", "br", "a"];
+const weChatRewriteMaxTokens = 10000;
 
 function sanitizeWeChatTextHtml(html: string): string {
   return sanitizeHtml(html, {
@@ -116,7 +117,7 @@ export async function rewriteWeChatArticle(input: { mode: WeChatRewriteMode; loc
         input.instructions ? `管理者補充要求（不得變更圖片引用或輸出格式）：${input.instructions}` : "",
       ].join("\n"),
       sourceBlocks: JSON.stringify(input.blocks), previousContext: "",
-    }, jsonSchema: rewriteJsonSchema, schemaName: "wechat_article_rewrite", maxTokens: 6000,
+    }, jsonSchema: rewriteJsonSchema, schemaName: "wechat_article_rewrite", maxTokens: weChatRewriteMaxTokens,
     parse: (value) => parseStructuredJson(value, parseRewriteDraft),
   }) as WeChatRewriteDraft;
   const sourceImages = new Map(input.blocks.filter((block) => block.type === "image").map((block) => [block.id, block]));
