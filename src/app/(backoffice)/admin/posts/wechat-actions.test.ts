@@ -78,7 +78,7 @@ describe("WeChat import actions", () => {
   it("retries only the failed stage and immediately scrubs an abandoned payload", async () => {
     const user = await prisma.user.create({ data: { username: "wechat-retry", displayName: "Retry", passwordHash: "test", mustChangePassword: false } });
     vi.mocked(getCurrentUser).mockResolvedValue(user);
-    const imported = await prisma.weChatImport.create({ data: { userId: user.id, status: "TRANSFER_FAILED", sourceUrl: "https://mp.weixin.qq.com/s/example", normalizedUrl: "https://mp.weixin.qq.com/s/example", targetLocale: "zh-tw", sourceContentHtml: "<p>敏感來源</p>", expiresAt: new Date("2026-09-08T00:00:00Z"), assets: { create: { position: 0, originalUrl: "https://mmbiz.qpic.cn/a", mimeType: "image/png", byteSize: 3, sha256: "b".repeat(64), alt: "圖", imageBytes: new Uint8Array([1, 2, 3]) } } } });
+    const imported = await prisma.weChatImport.create({ data: { userId: user.id, status: "TRANSFER_FAILED", sourceUrl: "https://mp.weixin.qq.com/s/example", normalizedUrl: "https://mp.weixin.qq.com/s/example", targetLocale: "zh-tw", sourceContentHtml: "<p>敏感來源</p>", expiresAt: new Date(Date.now() + 86400000), assets: { create: { position: 0, originalUrl: "https://mmbiz.qpic.cn/a", mimeType: "image/png", byteSize: 3, sha256: "b".repeat(64), alt: "圖", imageBytes: new Uint8Array([1, 2, 3]) } } } });
     await expect(queueWeChatRetryAction(imported.id)).resolves.toEqual({ ok: true });
     await expect(prisma.weChatImport.findUniqueOrThrow({ where: { id: imported.id } })).resolves.toMatchObject({ status: "TRANSFER_QUEUED" });
     await expect(abandonWeChatImportAction(imported.id)).resolves.toEqual({ ok: true });

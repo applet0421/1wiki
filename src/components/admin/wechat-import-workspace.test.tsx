@@ -35,8 +35,9 @@ describe("WeChat wizard", () => {
     render(<WeChatImportWorkspace imported={imported} />);
     expect(screen.getByRole("button", { name: "確認內容並轉存圖片" })).toBeEnabled();
     expect(screen.queryByRole("checkbox", { name: "我已檢視完整內容、圖片與待核實事項。" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "放棄並清除暫存" }));
+    fireEvent.click(screen.getByRole("button", { name: "重置工作" }));
     expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+    expect(screen.getByText("確定重置這筆工作？")).toBeInTheDocument();
     expect(actions.abandonWeChatImportAction).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "取消" }));
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
