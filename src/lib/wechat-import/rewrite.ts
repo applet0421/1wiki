@@ -12,6 +12,13 @@ const weChatTextTags = ["p", "h2", "h3", "strong", "em", "ul", "ol", "li", "bloc
 const weChatRewriteMaxTokens = 10000;
 const weChatRewriteChunkCharacters = 5000;
 
+export class WeChatRewriteValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "WeChatRewriteValidationError";
+  }
+}
+
 function sanitizeWeChatTextHtml(html: string): string {
   return sanitizeHtml(html, {
     allowedTags: weChatTextTags,
@@ -26,20 +33,20 @@ function sanitizeWeChatTextHtml(html: string): string {
 
 export function assertImageInvariant(mode: WeChatRewriteMode, source: ArticleBlock[], rewritten: ArticleBlock[]): void {
   if (mode === "FAITHFUL") {
-    if (source.map((block) => `${block.id}:${block.type}`).join(",") !== rewritten.map((block) => `${block.id}:${block.type}`).join(",")) throw new Error("忠實模式必須保留圖片與段落順序");
+    if (source.map((block) => `${block.id}:${block.type}`).join(",") !== rewritten.map((block) => `${block.id}:${block.type}`).join(",")) throw new WeChatRewriteValidationError("忠實模式必須保留圖片與段落順序");
   }
   const sourceImages = source.filter((block) => block.type === "image").map((block) => `${block.id}:${block.assetId}`).sort();
   const rewrittenImages = rewritten.filter((block) => block.type === "image").map((block) => `${block.id}:${block.assetId}`).sort();
-  if (sourceImages.join(",") !== rewrittenImages.join(",")) throw new Error("改寫必須保留完整圖片集合");
+  if (sourceImages.join(",") !== rewrittenImages.join(",")) throw new WeChatRewriteValidationError("改寫必須保留完整圖片集合");
 }
 
 export function assertHeadingStructure(blocks: ArticleBlock[]): void {
   const textBlocks = blocks.filter((block) => block.type === "text");
   const hasH2 = textBlocks.some((block) => /<h2(?:\s[^>]*)?>/iu.test(block.html));
-  if (!hasH2) throw new Error("改寫內容必須至少包含一個 H2 章節標題");
+  if (!hasH2) throw new WeChatRewriteValidationError("改寫內容必須至少包含一個 H2 章節標題");
   const textLength = textBlocks.reduce((total, block) => total + block.html.replace(/<[^>]*>/gu, "").length, 0);
   const hasH3 = textBlocks.some((block) => /<h3(?:\s[^>]*)?>/iu.test(block.html));
-  if (textLength >= 1200 && !hasH3) throw new Error("較長的改寫內容必須包含 H3 子章節標題");
+  if (textLength >= 1200 && !hasH3) throw new WeChatRewriteValidationError("較長的改寫內容必須包含 H3 子章節標題");
 }
 
 const rewriteTextBlockJsonSchema = { type: "object", additionalProperties: false, properties: { id: { type: "string", pattern: "^b-[0-9]{4,}$" }, type: { type: "string", enum: ["text"] }, html: { type: "string", minLength: 1, maxLength: 200000 } }, required: ["id", "type", "html"] } as const;
@@ -111,7 +118,7 @@ function mergeRewrittenTextChunks(source: ArticleBlock[], chunks: RewriteTextChu
       continue;
     }
     if (nonFirstTextIds.has(block.id)) continue;
-    throw new Error("找不到對應的改寫文字區塊");
+    throw new WeChatRewriteValidationError("找不到對應的改寫文字區塊");
   }
   return merged;
 }
@@ -206,11 +213,11 @@ export async function rewriteWeChatArticle(input: { mode: WeChatRewriteMode; loc
       };
     }
     const rewritten = value.blocks.filter((block): block is Extract<ArticleBlock, { type: "text" }> => block.type === "text").map((block) => {
-      if (/<h1(?:\s[^>]*)?>/iu.test(block.html)) throw new Error("正文不得包含 H1；文章標題是唯一的 H1");
+      if (/<h1(?:\s[^>]*)?>/iu.test(block.html)) throw new WeChatRewriteValidationError("正文不得包含 H1；文章標題是唯一的 H1");
       return { ...block, html: sanitizeWeChatTextHtml(block.html) };
     });
-    if (!rewritten.length) throw new Error("模型未回傳可用的文字內容");
-    if (input.mode === "FAITHFUL" && source.map((block) => block.id).join(",") !== rewritten.map((block) => block.id).join(",")) throw new Error("忠實模式必須保留文字區塊順序");
+    if (!rewritten.length) throw new WeChatRewriteValidationError("模型未回傳可用的文字內容");
+    if (input.mode === "FAITHFUL" && source.map((block) => block.id).join(",") !== rewritten.map((block) => block.id).join(",")) throw new WeChatRewriteValidationError("忠實模式必須保留文字區塊順序");
     rewrittenChunks.push({ source, rewritten });
   }
 

@@ -5,7 +5,7 @@ import { extractViaBrowser } from "./browser-extractor";
 import { extractViaHttp } from "./http-extractor";
 import { createReport } from "./report";
 import { transferWeChatImportAssets } from "./r2-transfer";
-import { rewriteWeChatArticle } from "./rewrite";
+import { rewriteWeChatArticle, WeChatRewriteValidationError } from "./rewrite";
 import { parseStoredBlocks } from "./schema";
 import { WECHAT_STAGING_TTL_MS } from "./retention";
 
@@ -41,11 +41,13 @@ export async function processNextWeChatImport(client: PrismaClient, dependencies
       const draft = await (dependencies.rewrite || rewriteWeChatArticle)({ mode: job.rewriteMode, locale: job.targetLocale as "zh-tw" | "en" | "ja", sourceTitle: job.sourceTitle || "", sourceMetadata: { accountName: job.sourceAccountName, author: job.sourceAuthor, publishedAt: job.sourcePublishedAt?.toISOString() }, blocks, instructions });
       await client.weChatImport.updateMany({ where: { id: job.id, status: "REWRITING" }, data: { status: "REWRITTEN", rewrittenDraft: draft as never, leaseExpiresAt: null, failureStage: null, errorCode: null, errorSummary: null } });
     } catch (error) {
-      const errorCode = error instanceof AIProviderError ? `LLM_${error.category.toUpperCase()}` : "LLM_FAILED";
+      const errorCode = error instanceof AIProviderError ? `LLM_${error.category.toUpperCase()}` : error instanceof WeChatRewriteValidationError ? "LLM_REWRITE_VALIDATION_FAILED" : "LLM_FAILED";
       const errorSummary = error instanceof AIProviderError
         ? error.category === "output_limit"
           ? "文章完整內容超出目前單次模型輸出上限；請改用支援更長輸出的模型後重試。"
           : error.message
+        : error instanceof WeChatRewriteValidationError
+          ? `改寫內容未通過結構驗證：${error.message}`
         : "文章改寫未完成，請查看 LLM 用量紀錄並明確重試。";
       await client.weChatImport.updateMany({ where: { id: job.id, status: "REWRITING" }, data: { status: "FAILED", failureStage: "REWRITE", errorCode, errorSummary, leaseExpiresAt: null } });
     }

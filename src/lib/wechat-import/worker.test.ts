@@ -6,6 +6,7 @@ import { processNextWeChatImport } from "./worker";
 import * as transfer from "./r2-transfer";
 import type { ArticleBlock } from "./types";
 import { AIProviderError } from "@/lib/ai/errors";
+import { WeChatRewriteValidationError } from "./rewrite";
 
 describe("WeChat import worker", () => {
   beforeEach(resetDatabase);
@@ -35,6 +36,20 @@ describe("WeChat import worker", () => {
       status: "FAILED",
       errorCode: "LLM_OUTPUT_LIMIT",
       errorSummary: "文章完整內容超出目前單次模型輸出上限；請改用支援更長輸出的模型後重試。",
+    });
+  });
+
+  it("persists the specific post-model rewrite validation error for a safe retry decision", async () => {
+    const user = await prisma.user.create({ data: { username: "wechat-validation-error", displayName: "Worker", passwordHash: "test", mustChangePassword: false } });
+    const job = await prisma.weChatImport.create({ data: { userId: user.id, status: "REWRITE_QUEUED", sourceUrl: "https://mp.weixin.qq.com/s/example", normalizedUrl: "https://mp.weixin.qq.com/s/example", targetLocale: "zh-tw", sourceBlocks: [{ id: "b-0001", type: "text", html: "<p>內文</p>" }], expiresAt: new Date(Date.now() + 86400000) } });
+
+    await processNextWeChatImport(prisma, { rewrite: async () => { throw new WeChatRewriteValidationError("改寫內容必須至少包含一個 H2 章節標題"); } });
+
+    await expect(prisma.weChatImport.findUniqueOrThrow({ where: { id: job.id } })).resolves.toMatchObject({
+      status: "FAILED",
+      failureStage: "REWRITE",
+      errorCode: "LLM_REWRITE_VALIDATION_FAILED",
+      errorSummary: "改寫內容未通過結構驗證：改寫內容必須至少包含一個 H2 章節標題",
     });
   });
 

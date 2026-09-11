@@ -2,12 +2,11 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import HomePage, { revalidate } from "./page";
 
-const { listPublishedPosts, listPublishedRootCategories } = vi.hoisted(() => ({
+const { listPublishedPosts } = vi.hoisted(() => ({
   listPublishedPosts: vi.fn(),
-  listPublishedRootCategories: vi.fn(),
 }));
 
-vi.mock("@/lib/content/repository", () => ({ listPublishedPosts, listPublishedRootCategories }));
+vi.mock("@/lib/content/repository", () => ({ listPublishedPosts }));
 vi.mock("@/lib/db/prisma", () => ({ prisma: {} }));
 vi.mock("@/lib/adsense/article-ad-settings", () => ({
   getOrCreateArticleAdSettings: vi.fn().mockResolvedValue({ middleAdInterval: 2, maxMiddleAds: 3, categoryInlineAdInterval: 10, anchorAdsEnabled: false, anchorAdsOnArticles: true, anchorAdsOnHome: true, anchorAdsOnCategories: true }),
@@ -18,19 +17,14 @@ describe("HomePage", () => {
     expect(revalidate).toBe(false);
   });
 
-  it("shows only root category cards with canonical category URLs", async () => {
+  it("does not show topic shortcuts on the homepage", async () => {
     listPublishedPosts.mockResolvedValueOnce([{
       id: "post", slug: "guide", title: "Guide", excerpt: "Intro", publishedAt: new Date("2026-09-03T00:00:00Z"),
       category: { name: "ChatGPT", slug: "chatgpt", parent: { name: "AI", slug: "ai", parent: null } },
     }]);
-    listPublishedRootCategories.mockResolvedValueOnce([{
-      id: "root", name: "AI", slug: "ai", description: "AI guides", publishedPostCount: 1,
-    }]);
-
     render(await HomePage({ params: Promise.resolve({ locale: "zh-tw" }) }));
 
-    expect(screen.getByRole("link", { name: /AI/ })).toHaveAttribute("href", "/zh-tw/category/ai");
-    expect(screen.queryByRole("heading", { name: "ChatGPT" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "先選一個你想解決的主題" })).not.toBeInTheDocument();
   });
 
   it("presents the latest answers as a readable list and uses the revised hero copy", async () => {
@@ -44,13 +38,11 @@ describe("HomePage", () => {
         category: { name: "軟體", slug: "software", parent: null },
       },
     ]);
-    listPublishedRootCategories.mockResolvedValueOnce([]);
-
     render(await HomePage({ params: Promise.resolve({ locale: "zh-tw" }) }));
 
     expect(screen.getByRole("heading", { name: "把複雜的科技問題變簡單。" })).toBeInTheDocument();
     expect(screen.getByText("1Wiki 提供 AI、App、軟體、手機與 3C 教學，從設定、操作到疑難排解，幫你更快解決每天遇到的科技問題。")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "先選一個你想解決的主題" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "先選一個你想解決的主題" })).not.toBeInTheDocument();
     expect(screen.getByTestId("latest-answers")).toHaveClass("category-article-list");
     expect(screen.getAllByRole("article")).toHaveLength(2);
   });
