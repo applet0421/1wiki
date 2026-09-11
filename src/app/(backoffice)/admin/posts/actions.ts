@@ -11,6 +11,7 @@ import { classifySearchEvent } from "@/lib/search-engine/notifications";
 import { getSiteUrl } from "@/lib/config/site";
 import { revalidatePublicContent } from "@/lib/content/public-invalidation";
 import { enqueuePublicInvalidation } from "@/lib/content/public-invalidation-outbox";
+import { inspectArticleLayout } from "@/lib/content/article-layout";
 
 function field(formData: FormData, name: string): string { return String(formData.get(name) || ""); }
 function completeSeo(input: { title: string; excerpt: string; contentHtml: string; seoTitle: string; seoDescription: string; seoKeywords: string }) {
@@ -37,6 +38,8 @@ export async function savePostAction(formData: FormData) {
   }
   const previous = id ? await prisma.post.findUnique({ where: { id }, select: { status: true, locale: true, slug: true } }) : null;
   const contentHtml = isPublishing ? normalizeArticleImageAlts(rawContentHtml, title) : rawContentHtml;
+  const layoutDiagnostics = inspectArticleLayout(contentHtml);
+  if (layoutDiagnostics.length) console.warn("article-layout-diagnostics", { postId: id || "new", codes: layoutDiagnostics.map((item) => item.code) });
   const seo = isPublishing ? completeSeo({ title, excerpt, contentHtml, seoTitle: field(formData, "seoTitle"), seoDescription: field(formData, "seoDescription"), seoKeywords: field(formData, "seoKeywords") }) : { seoTitle: field(formData, "seoTitle"), seoDescription: field(formData, "seoDescription"), seoKeywords: field(formData, "seoKeywords") };
   let saved: Awaited<ReturnType<typeof savePost>> | null = null;
   try {
@@ -73,6 +76,8 @@ export async function togglePostStatusAction(formData: FormData) {
   if (!current) redirect("/admin?error=找不到文章");
   const isPublishing = field(formData, "status") === "PUBLISHED";
   const contentHtml = isPublishing ? normalizeArticleImageAlts(current.contentHtml, current.title) : current.contentHtml;
+  const layoutDiagnostics = inspectArticleLayout(contentHtml);
+  if (layoutDiagnostics.length) console.warn("article-layout-diagnostics", { postId: current.id, codes: layoutDiagnostics.map((item) => item.code) });
   const seo = isPublishing ? completeSeo({ title: current.title, excerpt: current.excerpt, contentHtml, seoTitle: current.seoTitle || "", seoDescription: current.seoDescription || "", seoKeywords: current.seoKeywords || "" }) : { seoTitle: current.seoTitle || "", seoDescription: current.seoDescription || "", seoKeywords: current.seoKeywords || "" };
   try {
     await savePost(prisma, user.id, {
