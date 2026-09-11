@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { deletePost, savePost } from "@/lib/content/repository";
 import { prisma } from "@/lib/db/prisma";
 import { localeSchema } from "@/lib/content/schema";
+import { normalizeArticleImageAlts } from "@/lib/content/image-alt";
 import { articleUrl, enqueueGoogleSitemapNotification, enqueueSearchNotification } from "@/lib/search-engine/repository";
 import { classifySearchEvent } from "@/lib/search-engine/notifications";
 import { getSiteUrl } from "@/lib/config/site";
@@ -19,14 +20,6 @@ function completeSeo(input: { title: string; excerpt: string; contentHtml: strin
     seoDescription: input.seoDescription.trim() || (input.excerpt.trim() || plainText.slice(0, 170)),
     seoKeywords: input.seoKeywords.trim() || input.title.trim(),
   };
-}
-function completeImageAlt(contentHtml: string, title: string): string {
-  const fallback = `${title.trim()} 示意圖`;
-  return contentHtml.replace(/<img\b([^>]*?)>/giu, (tag, attributes: string) => {
-    if (/\balt\s*=\s*["'][^"']+[^"']*["']/iu.test(attributes)) return tag;
-    if (/\balt\s*=\s*["']\s*["']/iu.test(attributes)) return `<img${attributes.replace(/\balt\s*=\s*["']\s*["']/iu, `alt="${fallback.replace(/"/g, "&quot;")}"`)}>`;
-    return `<img${attributes} alt="${fallback.replace(/"/g, "&quot;")}">`;
-  });
 }
 async function requireContentUser() { const user = await getCurrentUser(); if (!user) redirect("/login"); if (user.mustChangePassword) redirect("/change-password"); return user; }
 
@@ -43,7 +36,7 @@ export async function savePostAction(formData: FormData) {
     if (!imported) redirect(`${id ? `/admin/posts/${id}` : "/admin/posts/new"}?error=${encodeURIComponent("匯入工作不可用或不屬於目前帳號")}`);
   }
   const previous = id ? await prisma.post.findUnique({ where: { id }, select: { status: true, locale: true, slug: true } }) : null;
-  const contentHtml = isPublishing ? completeImageAlt(rawContentHtml, title) : rawContentHtml;
+  const contentHtml = isPublishing ? normalizeArticleImageAlts(rawContentHtml, title) : rawContentHtml;
   const seo = isPublishing ? completeSeo({ title, excerpt, contentHtml, seoTitle: field(formData, "seoTitle"), seoDescription: field(formData, "seoDescription"), seoKeywords: field(formData, "seoKeywords") }) : { seoTitle: field(formData, "seoTitle"), seoDescription: field(formData, "seoDescription"), seoKeywords: field(formData, "seoKeywords") };
   let saved: Awaited<ReturnType<typeof savePost>> | null = null;
   try {
@@ -79,7 +72,7 @@ export async function togglePostStatusAction(formData: FormData) {
   const current = await prisma.post.findUnique({ where: { id } });
   if (!current) redirect("/admin?error=找不到文章");
   const isPublishing = field(formData, "status") === "PUBLISHED";
-  const contentHtml = isPublishing ? completeImageAlt(current.contentHtml, current.title) : current.contentHtml;
+  const contentHtml = isPublishing ? normalizeArticleImageAlts(current.contentHtml, current.title) : current.contentHtml;
   const seo = isPublishing ? completeSeo({ title: current.title, excerpt: current.excerpt, contentHtml, seoTitle: current.seoTitle || "", seoDescription: current.seoDescription || "", seoKeywords: current.seoKeywords || "" }) : { seoTitle: current.seoTitle || "", seoDescription: current.seoDescription || "", seoKeywords: current.seoKeywords || "" };
   try {
     await savePost(prisma, user.id, {
