@@ -42,10 +42,11 @@ export async function executeProviderRequest(fetcher: typeof fetch, url: string,
 
 export function parseStructuredJson<T>(value: unknown, parse: (value: unknown) => T): T {
   try {
-    const json = typeof value === "string"
-      ? value.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "")
-      : value;
-    const parsed = typeof json === "string" ? JSON.parse(json) : json;
+    let parsed = value;
+    for (let depth = 0; depth < 2 && typeof parsed === "string"; depth += 1) {
+      const json = parsed.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+      parsed = JSON.parse(json);
+    }
     return parse(parsed);
   } catch {
     throw new AIProviderError("invalid_output");

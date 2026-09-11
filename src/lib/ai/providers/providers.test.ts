@@ -31,6 +31,10 @@ describe("AI provider adapters", () => {
     expect(parseArticleJson("```json\n" + json + "\n```")).toEqual(article);
   });
 
+  it("accepts a valid article JSON that a provider returned as a JSON string", () => {
+    expect(parseArticleJson(JSON.stringify(json))).toEqual(article);
+  });
+
   it("calls DeepSeek chat completions with JSON output", async () => {
     const fetcher = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ choices: [{ message: { content: json } }] }), { status: 200 }));
     await expect(callDeepSeek({ apiKey: "secret", model: "deepseek-v4-flash", prompt: "prompt", fetcher })).resolves.toEqual(article);
