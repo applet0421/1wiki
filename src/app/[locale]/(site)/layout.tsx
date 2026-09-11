@@ -13,16 +13,15 @@ import { AnalyticsTracker } from "@/components/site/analytics-tracker";
 import { getAnalyticsConfig } from "@/lib/analytics/config";
 import { resolveBrandSeo } from "@/lib/brand-seo/repository";
 
-// Keep the shared shell dynamic so database errors cannot be persisted as a cached document.
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// Keep the generated shell until an admin update explicitly invalidates it.
+export const revalidate = false;
 
 export default async function SiteLayout({ children, params }: { children: ReactNode; params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const siteUrl = getSiteUrl();
   const dictionary = getDictionary(locale);
-  const [categories, brand] = await Promise.all([listNavigationCategories(prisma, locale), resolveBrandSeo(prisma)]);
+  const [categories, brand] = await Promise.all([listNavigationCategories(prisma, locale).catch((error) => { console.error("navigation categories read failed", error); return []; }), resolveBrandSeo(prisma)]);
   const analytics = getAnalyticsConfig();
   const identity = { siteName: brand.siteName, alternateNames: brand.alternateNames, logoUrl: `${siteUrl}${brand.assets.logo}` };
   return <>{analytics.enabled ? <AnalyticsTracker measurementId={analytics.measurementId} /> : null}<JsonLd value={buildWebsiteJsonLd(siteUrl, locale, identity)} /><JsonLd value={buildOrganizationJsonLd(siteUrl, identity)} /><SiteHeader locale={locale} dictionary={dictionary} categories={categories.map((category) => ({
