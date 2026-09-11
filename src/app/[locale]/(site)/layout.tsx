@@ -13,8 +13,9 @@ import { AnalyticsTracker } from "@/components/site/analytics-tracker";
 import { getAnalyticsConfig } from "@/lib/analytics/config";
 import { resolveBrandSeo } from "@/lib/brand-seo/repository";
 
-// Public content is refreshed only by the invalidation outbox after an admin update.
-export const revalidate = false;
+// Keep the shared shell dynamic so database errors cannot be persisted as a cached document.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function SiteLayout({ children, params }: { children: ReactNode; params: Promise<{ locale: string }> }) {
   const { locale } = await params;

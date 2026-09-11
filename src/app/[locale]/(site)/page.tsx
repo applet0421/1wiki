@@ -11,8 +11,9 @@ import { AdsenseScript } from "@/components/ads/adsense-script";
 import { getAdSlotConfig, getAnchorAdsConfig, getLiveAdsenseClientId, getPublicAdEnvironment } from "@/lib/adsense/config";
 import { getOrCreateArticleAdSettings } from "@/lib/adsense/article-ad-settings";
 
-// Public content is refreshed only by the invalidation outbox after an admin update.
-export const revalidate = false;
+// Keep public rendering dynamic so transient database/proxy errors are never cached as pages.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 type Props = { params: Promise<{ locale: string }> };
 
 const getHomeData = cache((locale: "zh-tw" | "en" | "ja") => listPublishedPosts(prisma, locale, 12));

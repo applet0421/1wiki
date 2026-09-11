@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import HomePage, { revalidate } from "./page";
+import HomePage, { dynamic, revalidate } from "./page";
 
 const { listPublishedPosts } = vi.hoisted(() => ({
   listPublishedPosts: vi.fn(),
@@ -13,8 +13,9 @@ vi.mock("@/lib/adsense/article-ad-settings", () => ({
 }));
 
 describe("HomePage", () => {
-  it("keeps the homepage cached until explicit invalidation", () => {
-    expect(revalidate).toBe(false);
+  it("renders the homepage dynamically so transient errors are not cached", () => {
+    expect(dynamic).toBe("force-dynamic");
+    expect(revalidate).toBe(0);
   });
 
   it("does not show topic shortcuts on the homepage", async () => {
