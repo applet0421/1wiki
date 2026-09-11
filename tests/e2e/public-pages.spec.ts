@@ -79,6 +79,7 @@ test("行動版選單會以完整可捲動的抽屜顯示所有導覽項目", as
   expect(drawerBounds.bottom).toBe(852);
   await expect(drawer.getByRole("link", { name: "後台" })).toHaveCount(0);
   await expect(drawer.getByRole("button", { name: "選擇語言：繁體中文" })).toHaveCount(0);
+  await expect(drawer.getByRole("link", { name: "關於我們" })).toHaveCount(0);
 });
 
 test("行動版選單的巢狀分類不會出現白底", async ({ page }) => {

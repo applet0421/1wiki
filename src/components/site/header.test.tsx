@@ -55,7 +55,7 @@ describe("SiteHeader", () => {
     expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("opens a mobile navigation drawer with categories and the admin link", () => {
+  it("opens a mobile navigation drawer with categories only", () => {
     render(<SiteHeader locale="zh-tw" dictionary={getDictionary("zh-tw")} categories={[
       { id: "ai", name: "AI", segments: ["ai"] },
       { id: "software", name: "軟體", segments: ["software"] },
@@ -72,7 +72,7 @@ describe("SiteHeader", () => {
     expect(drawer).toBeInTheDocument();
     expect(within(drawer).getByRole("link", { name: "AI" })).toHaveAttribute("href", "/zh-tw/category/ai");
     expect(within(drawer).getByRole("link", { name: "軟體" })).toHaveAttribute("href", "/zh-tw/category/software");
-    expect(within(drawer).getByRole("link", { name: "關於我們" })).toHaveAttribute("href", "/zh-tw/about");
-    expect(within(drawer).getByRole("link", { name: "後台" })).toHaveAttribute("href", "/login");
+    expect(within(drawer).queryByRole("link", { name: "關於我們" })).not.toBeInTheDocument();
+    expect(within(drawer).queryByRole("link", { name: "後台" })).not.toBeInTheDocument();
   });
 });

@@ -39,4 +39,10 @@ describe("sanitizeArticleHtml", () => {
       "<div>第一行</div><div>第二行</div>",
     );
   });
+
+  it("preserves bold and italic formatting emitted by the rich text toolbar", () => {
+    expect(sanitizeArticleHtml("<p><b>粗體</b><i>斜體</i></p>")).toBe(
+      "<p><strong>粗體</strong><em>斜體</em></p>",
+    );
+  });
 });

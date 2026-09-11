@@ -33,6 +33,8 @@ export function sanitizeArticleHtml(html: string): string {
     allowedIframeHostnames: ["www.youtube-nocookie.com"],
     nonTextTags: ["style", "script", "textarea", "option", "noscript", "ins"],
     transformTags: {
+      b: "strong",
+      i: "em",
       a: (tagName, attribs) => ({
         tagName,
         attribs: {
