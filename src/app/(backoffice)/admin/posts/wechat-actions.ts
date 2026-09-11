@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db/prisma";
 import { Prisma } from "@prisma/client";
 import { isLocale } from "@/lib/i18n/config";
 import { createWeChatImport } from "@/lib/wechat-import/repository";
-import type { WeChatRewriteMode } from "@/lib/wechat-import/types";
+import type { WeChatImportStatus, WeChatRewriteMode } from "@/lib/wechat-import/types";
 import { WECHAT_STAGING_TTL_MS } from "@/lib/wechat-import/retention";
 import { parseRewriteDraft } from "@/lib/wechat-import/schema";
 import { normalizeWeChatRewriteDraftForLocale } from "@/lib/wechat-import/rewrite";
@@ -92,4 +92,32 @@ export async function abandonWeChatImportAction(importId: string) {
     prisma.weChatImport.update({ where: { id: importId }, data: { sourceUrl: "https://mp.weixin.qq.com/", normalizedUrl: "https://mp.weixin.qq.com/", sourceCoverUrl: null, sourceContentHtml: null, sourceBlocks: Prisma.DbNull, rewrittenDraft: Prisma.DbNull, editorDraft: Prisma.DbNull } }),
   ]);
   return { ok: true as const };
+}
+
+const resettableWeChatImportStatuses: WeChatImportStatus[] = ["FETCH_QUEUED", "FETCHING", "FETCHED", "REWRITE_QUEUED", "REWRITING", "REWRITTEN", "TRANSFER_QUEUED", "TRANSFERRING", "TRANSFER_FAILED", "FAILED", "UNKNOWN"];
+
+export async function resetAllWeChatImportsAction() {
+  const userId = await currentUserId();
+  if (!userId) return { ok: false as const, error: "請先登入後台。" };
+  const cleared = await prisma.$transaction(async (tx) => {
+    const candidates = await tx.weChatImport.findMany({
+      where: { userId, post: null, status: { in: resettableWeChatImportStatuses } },
+      select: { id: true },
+    });
+    if (!candidates.length) return 0;
+    const candidateIds = candidates.map((item) => item.id);
+    await tx.weChatImport.updateMany({
+      where: { id: { in: candidateIds }, userId, post: null, status: { in: resettableWeChatImportStatuses } },
+      data: { status: "ABANDONED", leaseExpiresAt: null },
+    });
+    const targetIds = (await tx.weChatImport.findMany({ where: { id: { in: candidateIds }, userId, post: null, status: "ABANDONED" }, select: { id: true } })).map((item) => item.id);
+    if (!targetIds.length) return 0;
+    await tx.weChatImportAsset.updateMany({ where: { importId: { in: targetIds } }, data: { imageBytes: null, originalUrl: "" } });
+    await tx.weChatImport.updateMany({
+      where: { id: { in: targetIds } },
+      data: { sourceUrl: "https://mp.weixin.qq.com/", normalizedUrl: "https://mp.weixin.qq.com/", sourceCoverUrl: null, sourceContentHtml: null, sourceBlocks: Prisma.DbNull, rewrittenDraft: Prisma.DbNull, editorDraft: Prisma.DbNull },
+    });
+    return targetIds.length;
+  });
+  return { ok: true as const, cleared };
 }

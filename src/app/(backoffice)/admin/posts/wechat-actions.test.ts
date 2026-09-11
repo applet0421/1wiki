@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/db/prisma";
 import { resetDatabase } from "../../../../../tests/helpers/database";
 import { getCurrentUser } from "@/lib/auth/session";
-import { abandonWeChatImportAction, createWeChatImportAction, queueWeChatRetryAction, queueWeChatRewriteAction, queueWeChatTransferAction } from "./wechat-actions";
+import { abandonWeChatImportAction, createWeChatImportAction, queueWeChatRetryAction, queueWeChatRewriteAction, queueWeChatTransferAction, resetAllWeChatImportsAction } from "./wechat-actions";
 
 vi.mock("@/lib/auth/session", () => ({ getCurrentUser: vi.fn() }));
 
@@ -83,5 +83,21 @@ describe("WeChat import actions", () => {
     await expect(prisma.weChatImport.findUniqueOrThrow({ where: { id: imported.id } })).resolves.toMatchObject({ status: "TRANSFER_QUEUED" });
     await expect(abandonWeChatImportAction(imported.id)).resolves.toEqual({ ok: true });
     await expect(prisma.weChatImport.findUniqueOrThrow({ where: { id: imported.id }, include: { assets: true } })).resolves.toMatchObject({ status: "ABANDONED", sourceContentHtml: null, assets: [{ imageBytes: null, originalUrl: "" }] });
+  });
+
+  it("safely clears only the current user's unfinished WeChat staging work", async () => {
+    const [owner, other] = await Promise.all([
+      prisma.user.create({ data: { username: "wechat-reset-owner", displayName: "Owner", passwordHash: "test", mustChangePassword: false } }),
+      prisma.user.create({ data: { username: "wechat-reset-other", displayName: "Other", passwordHash: "test", mustChangePassword: false } }),
+    ]);
+    vi.mocked(getCurrentUser).mockResolvedValue(owner);
+    const staging = await prisma.weChatImport.create({ data: { userId: owner.id, status: "FAILED", sourceUrl: "https://mp.weixin.qq.com/s/staging", normalizedUrl: "https://mp.weixin.qq.com/s/staging", targetLocale: "zh-tw", sourceContentHtml: "<p>暫存原文</p>", rewrittenDraft: { title: "暫存草稿" }, expiresAt: new Date(Date.now() + 86400000), assets: { create: { position: 0, originalUrl: "https://mmbiz.qpic.cn/staging", mimeType: "image/png", byteSize: 3, sha256: "c".repeat(64), alt: "暫存圖片", imageBytes: new Uint8Array([1, 2, 3]) } } } });
+    const ready = await prisma.weChatImport.create({ data: { userId: owner.id, status: "READY", sourceUrl: "https://mp.weixin.qq.com/s/ready", normalizedUrl: "https://mp.weixin.qq.com/s/ready", targetLocale: "zh-tw", expiresAt: new Date(Date.now() + 86400000) } });
+    const otherJob = await prisma.weChatImport.create({ data: { userId: other.id, status: "FAILED", sourceUrl: "https://mp.weixin.qq.com/s/other", normalizedUrl: "https://mp.weixin.qq.com/s/other", targetLocale: "zh-tw", sourceContentHtml: "<p>其他使用者</p>", expiresAt: new Date(Date.now() + 86400000) } });
+
+    await expect(resetAllWeChatImportsAction()).resolves.toEqual({ ok: true, cleared: 1 });
+    await expect(prisma.weChatImport.findUniqueOrThrow({ where: { id: staging.id }, include: { assets: true } })).resolves.toMatchObject({ status: "ABANDONED", sourceContentHtml: null, rewrittenDraft: null, assets: [{ imageBytes: null, originalUrl: "" }] });
+    await expect(prisma.weChatImport.findUniqueOrThrow({ where: { id: ready.id } })).resolves.toMatchObject({ status: "READY" });
+    await expect(prisma.weChatImport.findUniqueOrThrow({ where: { id: otherJob.id } })).resolves.toMatchObject({ status: "FAILED", sourceContentHtml: "<p>其他使用者</p>" });
   });
 });
